@@ -1,12 +1,14 @@
+import type { Capability } from '@darzikhata/domain';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
 import { SignInPage } from '../features/auth/SignInPage';
-import { PlaceholderPage } from '../features/PlaceholderPage';
 import { WelcomePage } from '../features/welcome/WelcomePage';
 import { DesktopShell } from '../shell/DesktopShell';
 import { MobileShell } from '../shell/MobileShell';
-import { navItem, type NavKey } from '../shell/nav';
+import { navItem } from '../shell/nav';
+import type { MessageKey } from '../i18n/bn';
+import { useI18n } from '../i18n/I18nProvider';
 import { useShell } from '../shell/ShellPreference';
 import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, Loading, RequireCapability, RequireShop, RequireStaff } from './guards';
@@ -24,6 +26,9 @@ const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'Job
 const WorkPage = lazyPage(() => import('../features/work/WorkPage'), 'WorkPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
 const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrintPage'), 'WorkListPrintPage');
+const SettingsPage = lazyPage(() => import('../features/settings/SettingsPage'), 'SettingsPage');
+const SettingsHome = lazyPage(() => import('../features/settings/SettingsHome'), 'SettingsHome');
+const ShopSettings = lazyPage(() => import('../features/settings/ShopSettings'), 'ShopSettings');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
 function AppShell() {
@@ -33,11 +38,12 @@ function AppShell() {
   return kind === 'desktop' ? <DesktopShell role={current.role} /> : <MobileShell role={current.role} />;
 }
 
-function Section({ nav }: { nav: NavKey }) {
-  const item = navItem(nav);
+/** Stands in for a settings section until its screen is built. */
+function SectionHeading({ label, anyOf }: { label: MessageKey; anyOf: Capability[] }) {
+  const { t } = useI18n();
   return (
-    <RequireCapability anyOf={item.requires}>
-      <PlaceholderPage title={item.label} />
+    <RequireCapability anyOf={anyOf}>
+      <h2 className="text-lg font-semibold">{t(label)}</h2>
     </RequireCapability>
   );
 }
@@ -136,7 +142,20 @@ export function AppRoutes() {
             </RequireCapability>
           }
         />
-        <Route path="settings" element={<Section nav="settings" />} />
+        <Route path="settings" element={<SettingsPage />}>
+          <Route index element={<SettingsHome />} />
+          <Route
+            path="shop"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <ShopSettings />
+              </RequireCapability>
+            }
+          />
+          <Route path="templates" element={<SectionHeading label="settings.templates" anyOf={['settings.edit']} />} />
+          <Route path="staff" element={<SectionHeading label="settings.staff" anyOf={['staff.manage']} />} />
+          <Route path="branches" element={<SectionHeading label="settings.branches" anyOf={['settings.edit']} />} />
+        </Route>
         <Route path="more" element={<MorePage />} />
       </Route>
       <Route
