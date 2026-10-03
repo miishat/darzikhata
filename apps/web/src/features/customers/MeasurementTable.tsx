@@ -1,4 +1,5 @@
-import { formatMeasurement, type GarmentTemplate, type MeasurementValue } from '@darzikhata/domain';
+import { formatMeasurement, labelIn, type GarmentTemplate, type Language, type MeasurementValue } from '@darzikhata/domain';
+import { translate } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nProvider';
 import { compareValues, fieldGroups, groupLabel } from './measurementView';
 
@@ -7,11 +8,16 @@ export interface MeasurementTableProps {
   values: Record<string, MeasurementValue>;
   /** A second set of values shown in a column beside the first, with changed rows flagged. */
   compare?: { label: string; values: Record<string, MeasurementValue> };
+  /** Overrides the app language, for a print-out in the other language. */
+  language?: Language;
 }
 
 /** A garment's measurements, grouped, one row per field that has a value (or any field when comparing). */
-export function MeasurementTable({ template, values, compare }: MeasurementTableProps) {
-  const { t, label, language } = useI18n();
+export function MeasurementTable({ template, values, compare, language: forced }: MeasurementTableProps) {
+  const app = useI18n();
+  const language = forced ?? app.language;
+  const t: typeof app.t = (key, vars) => translate(language, key, vars);
+  const label = (l: Parameters<typeof labelIn>[0]) => labelIn(l, language);
   const show = (value: MeasurementValue | undefined) =>
     value ? `${formatMeasurement(value.value, language)} ${t(value.unit === 'cm' ? 'unit.cm' : 'unit.inch')}` : '';
   const changes = compare

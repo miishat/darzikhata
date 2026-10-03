@@ -54,3 +54,25 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  .print-block {
+    break-inside: avoid;
+  }
+}

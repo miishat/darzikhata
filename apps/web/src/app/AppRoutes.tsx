@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
 import { SignInPage } from '../features/auth/SignInPage';
@@ -8,12 +9,15 @@ import { MobileShell } from '../shell/MobileShell';
 import { navItem, type NavKey } from '../shell/nav';
 import { useShell } from '../shell/ShellPreference';
 import { lazyPage } from './lazy';
-import { Entry, HomeRedirect, RequireCapability, RequireShop, RequireStaff } from './guards';
+import { Entry, HomeRedirect, Loading, RequireCapability, RequireShop, RequireStaff } from './guards';
 
 const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage'), 'CustomersPage');
 const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm'), 'CustomerForm');
 const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
+const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
+const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'JobSlipPage');
+const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
 
 function AppShell() {
   const { kind } = useShell();
@@ -100,6 +104,42 @@ export function AppRoutes() {
         <Route path="settings" element={<Section nav="settings" />} />
         <Route path="more" element={<MorePage />} />
       </Route>
+      <Route
+        path="/print/receipt/:orderId"
+        element={
+          <RequireStaff>
+            <RequireCapability anyOf={['money.view']}>
+              <Suspense fallback={<Loading />}>
+                <ReceiptPage />
+              </Suspense>
+            </RequireCapability>
+          </RequireStaff>
+        }
+      />
+      <Route
+        path="/print/job/:orderId"
+        element={
+          <RequireStaff>
+            <RequireCapability anyOf={['orders.view', 'work.view.all', 'work.view.assigned']}>
+              <Suspense fallback={<Loading />}>
+                <JobSlipPage />
+              </Suspense>
+            </RequireCapability>
+          </RequireStaff>
+        }
+      />
+      <Route
+        path="/print/tags/:orderId"
+        element={
+          <RequireStaff>
+            <RequireCapability anyOf={['orders.view', 'work.view.all', 'work.view.assigned']}>
+              <Suspense fallback={<Loading />}>
+                <FabricTagsPage />
+              </Suspense>
+            </RequireCapability>
+          </RequireStaff>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
