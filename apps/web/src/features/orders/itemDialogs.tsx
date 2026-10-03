@@ -91,7 +91,7 @@ export function HandOverDialog({ order, item, onClose }: ItemDialogProps) {
   const { t, language, money } = useI18n();
   const can = useCan();
   const { problem, working, save } = useSave(onClose);
-  const target = stageMoves(item).find((m) => m.stage.group === 'delivered')?.stage.key ?? '';
+  const target = stageMoves(item).find((m) => m.stage.group === 'delivered')?.stage.key;
   const balance = moneySummary(order).balance;
   return (
     <Shell
@@ -100,7 +100,9 @@ export function HandOverDialog({ order, item, onClose }: ItemDialogProps) {
       working={working}
       problem={problem}
       saveLabel={t('common.confirm')}
-      onSave={() => void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: target, reason: '' })}
+      onSave={() => {
+        if (target) void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: target, reason: '' });
+      }}
     >
       <p>{t('item.handOverBody', { item: itemTitle(order, item, language) })}</p>
       {can('money.view') && balance > 0 && <p className="font-semibold">{t('item.balanceDue', { amount: money(balance) })}</p>}
@@ -116,6 +118,7 @@ export function ChangeStageDialog({ order, item, onClose }: ItemDialogProps) {
   const [to, setTo] = useState(() => (moves.find((m) => m.kind === 'forward') ?? moves[0])?.stage.key ?? '');
   const [reason, setReason] = useState('');
   const [missing, setMissing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const move = moves.find((m) => m.stage.key === to);
   const rework = move?.kind === 'rework';
 
@@ -125,8 +128,14 @@ export function ChangeStageDialog({ order, item, onClose }: ItemDialogProps) {
       setMissing(true);
       return;
     }
+    if (move.stage.group === 'delivered') {
+      setConfirming(true);
+      return;
+    }
     void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to, reason: rework ? reason.trim() : '' });
   };
+
+  if (confirming) return <HandOverDialog order={order} item={item} onClose={onClose} />;
 
   return (
     <Shell title={t('item.changeStage')} onClose={onClose} working={working} problem={problem} onSave={submit}>

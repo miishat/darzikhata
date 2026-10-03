@@ -51,6 +51,24 @@ describe('Order detail', () => {
     expect(within(screen.getByRole('region', { name: 'অর্ডারের বিস্তারিত' })).getByText('চলমান')).toBeTruthy();
   });
 
+  it('asks for hand-over confirmation when delivering through the stage picker', async () => {
+    const { store, order } = await openOrder('rahman', (o) => o.items.some((i) => itemSummaryGroup(i) === 'ready'));
+    const item = order.items.find((i) => itemSummaryGroup(i) === 'ready')!;
+    const card = screen.getByRole('region', { name: title(order, item) });
+
+    await userEvent.click(within(card).getByRole('button', { name: 'অন্য ধাপ…' }));
+    const picker = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
+    await userEvent.selectOptions(within(picker).getByLabelText('নতুন ধাপ'), 'ডেলিভারি হয়েছে');
+    await userEvent.click(within(picker).getByRole('button', { name: 'সেভ করুন' }));
+
+    const confirm = await screen.findByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
+    expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe(item.stageKey);
+
+    await userEvent.click(within(confirm).getByRole('button', { name: 'নিশ্চিত করুন' }));
+    expect(await within(card).findByText('ধাপ: ডেলিভারি হয়েছে')).toBeTruthy();
+    expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe('delivered');
+  });
+
   it('moves a garment on, then back for rework with a reason', async () => {
     const { store, order } = await openOrder('rahman', (o) => o.items.some((i) => !i.cancelled && i.stageKey === 'cutting'));
     const item = order.items.find((i) => !i.cancelled && i.stageKey === 'cutting')!;
