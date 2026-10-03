@@ -1,4 +1,4 @@
-import { moneySummary } from '@darzikhata/domain';
+import { moneySummary, replay } from '@darzikhata/domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DarziDb } from './db';
 import { ShopStore } from './store';
@@ -12,6 +12,16 @@ function freshStore(name = `test-${++dbCount}`) {
   let n = 0;
   const store = new ShopStore({ db, now: () => new Date('2026-10-03T06:00:00.000Z'), newId: () => `new-${++n}` });
   return { db, store, name };
+}
+
+/** Makes saving an event finish slowly so a second action can land while it is in flight. */
+function slowAdd(db: DarziDb) {
+  const add = db.events.add.bind(db.events);
+  db.events.add = (async (...args: Parameters<typeof add>) => {
+    const result = await add(...args);
+    await new Promise((r) => setTimeout(r, 40));
+    return result;
+  }) as typeof db.events.add;
 }
 
 afterEach(async () => {
@@ -110,5 +120,44 @@ describe('ShopStore', () => {
     unsubscribe();
     await store.startDemo('rahman');
     expect(calls).toBe(1);
+  });
+
+  it('Reset during an in-flight dispatch leaves memory equal to the persisted log', async () => {
+    const { store, db } = freshStore();
+    await store.startDemo('rahman');
+    slowAdd(db);
+    const pending = store.dispatch(advance('old-shop-pay', 100));
+    const reset = store.startDemo('nakshi');
+    await Promise.all([pending, reset]);
+    const rows = await db.events.orderBy('seq').toArray();
+    expect(rows.some((r) => r.id === 'new-1')).toBe(false);
+    expect(store.getSnapshot().config?.id).toBe('nakshi');
+    expect(store.getSnapshot().state).toEqual(replay(rows.map((r) => r.event)).state);
+  });
+
+  it('clear after an in-flight dispatch leaves an empty log and empty state', async () => {
+    const { store, db } = freshStore();
+    await store.startDemo('rahman');
+    slowAdd(db);
+    const pending = store.dispatch(advance('doomed', 100));
+    const cleared = store.clear();
+    await Promise.all([pending, cleared]);
+    expect(await db.events.count()).toBe(0);
+    expect(store.getSnapshot().status).toBe('empty');
+    expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(0);
+  });
+
+  it('signOut right after an un-awaited dispatch lets the dispatch finish under its own session', async () => {
+    // Tasks run in call order: a dispatch queued before signOut succeeds, one queued after it throws.
+    const { store, db } = freshStore();
+    await store.startDemo('rahman');
+    const pending = store.dispatch(advance('before-out', 100));
+    const out = store.signOut();
+    const after = store.dispatch(advance('after-out', 100));
+    await expect(pending).resolves.toMatchObject({ kind: 'applied' });
+    await out;
+    await expect(after).rejects.toThrow('No one is signed in to a shop');
+    expect((await db.events.where('id').equals('new-1').first())?.event.staffId).toBe('rahman-owner');
+    expect(await db.events.where('id').equals('new-2').count()).toBe(0);
   });
 });

@@ -46,7 +46,7 @@ const LOADING: StoreSnapshot = { status: 'loading', config: null, state: emptySt
 export class ShopStore {
   private snapshot: StoreSnapshot = LOADING;
   private readonly listeners = new Set<() => void>();
-  /** Dispatches run one at a time so the saved order always matches the applied order. */
+  /** Dispatches, sign-in/out, reset and clear run one at a time so memory, saved order and applied order agree. */
   private queue: Promise<unknown> = Promise.resolve();
   private readonly db: DarziDb;
   private readonly now: () => Date;
@@ -90,7 +90,17 @@ export class ShopStore {
   }
 
   /** Replaces everything on this device with a fresh demo shop, signed in as its owner. */
-  async startDemo(shopKey: SeedShopKey): Promise<void> {
+  startDemo(shopKey: SeedShopKey): Promise<void> {
+    return this.enqueue(() => this.doStartDemo(shopKey));
+  }
+
+  private enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(task);
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async doStartDemo(shopKey: SeedShopKey): Promise<void> {
     const { config, events } = generateShop(shopKey, todayInDhaka(this.now()));
     const owner = config.staff.find((s) => s.roleId === 'owner')!;
     const session: Session = { shopKey, staffId: owner.id };
@@ -108,7 +118,11 @@ export class ShopStore {
   }
 
   /** Removes all demo data from this device. */
-  async clear(): Promise<void> {
+  clear(): Promise<void> {
+    return this.enqueue(() => this.doClear());
+  }
+
+  private async doClear(): Promise<void> {
     await this.db.transaction('rw', this.db.events, this.db.meta, async () => {
       await this.db.events.clear();
       await this.db.meta.clear();
@@ -121,9 +135,7 @@ export class ShopStore {
    * rejected ones are returned so the screen can explain what went wrong.
    */
   dispatch(body: EventBody): Promise<ApplyOutcome> {
-    const run = this.queue.then(() => this.save(body));
-    this.queue = run.catch(() => undefined);
-    return run;
+    return this.enqueue(() => this.save(body));
   }
 
   private async save(body: EventBody): Promise<ApplyOutcome> {
@@ -139,17 +151,19 @@ export class ShopStore {
   }
 
   /** Returns to the "who is using this device?" screen without touching shop data. */
-  async signOut(): Promise<void> {
-    await this.setSession(this.snapshot.session ? { ...this.snapshot.session, staffId: null } : null);
+  signOut(): Promise<void> {
+    return this.enqueue(() => this.setSession(this.snapshot.session ? { ...this.snapshot.session, staffId: null } : null));
   }
 
   /** Signs a staff member in with their PIN. Returns false for a wrong PIN or inactive staff. */
-  async signIn(staffId: string, pin: string): Promise<boolean> {
-    const { config, session } = this.snapshot;
-    const staff = config ? staffById(config, staffId) : null;
-    if (!session || !staff || !verifyPin(staff, pin)) return false;
-    await this.setSession({ ...session, staffId });
-    return true;
+  signIn(staffId: string, pin: string): Promise<boolean> {
+    return this.enqueue(async () => {
+      const { config, session } = this.snapshot;
+      const staff = config ? staffById(config, staffId) : null;
+      if (!session || !staff || !verifyPin(staff, pin)) return false;
+      await this.setSession({ ...session, staffId });
+      return true;
+    });
   }
 
   private async setSession(session: Session | null): Promise<void> {
