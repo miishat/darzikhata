@@ -14,15 +14,28 @@ export interface MetaRow {
   value: unknown;
 }
 
+/** A photo kept on this device (a data URL), referenced from order items by id. */
+export interface PhotoRow {
+  id: string;
+  dataUrl: string;
+  createdAt: string;
+}
+
 export class DarziDb extends Dexie {
   events!: EntityTable<EventRow, 'seq'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  photos!: EntityTable<PhotoRow, 'id'>;
 
   constructor(name = 'darzikhata') {
     super(name);
     this.version(1).stores({
       events: '++seq, &id',
       meta: 'key',
+    });
+    this.version(2).stores({
+      events: '++seq, &id',
+      meta: 'key',
+      photos: 'id',
     });
   }
 }

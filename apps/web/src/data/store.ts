@@ -1,6 +1,7 @@
 import {
   applyEvent,
   emptyState,
+  nextOrderNumber,
   replay,
   staffById,
   todayInDhaka,
@@ -37,6 +38,11 @@ export interface StoreDeps {
   newId?: () => string;
 }
 
+/** Result of saving several changes together: all were saved, or none were. */
+export type BatchOutcome =
+  | { ok: true; outcomes: ApplyOutcome[] }
+  | { ok: false; failedIndex: number; outcome: ApplyOutcome };
+
 const LOADING: StoreSnapshot = { status: 'loading', config: null, state: emptyState(), session: null, deviceId: null };
 
 /**
@@ -59,6 +65,17 @@ export class ShopStore {
   }
 
   getSnapshot = (): StoreSnapshot => this.snapshot;
+
+  /** A new id for a record a screen is about to create (customer, order, item, payment). */
+  createId = (): string => this.newId();
+
+  /** The next order number in this device's own series, e.g. "A-0042". */
+  nextOrderNumber(): string {
+    const { config, deviceId, state } = this.snapshot;
+    const device = config?.devices.find((d) => d.id === deviceId);
+    if (!device) throw new Error('This device is not set up for the shop');
+    return nextOrderNumber(Object.values(state.orders).map((o) => o.number), device.series);
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -104,9 +121,10 @@ export class ShopStore {
     const { config, events } = generateShop(shopKey, todayInDhaka(this.now()));
     const owner = config.staff.find((s) => s.roleId === 'owner')!;
     const session: Session = { shopKey, staffId: owner.id };
-    await this.db.transaction('rw', this.db.events, this.db.meta, async () => {
+    await this.db.transaction('rw', this.db.events, this.db.meta, this.db.photos, async () => {
       await this.db.events.clear();
       await this.db.meta.clear();
+      await this.db.photos.clear();
       await this.db.events.bulkAdd(events.map((event) => ({ id: event.id, event })));
       await this.db.meta.bulkPut([
         { key: 'config', value: config },
@@ -123,9 +141,10 @@ export class ShopStore {
   }
 
   private async doClear(): Promise<void> {
-    await this.db.transaction('rw', this.db.events, this.db.meta, async () => {
+    await this.db.transaction('rw', this.db.events, this.db.meta, this.db.photos, async () => {
       await this.db.events.clear();
       await this.db.meta.clear();
+      await this.db.photos.clear();
     });
     await this.load();
   }
@@ -139,15 +158,58 @@ export class ShopStore {
   }
 
   private async save(body: EventBody): Promise<ApplyOutcome> {
-    const { status, session, deviceId } = this.snapshot;
-    if (status !== 'ready' || !session?.staffId || !deviceId) throw new Error('No one is signed in to a shop');
-    const event = { id: this.newId(), at: this.now().toISOString(), deviceId, staffId: session.staffId, ...body } as DomainEvent;
+    const event = this.stamp(body);
     const outcome = applyEvent(this.snapshot.state, event);
     if (outcome.kind === 'applied') {
       await this.db.events.add({ id: event.id, event });
       this.publish({ ...this.snapshot, state: outcome.state });
     }
     return outcome;
+  }
+
+  /**
+   * Records several changes as one action, such as a new customer, their measurements, the order
+   * and its advance. Each is checked against the state left by the ones before it. If any is not
+   * applied, nothing is saved and the first failure is returned.
+   */
+  dispatchBatch(bodies: EventBody[]): Promise<BatchOutcome> {
+    return this.enqueue(() => this.saveBatch(bodies));
+  }
+
+  private stamp(body: EventBody): DomainEvent {
+    const { status, session, deviceId } = this.snapshot;
+    if (status !== 'ready' || !session?.staffId || !deviceId) throw new Error('No one is signed in to a shop');
+    return { id: this.newId(), at: this.now().toISOString(), deviceId, staffId: session.staffId, ...body } as DomainEvent;
+  }
+
+  private async saveBatch(bodies: EventBody[]): Promise<BatchOutcome> {
+    let state = this.snapshot.state;
+    const events: DomainEvent[] = [];
+    const outcomes: ApplyOutcome[] = [];
+    for (const [index, body] of bodies.entries()) {
+      const event = this.stamp(body);
+      const outcome = applyEvent(state, event);
+      if (outcome.kind !== 'applied') return { ok: false, failedIndex: index, outcome };
+      state = outcome.state;
+      events.push(event);
+      outcomes.push(outcome);
+    }
+    await this.db.events.bulkAdd(events.map((event) => ({ id: event.id, event })));
+    this.publish({ ...this.snapshot, state });
+    return { ok: true, outcomes };
+  }
+
+  /** Keeps a photo (a data URL) on this device and returns its id. */
+  savePhoto(dataUrl: string): Promise<string> {
+    return this.enqueue(async () => {
+      const id = this.newId();
+      await this.db.photos.add({ id, dataUrl, createdAt: this.now().toISOString() });
+      return id;
+    });
+  }
+
+  async getPhoto(id: string): Promise<string | null> {
+    return (await this.db.photos.get(id))?.dataUrl ?? null;
   }
 
   /** Returns to the "who is using this device?" screen without touching shop data. */
