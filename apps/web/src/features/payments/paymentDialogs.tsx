@@ -31,7 +31,7 @@ export function TakePaymentDialog({ order, onClose }: Props) {
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
   const methods = useMethods();
-  const id = useRef(store.createId());
+  const [id] = useState(() => store.createId());
   const balance = moneySummary(order).balance;
   const [amount, setAmount] = useState<number | null>(balance > 0 ? balance : null);
   const [method, setMethod] = useState<PaymentMethod>('cash');
@@ -45,7 +45,7 @@ export function TakePaymentDialog({ order, onClose }: Props) {
       type: 'payment.recorded',
       orderId: order.id,
       payment: {
-        id: id.current,
+        id: id,
         amount,
         method,
         reference: reference.trim(),
@@ -77,7 +77,7 @@ export function RefundDialog({ order, onClose }: Props) {
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
   const methods = useMethods();
-  const id = useRef(store.createId());
+  const [id] = useState(() => store.createId());
   const held = netPaid(order.payments);
   const credit = moneySummary(order).creditDue;
   const [amount, setAmount] = useState<number | null>(credit > 0 ? credit : null);
@@ -98,7 +98,7 @@ export function RefundDialog({ order, onClose }: Props) {
     void save({
       type: 'payment.recorded',
       orderId: order.id,
-      payment: { id: id.current, amount, method, reference: '', kind: 'refund', corrects: null, reason: reason.trim() },
+      payment: { id: id, amount, method, reference: '', kind: 'refund', corrects: null, reason: reason.trim() },
     });
   };
 
@@ -127,7 +127,7 @@ export function CorrectionDialog({ order, payment, onClose }: Props & { payment:
   const { t, money } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
-  const id = useRef(store.createId());
+  const [id] = useState(() => store.createId());
   const current = correctedAmount(order.payments, payment.id);
   const [amount, setAmount] = useState<number | null>(null);
   const [reason, setReason] = useState('');
@@ -147,7 +147,7 @@ export function CorrectionDialog({ order, payment, onClose }: Props & { payment:
       type: 'payment.recorded',
       orderId: order.id,
       payment: {
-        id: id.current,
+        id: id,
         amount: amount - current,
         method: payment.method,
         reference: '',
@@ -211,7 +211,7 @@ export function PriceAdjustmentDialog({ order, onClose }: Props) {
   const { t } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
-  const id = useRef(store.createId());
+  const [id] = useState(() => store.createId());
   const [kind, setKind] = useState<'up' | 'down'>('up');
   const [amount, setAmount] = useState<number | null>(null);
   const [reason, setReason] = useState('');
@@ -223,7 +223,7 @@ export function PriceAdjustmentDialog({ order, onClose }: Props) {
     void save({
       type: 'order.priceAdjusted',
       orderId: order.id,
-      adjustment: { id: id.current, amount: kind === 'up' ? amount : -amount, reason: reason.trim() },
+      adjustment: { id: id, amount: kind === 'up' ? amount : -amount, reason: reason.trim() },
     });
   };
 

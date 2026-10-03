@@ -72,6 +72,17 @@ describe('Customer form', () => {
     expect(await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' })).toBeTruthy();
   });
 
+  it('shows the other customer’s values, not what was typed, when the route target changes', async () => {
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/new' });
+    await userEvent.type(await screen.findByLabelText('নাম'), 'টাইপ করা নাম');
+    await act(() => router.navigate('/app/customers/rahman-c1/edit'));
+    await userEvent.click(await screen.findByRole('button', { name: 'সেভ না করে যান' }));
+
+    expect(await screen.findByRole('heading', { name: 'কাস্টমারের তথ্য বদলান' })).toBeTruthy();
+    const customer = store.getSnapshot().state.customers['rahman-c1']!;
+    expect(screen.getByLabelText('নাম')).toHaveProperty('value', customer.name);
+  });
+
   it('is only for staff who may edit customers', async () => {
     await renderApp({
       layout: 'desktop',

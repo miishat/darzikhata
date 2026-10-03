@@ -21,6 +21,7 @@ import {
 } from './customerInput';
 
 const NO_HOUSEHOLD = '';
+const NEW_FORM = 'new';
 
 /** Add a customer, or correct one's details. One form serves both routes. */
 export function CustomerForm() {
@@ -36,7 +37,7 @@ export function CustomerForm() {
       </p>
     );
   }
-  return <Form customer={customer ?? null} />;
+  return <Form key={customerId ?? NEW_FORM} customer={customer ?? null} />;
 }
 
 function Form({ customer }: { customer: Customer | null }) {
