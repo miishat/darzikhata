@@ -12,6 +12,7 @@ import { Entry, HomeRedirect, RequireCapability, RequireShop, RequireStaff } fro
 
 const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage'), 'CustomersPage');
 const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm'), 'CustomerForm');
+const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 
 function AppShell() {
@@ -75,6 +76,14 @@ export function AppRoutes() {
           element={
             <RequireCapability anyOf={['customers.edit']}>
               <CustomerForm />
+            </RequireCapability>
+          }
+        />
+        <Route
+          path="customers/:customerId/measure/:templateId"
+          element={
+            <RequireCapability anyOf={['measurements.edit']}>
+              <MeasurementForm />
             </RequireCapability>
           }
         />

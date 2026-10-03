@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { buttonClasses } from '../../ui/Button';
 import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
+import { MeasurementSection } from './MeasurementSection';
 
 function Region({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -78,6 +79,8 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
           )}
         </Region>
       )}
+
+      <MeasurementSection customerId={customer.id} />
 
       <Region id="customer-orders" title={t('customer.orders')}>
         {orders.length === 0 ? (
