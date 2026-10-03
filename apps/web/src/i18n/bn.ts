@@ -53,6 +53,10 @@ export const bn = {
   'input.invalidMoney': 'টাকার অঙ্ক বোঝা যায়নি',
   'pin.delete': 'শেষ সংখ্যা মুছুন',
   'pin.label': 'পিন',
+  'unsaved.title': 'না সেভ করে চলে যাবেন?',
+  'unsaved.body': 'এই পাতায় যা লিখেছেন তা সেভ হয়নি।',
+  'unsaved.stay': 'এখানেই থাকুন',
+  'unsaved.leave': 'সেভ না করে যান',
 } as const;
 
 export type MessageKey = keyof typeof bn;

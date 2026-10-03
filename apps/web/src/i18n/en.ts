@@ -54,4 +54,8 @@ export const en: Messages = {
   'input.invalidMoney': 'Could not read that amount',
   'pin.delete': 'Delete last digit',
   'pin.label': 'PIN',
+  'unsaved.title': 'Leave without saving?',
+  'unsaved.body': 'What you entered on this page has not been saved.',
+  'unsaved.stay': 'Stay here',
+  'unsaved.leave': 'Leave without saving',
 };

@@ -1,5 +1,7 @@
 import { can, type Role } from '@darzikhata/domain';
+import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
+import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { visibleNav } from './nav';
@@ -50,7 +52,9 @@ export function DesktopShell({ role }: { role: Role }) {
           <SwitchUserButton />
         </header>
         <main className="min-w-0 flex-1 overflow-auto p-6">
-          <Outlet />
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { can, type Role } from '@darzikhata/domain';
+import { Suspense } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
+import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { visibleNav } from './nav';
 import { ConnectionBadge, SwitchUserButton, useShopHeader } from './ShellParts';
@@ -23,7 +25,9 @@ export function MobileShell({ role }: { role: Role }) {
         <SwitchUserButton compact />
       </header>
       <main className="flex-1 px-4 pt-4 pb-36">
-        <Outlet />
+        <Suspense fallback={<Loading />}>
+          <Outlet />
+        </Suspense>
       </main>
       {can(role, 'orders.create') && (
         <Link

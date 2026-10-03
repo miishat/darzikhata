@@ -1,14 +1,16 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
 import { SignInPage } from '../features/auth/SignInPage';
-import { MorePage } from '../features/more/MorePage';
 import { PlaceholderPage } from '../features/PlaceholderPage';
 import { WelcomePage } from '../features/welcome/WelcomePage';
 import { DesktopShell } from '../shell/DesktopShell';
 import { MobileShell } from '../shell/MobileShell';
 import { navItem, type NavKey } from '../shell/nav';
 import { useShell } from '../shell/ShellPreference';
+import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, RequireCapability, RequireShop, RequireStaff } from './guards';
+
+const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 
 function AppShell() {
   const { kind } = useShell();

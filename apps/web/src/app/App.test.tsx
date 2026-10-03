@@ -1,41 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
-import { afterEach, describe, expect, it } from 'vitest';
-import { DarziDb } from '../data/db';
-import { ShopStore } from '../data/store';
-import { App } from './App';
-
-let count = 0;
-const dbs: DarziDb[] = [];
-
-afterEach(async () => {
-  for (const db of dbs.splice(0)) await db.delete();
-});
-
-async function renderApp({ layout, path = '/', shop, as }: {
-  layout: 'mobile' | 'desktop';
-  path?: string;
-  shop?: 'rahman' | 'nakshi';
-  as?: { staffId: string; pin: string };
-}) {
-  window.localStorage.setItem('dk.layout', layout);
-  const db = new DarziDb(`app-test-${++count}`);
-  dbs.push(db);
-  const store = new ShopStore({ db });
-  if (shop) await store.startDemo(shop);
-  else await store.load();
-  if (as) {
-    await store.signOut();
-    await store.signIn(as.staffId, as.pin);
-  }
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <App store={store} />
-    </MemoryRouter>,
-  );
-  return store;
-}
+import { describe, expect, it } from 'vitest';
+import { renderApp } from '../test/renderApp';
 
 const mainNav = () => screen.getByRole('navigation', { name: 'প্রধান মেনু' });
 
@@ -92,7 +58,7 @@ describe('App', () => {
   });
 
   it('switches language and layout from More, and resets the demo after confirming', async () => {
-    const store = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/more' });
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/more' });
     await userEvent.click(await screen.findByRole('radio', { name: 'English' }));
     expect(await screen.findByRole('heading', { name: 'More' })).toBeTruthy();
 
