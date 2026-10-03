@@ -59,4 +59,35 @@ describe('Global search', () => {
     await userEvent.keyboard('n');
     expect(router.state.location.pathname).toBe('/app/work');
   });
+
+  it('does not swallow N or "/" when they have nothing to do', async () => {
+    await renderApp({
+      layout: 'desktop',
+      shop: 'nakshi',
+      path: '/app/work',
+      as: { staffId: 'nakshi-tailor', pin: '4444' },
+    });
+    await screen.findByRole('heading', { name: 'কাজের তালিকা' });
+    for (const key of ['n', '/']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      document.body.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    }
+  });
+
+  it('closes the results with Escape and wraps the highlight with the arrow keys', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    await userEvent.type(await screen.findByRole('combobox', { name: 'অর্ডার বা কাস্টমার খুঁজুন' }), '০১৭');
+    const count = within(screen.getByRole('listbox')).getAllByRole('option').length;
+    expect(count).toBeGreaterThan(1);
+    const selected = () => screen.getAllByRole('option').findIndex((o) => o.getAttribute('aria-selected') === 'true');
+
+    await userEvent.keyboard('{ArrowUp}');
+    expect(selected()).toBe(count - 1);
+    await userEvent.keyboard('{ArrowDown}');
+    expect(selected()).toBe(0);
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
 });

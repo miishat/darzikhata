@@ -22,9 +22,15 @@ export function DesktopShell({ role }: { role: Role }) {
   const searchInput = useRef<HTMLInputElement>(null);
 
   useShortcuts({
-    onSearch: () => searchInput.current?.focus(),
+    onSearch: () => {
+      if (!searchInput.current) return false;
+      searchInput.current.focus();
+      return true;
+    },
     onNewOrder: () => {
-      if (can(role, 'orders.create')) navigate('/app/orders/new');
+      if (!can(role, 'orders.create')) return false;
+      navigate('/app/orders/new');
+      return true;
     },
   });
 

@@ -7,6 +7,8 @@ export interface ShortcutEvent {
   altKey: boolean;
   defaultPrevented: boolean;
   target: EventTarget | null;
+  repeat?: boolean;
+  isComposing?: boolean;
 }
 
 function isTyping(target: EventTarget | null): boolean {
@@ -20,6 +22,7 @@ function isTyping(target: EventTarget | null): boolean {
  * with Ctrl, Cmd or Alt held (so browser and OS shortcuts keep working), or while a dialog is open.
  */
 export function shortcutFor(event: ShortcutEvent): Shortcut | null {
+  if (event.repeat || event.isComposing) return null;
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return null;
   if (isTyping(event.target)) return null;
   if (document.querySelector('[role="dialog"]')) return null;

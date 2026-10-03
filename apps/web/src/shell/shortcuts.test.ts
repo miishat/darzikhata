@@ -37,6 +37,15 @@ describe('shortcutFor', () => {
     }
   });
 
+  it('ignores auto-repeat from a held key', () => {
+    expect(shortcutFor(press('n', { repeat: true }))).toBeNull();
+    expect(shortcutFor(press('/', { repeat: true }))).toBeNull();
+  });
+
+  it('ignores keys pressed during IME composition', () => {
+    expect(shortcutFor(press('n', { isComposing: true }))).toBeNull();
+  });
+
   it('does nothing while a dialog is open', () => {
     document.body.innerHTML = '<div role="dialog"></div>';
     expect(shortcutFor(press('/'))).toBeNull();
