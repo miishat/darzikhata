@@ -1,6 +1,7 @@
 import { rejected, type DomainEvent, type Step } from './events';
 import { emptyState, type ShopState } from './model';
 import { reduceCustomerEvent } from './reduceCustomers';
+import { reduceOrderEvent } from './reduceOrders';
 
 export type ApplyOutcome =
   | { kind: 'applied'; state: ShopState }
@@ -15,8 +16,10 @@ function reduce(state: ShopState, event: DomainEvent): Step {
     case 'household.created':
     case 'measurement.recorded':
       return reduceCustomerEvent(state, event);
-    default:
+    case 'payment.recorded':
       return rejected('unsupported-event');
+    default:
+      return reduceOrderEvent(state, event);
   }
 }
 
