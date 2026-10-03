@@ -77,6 +77,22 @@ export const bn = {
   'method.bank': 'ব্যাংক',
   'save.conflict': 'এর মধ্যে অন্য কেউ এটি বদলেছেন। নতুন তথ্য দেখে আবার চেষ্টা করুন।',
   'save.rejected': 'সেভ করা যায়নি ({reason})',
+
+  'customers.list': 'কাস্টমার তালিকা',
+  'customers.search': 'কাস্টমার খুঁজুন',
+  'customers.new': 'নতুন কাস্টমার',
+  'customers.none': 'কোনো কাস্টমার পাওয়া যায়নি',
+  'customers.choose': 'বাম পাশ থেকে একজন কাস্টমার বেছে নিন',
+  'customers.back': 'সব কাস্টমার',
+  'customers.notFound': 'কাস্টমার পাওয়া যায়নি',
+  'customer.noPhone': 'ফোন নম্বর নেই',
+  'customer.household': 'পরিবার',
+  'customer.orders': 'অর্ডারের ইতিহাস',
+  'customer.noOrders': 'এখনো কোনো অর্ডার নেই',
+  'customer.newOrder': 'এই কাস্টমারের নতুন অর্ডার',
+  'customer.orderAgain': 'আবার অর্ডার',
+  'customer.edit': 'তথ্য বদলান',
+  'customer.balance': 'বাকি {amount}',
 } as const;
 
 export type MessageKey = keyof typeof bn;

@@ -10,6 +10,7 @@ import { useShell } from '../shell/ShellPreference';
 import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, RequireCapability, RequireShop, RequireStaff } from './guards';
 
+const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage'), 'CustomersPage');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 
 function AppShell() {
@@ -60,7 +61,14 @@ export function AppRoutes() {
             </RequireCapability>
           }
         />
-        <Route path="customers" element={<Section nav="customers" />} />
+        <Route
+          path="customers/:customerId?"
+          element={
+            <RequireCapability anyOf={navItem('customers').requires}>
+              <CustomersPage />
+            </RequireCapability>
+          }
+        />
         <Route path="work" element={<Section nav="work" />} />
         <Route path="payments" element={<Section nav="payments" />} />
         <Route path="settings" element={<Section nav="settings" />} />
