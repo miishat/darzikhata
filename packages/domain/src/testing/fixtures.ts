@@ -1,3 +1,4 @@
+import type { DomainEvent, EventBody, EventMeta, NewCustomer, NewOrder, NewOrderItem } from '../events';
 import type { Order, OrderItem, Payment } from '../model';
 import { STANDARD_STAGES } from '../templates';
 
@@ -73,4 +74,58 @@ export function spec54Order(overrides: Partial<Order> = {}): Order {
     ],
     ...overrides,
   });
+}
+
+export function eventFactory(deviceId = 'dev-A', staffId = 'staff-owner') {
+  let n = 0;
+  return (body: EventBody, overrides: Partial<EventMeta> = {}): DomainEvent => {
+    n += 1;
+    const at = new Date(Date.parse(T0) + n * 60_000).toISOString();
+    return { id: `${deviceId}-e${n}`, at, deviceId, staffId, ...body, ...overrides } as DomainEvent;
+  };
+}
+
+export function newCustomer(overrides: Partial<NewCustomer> = {}): NewCustomer {
+  return {
+    id: 'c1',
+    name: 'রহিম উদ্দিন',
+    nameAlt: 'Rahim Uddin',
+    phone: '01712345678',
+    householdId: null,
+    gender: 'male',
+    notes: '',
+    ...overrides,
+  };
+}
+
+export function newOrderItem(overrides: Partial<NewOrderItem> = {}): NewOrderItem {
+  return {
+    id: 'i1',
+    templateId: 'shirt',
+    garmentName: { bn: 'শার্ট', en: 'Shirt' },
+    price: 70000,
+    wearer: null,
+    measurements: null,
+    designNotes: '',
+    fabricNote: '',
+    photoIds: [],
+    stages: STANDARD_STAGES,
+    assignedTo: null,
+    trialDate: null,
+    deliveryDate: null,
+    ...overrides,
+  };
+}
+
+export function newOrder(overrides: Partial<NewOrder> = {}): NewOrder {
+  return {
+    id: 'o1',
+    number: 'A-0001',
+    customerId: 'c1',
+    branchId: 'main',
+    notes: '',
+    discount: null,
+    items: [newOrderItem()],
+    ...overrides,
+  };
 }
