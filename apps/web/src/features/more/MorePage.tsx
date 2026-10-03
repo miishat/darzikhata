@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { visibleNav } from '../../shell/nav';
 import { useShell, type ShellPreference } from '../../shell/ShellPreference';
 import { Button, buttonClasses } from '../../ui/Button';
+import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { Dialog } from '../../ui/Dialog';
 
 function Choice<T extends string>({ legend, value, options, onChange }: {
@@ -84,7 +85,7 @@ export function MorePage() {
         </Section>
       )}
       <Section>
-        <Choice<Language>
+        <ChoiceGroup<Language>
           legend={t('more.language')}
           value={language}
           onChange={setLanguage}
@@ -93,7 +94,7 @@ export function MorePage() {
             { value: 'en', label: 'English' },
           ]}
         />
-        <Choice<ShellPreference>
+        <ChoiceGroup<ShellPreference>
           legend={t('more.layout')}
           value={preference}
           onChange={setPreference}

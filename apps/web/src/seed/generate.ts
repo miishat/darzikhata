@@ -13,9 +13,12 @@ import {
   type ShopConfig,
   type Stage,
 } from '@darzikhata/domain';
+import { addDays } from '../lib/dates';
 import { CHILDREN, DESIGN_NOTES, FABRIC_NOTES, FITTING_NOTES, MEN, WOMEN, type SeedPerson } from './people';
 import { createRng, type Rng } from './random';
 import { shopConfig, type SeedShopKey } from './shops';
+
+export { addDays };
 
 export interface SeedData {
   config: ShopConfig;
@@ -75,12 +78,6 @@ const BASE: Record<string, number> = {
 const LENGTH: Record<string, number> = {
   shirt: 29, pant: 40, panjabi: 42, blouse: 15, 'bridal-lehenga': 15, 'school-shirt': 24, 'school-pant': 34,
 };
-
-export function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 /** A Dhaka wall-clock time (UTC+6) on a date, as an ISO timestamp. */
 export function dhakaTime(date: string, hour: number, minute = 0): string {
