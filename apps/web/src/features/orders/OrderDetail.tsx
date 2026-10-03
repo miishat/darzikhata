@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
+import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
 import { OrderMoney } from '../payments/OrderMoney';
@@ -19,12 +20,20 @@ export function OrderDetail({ orderId, onClose }: Props) {
   const { t, language, date } = useI18n();
   const { state } = useSnapshot();
   const can = useCan();
+  const { allowed } = useBranchScope();
   const order = state.orders[orderId];
 
   if (!order) {
     return (
       <p role="alert" className="text-danger">
         {t('orders.notFound')}
+      </p>
+    );
+  }
+  if (!allowed.some((b) => b.id === order.branchId)) {
+    return (
+      <p role="alert" className="text-danger">
+        {t('orders.otherBranch')}
       </p>
     );
   }

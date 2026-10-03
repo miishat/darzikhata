@@ -1,3 +1,4 @@
+import { BranchScopeProvider } from '../features/branches/BranchScopeProvider';
 import { StoreProvider } from '../data/StoreContext';
 import type { ShopStore } from '../data/store';
 import { I18nProvider } from '../i18n/I18nProvider';
@@ -9,9 +10,11 @@ export function App({ store }: { store: ShopStore }) {
   return (
     <StoreProvider store={store}>
       <I18nProvider>
-        <ShellProvider>
-          <AppRoutes />
-        </ShellProvider>
+        <BranchScopeProvider>
+          <ShellProvider>
+            <AppRoutes />
+          </ShellProvider>
+        </BranchScopeProvider>
       </I18nProvider>
     </StoreProvider>
   );

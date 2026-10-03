@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
+import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useToday } from '../common/hooks';
 import { OrderCards } from './OrderCards';
 import { OrderDetail } from './OrderDetail';
@@ -19,7 +19,7 @@ export function OrdersPage() {
   const { t, number } = useI18n();
   const { kind } = useShell();
   const can = useCan();
-  const { state } = useSnapshot();
+  const state = useScopedState();
   const today = useToday();
   const { orderId } = useParams();
   const { search } = useLocation();

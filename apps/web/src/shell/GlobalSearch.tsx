@@ -1,7 +1,7 @@
 import { can, type Role } from '@darzikhata/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type RefObject } from 'react';
 import { useNavigate } from 'react-router';
-import { useSnapshot } from '../data/StoreContext';
+import { useScopedState } from '../features/branches/BranchScopeProvider';
 import { globalSearch, type SearchHit } from '../features/search/globalSearch';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -19,7 +19,7 @@ function hitLabel(hit: SearchHit): string {
 /** The top-bar search box: orders by number, customers by name or phone. */
 export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObject<HTMLInputElement | null> }) {
   const { t } = useI18n();
-  const { state } = useSnapshot();
+  const state = useScopedState();
   const navigate = useNavigate();
   const listId = useId();
   const [query, setQuery] = useState('');

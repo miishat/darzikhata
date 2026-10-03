@@ -1,6 +1,7 @@
 import type { Language } from '@darzikhata/domain';
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { BranchSwitcher, useBranchScope } from '../branches/BranchScopeProvider';
 import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import type { MessageKey } from '../../i18n/bn';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -17,7 +18,8 @@ function Section({ children }: { children: ReactNode }) {
 /** Language, layout, sections not on the mobile tab bar, and demo controls. */
 export function MorePage() {
   const { t, language, setLanguage } = useI18n();
-  const { preference, setPreference } = useShell();
+  const { preference, setPreference, kind } = useShell();
+  const { allowed } = useBranchScope();
   const { session } = useSnapshot();
   const current = useCurrentStaff();
   const store = useStore();
@@ -56,6 +58,11 @@ export function MorePage() {
               </li>
             ))}
           </ul>
+        </Section>
+      )}
+      {kind === 'mobile' && allowed.length > 1 && (
+        <Section>
+          <BranchSwitcher />
         </Section>
       )}
       <Section>
