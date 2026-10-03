@@ -1,4 +1,5 @@
 export * from './apply';
+export * from './config';
 export * from './digits';
 export * from './events';
 export * from './label';
