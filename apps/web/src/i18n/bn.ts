@@ -186,6 +186,9 @@ export const bn = {
   'print.adjustments': 'ফিটিংয়ের পরিবর্তন',
   'print.measurementsHidden': 'মাপ দেখার অনুমতি নেই',
   'print.notFound': 'অর্ডার পাওয়া যায়নি',
+  'photos.add': 'ছবি যোগ করুন',
+  'photos.photo': 'ছবি {n}',
+  'photos.remove': 'ছবি {n} সরান',
 } as const;
 
 export type MessageKey = keyof typeof bn;

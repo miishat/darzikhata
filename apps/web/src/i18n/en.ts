@@ -187,4 +187,7 @@ export const en: Messages = {
   'print.adjustments': 'Fitting changes',
   'print.measurementsHidden': 'No permission to see measurements',
   'print.notFound': 'Order not found',
+  'photos.add': 'Add photos',
+  'photos.photo': 'Photo {n}',
+  'photos.remove': 'Remove photo {n}',
 };
