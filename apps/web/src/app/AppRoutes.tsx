@@ -21,6 +21,7 @@ const PaymentsPage = lazyPage(() => import('../features/payments/PaymentsPage'),
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
 const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'JobSlipPage');
+const WorkPage = lazyPage(() => import('../features/work/WorkPage'), 'WorkPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
 
 function AppShell() {
@@ -117,7 +118,14 @@ export function AppRoutes() {
             </RequireCapability>
           }
         />
-        <Route path="work" element={<Section nav="work" />} />
+        <Route
+          path="work"
+          element={
+            <RequireCapability anyOf={navItem('work').requires}>
+              <WorkPage />
+            </RequireCapability>
+          }
+        />
         <Route
           path="payments"
           element={
