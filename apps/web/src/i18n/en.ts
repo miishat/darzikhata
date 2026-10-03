@@ -400,4 +400,6 @@ export const en: Messages = {
   'status.phone': 'Phone: {phone}',
   'status.expired': 'This link no longer works. Please contact the shop.',
   'status.notFound': 'This link was not found. In the demo, links open only in the browser where they were created.',
+  'wearers.summary': 'By wearer',
+  'wearers.others': 'Garments without a name',
 };

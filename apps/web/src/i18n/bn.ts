@@ -399,6 +399,8 @@ export const bn = {
   'status.phone': 'ফোন: {phone}',
   'status.expired': 'এই লিংকটি আর কাজ করে না। দোকানে যোগাযোগ করুন।',
   'status.notFound': 'এই লিংকটি পাওয়া যায়নি। ডেমোতে লিংক শুধু যে ব্রাউজারে তৈরি হয়েছে সেখানেই খোলে।',
+  'wearers.summary': 'কে পরবেন অনুযায়ী',
+  'wearers.others': 'নাম ছাড়া পোশাক',
 } as const;
 
 export type MessageKey = keyof typeof bn;

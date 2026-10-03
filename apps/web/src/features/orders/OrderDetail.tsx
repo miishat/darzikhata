@@ -9,6 +9,7 @@ import { StatusLinkSection } from '../links/StatusLinkSection';
 import { progressText } from '../common/orderText';
 import { OrderMoney } from '../payments/OrderMoney';
 import { ItemCard } from './ItemCard';
+import { wearerGroups } from './wearers';
 
 interface Props {
   orderId: string;
@@ -39,6 +40,7 @@ export function OrderDetail({ orderId, onClose }: Props) {
     );
   }
   const customer = state.customers[order.customerId];
+  const groups = wearerGroups(order);
 
   return (
     <div className="flex flex-col gap-4">
@@ -84,9 +86,44 @@ export function OrderDetail({ orderId, onClose }: Props) {
 
       {can('links.manage') && <StatusLinkSection order={order} />}
 
-      {order.items.map((item) => (
-        <ItemCard key={item.id} order={order} item={item} />
-      ))}
+      {groups.length === 0 &&
+        order.items.map((item) => <ItemCard key={item.id} order={order} item={item} />)}
+
+      {groups.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-line bg-panel">
+          <table aria-label={t('wearers.summary')} className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-line">
+                <th scope="col" className="px-3 py-2 text-start text-sm font-semibold text-muted">{t('receipt.wearer')}</th>
+                <th scope="col" className="px-3 py-2 text-start text-sm font-semibold text-muted">{t('orders.col.progress')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((group) => (
+                <tr key={group.wearer ?? ''} className="border-b border-line last:border-b-0">
+                  <th scope="row" className="px-3 py-2 text-start font-normal">{group.wearer ?? t('wearers.others')}</th>
+                  <td className="px-3 py-2 text-sm">{progressText(group.progress, language)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {groups.map((group) => {
+        const name = group.wearer ?? t('wearers.others');
+        return (
+          <section key={group.wearer ?? ''} aria-label={name} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-lg font-semibold">{name}</h3>
+              <p className="text-sm">{progressText(group.progress, language)}</p>
+            </div>
+            {group.items.map((item) => (
+              <ItemCard key={item.id} order={order} item={item} />
+            ))}
+          </section>
+        );
+      })}
     </div>
   );
 }
