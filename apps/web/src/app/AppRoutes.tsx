@@ -29,6 +29,8 @@ const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrint
 const SettingsPage = lazyPage(() => import('../features/settings/SettingsPage'), 'SettingsPage');
 const SettingsHome = lazyPage(() => import('../features/settings/SettingsHome'), 'SettingsHome');
 const ShopSettings = lazyPage(() => import('../features/settings/ShopSettings'), 'ShopSettings');
+const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
+const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
 function AppShell() {
@@ -152,7 +154,30 @@ export function AppRoutes() {
               </RequireCapability>
             }
           />
-          <Route path="templates" element={<SectionHeading label="settings.templates" anyOf={['settings.edit']} />} />
+          <Route
+            path="templates"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplatesSettings />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="templates/new"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplateEditor />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="templates/:templateId"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplateEditor />
+              </RequireCapability>
+            }
+          />
           <Route path="staff" element={<SectionHeading label="settings.staff" anyOf={['staff.manage']} />} />
           <Route path="branches" element={<SectionHeading label="settings.branches" anyOf={['settings.edit']} />} />
         </Route>
