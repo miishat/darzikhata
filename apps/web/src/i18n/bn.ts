@@ -378,6 +378,18 @@ export const bn = {
   'work.bulkNote': 'টাকা নেওয়া আর হস্তান্তর একসাথে করা যায় না।',
   'work.print': 'তালিকা প্রিন্ট করুন',
   'work.col.notes': 'নোট',
+  'link.section': 'স্ট্যাটাস লিংক',
+  'link.about': 'কাস্টমার এই লিংকে অর্ডারের অগ্রগতি দেখতে পারবেন। দাম, মাপ বা পেমেন্ট দেখাবে না।',
+  'link.demoNote': 'ডেমোতে লিংকটি শুধু এই ব্রাউজারেই খোলে।',
+  'link.create': 'লিংক তৈরি করুন',
+  'link.url': 'লিংক',
+  'link.open': 'খুলে দেখুন',
+  'link.revoke': 'লিংক বন্ধ করুন',
+  'link.revokeTitle': 'লিংক বন্ধ করবেন?',
+  'link.revokeBody': 'এই লিংক আর কাজ করবে না। পরে নতুন লিংক তৈরি করা যাবে।',
+  'link.expiresAfter': 'অর্ডার শেষ হওয়ার {n} দিন পর লিংকটি নিজে থেকে বন্ধ হবে।',
+  'link.expired': 'অর্ডার শেষ হওয়ার {n} দিন পার হয়েছে, তাই লিংকটি আর কাজ করে না।',
+  'link.shareText': '{shop}: অর্ডার {number} এর অবস্থা দেখুন: {url}',
 } as const;
 
 export type MessageKey = keyof typeof bn;

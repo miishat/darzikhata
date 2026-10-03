@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
 import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
+import { StatusLinkSection } from '../links/StatusLinkSection';
 import { progressText } from '../common/orderText';
 import { OrderMoney } from '../payments/OrderMoney';
 import { ItemCard } from './ItemCard';
@@ -80,6 +81,8 @@ export function OrderDetail({ orderId, onClose }: Props) {
       </div>
 
       {can('money.view') && <OrderMoney order={order} />}
+
+      {can('links.manage') && <StatusLinkSection order={order} />}
 
       {order.items.map((item) => (
         <ItemCard key={item.id} order={order} item={item} />
