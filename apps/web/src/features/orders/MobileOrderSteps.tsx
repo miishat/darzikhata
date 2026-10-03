@@ -85,7 +85,9 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
       setStep(failing);
       setShowErrors(true);
       setFocusTick((n) => n + 1);
+      return;
     }
+    setProblem(t('entry.saveFailed'));
   };
 
   return (

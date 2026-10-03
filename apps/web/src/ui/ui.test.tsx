@@ -47,12 +47,21 @@ describe('NumberField', () => {
     expect(onValueChange).toHaveBeenLastCalledWith(null);
   });
 
-  it('shows an error for unreadable text without reporting a value', async () => {
+  it('shows an error for unreadable text and reports null so no stale value survives', async () => {
     const onValueChange = vi.fn();
     inBangla(<NumberField label="বুক" kind="measurement" onValueChange={onValueChange} />);
     await userEvent.type(screen.getByLabelText('বুক'), 'abc');
     expect(screen.getByText('মাপ বোঝা যায়নি। যেমন ৩৮½ বা 38.5 লিখুন')).toBeTruthy();
-    expect(onValueChange).not.toHaveBeenCalled();
+    expect(onValueChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('drops a valid money value to null once it turns unreadable', async () => {
+    const onValueChange = vi.fn();
+    inBangla(<NumberField label="অগ্রিম" kind="money" onValueChange={onValueChange} />);
+    await userEvent.type(screen.getByLabelText('অগ্রিম'), '1000');
+    expect(onValueChange).toHaveBeenLastCalledWith(100000);
+    await userEvent.type(screen.getByLabelText('অগ্রিম'), 'x');
+    expect(onValueChange).toHaveBeenLastCalledWith(null);
   });
 
   it('reports money in poisha and shows the initial value in taka', async () => {

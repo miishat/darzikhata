@@ -7,6 +7,9 @@ import type { DraftErrors, DraftItem } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
 import { useErrorText, useItemTitle } from './shared';
 
+/** The most a quantity field accepts; the draft's own limit is lower. */
+const MAX_QUANTITY_INPUT = 999;
+
 /** A line's quantity (Bangla or English digits, never a fraction or a negative) and its remove button. */
 export function ItemHeader({ entry, item, errors }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors }) {
   const { t, language } = useI18n();
@@ -18,7 +21,9 @@ export function ItemHeader({ entry, item, errors }: { entry: OrderEntry; item: D
     setText(raw);
     const digits = toEnglishDigits(raw).trim();
     const n = /^\d+$/.test(digits) ? Number(digits) : 0;
-    entry.updateItem(item.key, { quantity: Number.isSafeInteger(n) ? n : 0 });
+    const quantity = Number.isSafeInteger(n) ? Math.min(n, MAX_QUANTITY_INPUT) : 0;
+    if (quantity === MAX_QUANTITY_INPUT && n > MAX_QUANTITY_INPUT) setText(toScript(String(quantity), language));
+    entry.updateItem(item.key, { quantity });
   };
 
   return (

@@ -107,6 +107,35 @@ describe('Order entry on mobile', () => {
     expect(screen.getByText('অগ্রিম মোট দামের বেশি হতে পারে না')).toBeTruthy();
   });
 
+  it('does not let an unreadable price move on with the last valid one', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await next();
+    await next();
+    const price = await screen.findByLabelText('দাম (প্রতিটি)');
+    await userEvent.type(price, '500x');
+    await next();
+    expect(screen.getByRole('heading', { name: 'দাম, তারিখ ও অগ্রিম' })).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+  });
+
+  it('caps the quantity at 999', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    const quantity = within(screen.getByRole('region', { name: 'শার্ট ১' })).getByLabelText('সংখ্যা');
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, '1234567');
+    expect((quantity as HTMLInputElement).value).toBe('৯৯৯');
+  });
+
   it('asks before leaving a started order', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));

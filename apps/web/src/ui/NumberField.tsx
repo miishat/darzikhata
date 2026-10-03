@@ -8,7 +8,7 @@ export interface NumberFieldProps {
   /** 'measurement' accepts fractions like ৩৮½; 'money' takes taka and reports poisha. */
   kind: 'measurement' | 'money';
   initialValue?: number | null;
-  /** Called with the parsed number, or null when the field is emptied. Not called for unreadable text. */
+  /** Called with the parsed number, or null when the field is emptied or its text is unreadable. */
   onValueChange(value: number | null): void;
   suffix?: ReactNode;
   id?: string;
@@ -41,10 +41,8 @@ export function NumberField({ label, kind, initialValue = null, onValueChange, s
     }
     const parsed = parse(raw);
     setInvalid(parsed === null);
-    if (parsed !== null) {
-      setValue(parsed);
-      onValueChange(parsed);
-    }
+    setValue(parsed);
+    onValueChange(parsed);
   };
 
   return (

@@ -199,6 +199,7 @@ export const en: Messages = {
   'entry.stepOf': 'Step {n} of {total}',
   'entry.next': 'Next step',
   'entry.back': 'Previous step',
+  'entry.saveFailed': 'Could not save the order. Please try again',
   'entry.fixErrors': 'Please fix the problems below',
   'entry.changeCustomer': 'Another customer',
   'entry.garment': 'Garment',
