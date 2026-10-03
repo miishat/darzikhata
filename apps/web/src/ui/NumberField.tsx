@@ -12,6 +12,8 @@ export interface NumberFieldProps {
   onValueChange(value: number | null): void;
   suffix?: ReactNode;
   id?: string;
+  /** A problem with the value, shown unless the typed text itself is unreadable. */
+  error?: string | undefined;
 }
 
 function display(kind: NumberFieldProps['kind'], value: number | null, language: Language): string {
@@ -22,7 +24,7 @@ function display(kind: NumberFieldProps['kind'], value: number | null, language:
 }
 
 /** A number input that understands Bangla digits and tailor-style fractions. */
-export function NumberField({ label, kind, initialValue = null, onValueChange, suffix, id }: NumberFieldProps) {
+export function NumberField({ label, kind, initialValue = null, onValueChange, suffix, id, error }: NumberFieldProps) {
   const { language, t } = useI18n();
   const [text, setText] = useState(() => display(kind, initialValue, language));
   const [value, setValue] = useState<number | null>(initialValue);
@@ -53,7 +55,7 @@ export function NumberField({ label, kind, initialValue = null, onValueChange, s
       autoComplete="off"
       value={text}
       suffix={suffix}
-      error={invalid ? t(kind === 'measurement' ? 'input.invalidMeasurement' : 'input.invalidMoney') : undefined}
+      error={invalid ? t(kind === 'measurement' ? 'input.invalidMeasurement' : 'input.invalidMoney') : error}
       onChange={(e) => change(e.target.value)}
       onBlur={() => {
         if (!invalid) setText(display(kind, value, language));

@@ -1,0 +1,117 @@
+import { moneySummary } from '@darzikhata/domain';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+import { renderApp } from '../../test/renderApp';
+
+const SHIRT = { 'ঝুল': '29', 'বুক': '38', 'পেট': '34', 'কাঁধ (পুট)': '17', 'হাতা': '23', 'গলা': '15½' };
+
+async function fill(region: HTMLElement, values: Record<string, string>) {
+  for (const [label, value] of Object.entries(values)) await userEvent.type(within(region).getByLabelText(label), value);
+}
+
+const next = () => userEvent.click(screen.getByRole('button', { name: 'পরের ধাপ' }));
+const summaryRow = (label: RegExp) =>
+  within(screen.getByRole('table', { name: 'অর্ডারের হিসাব' })).getByRole('row', { name: label });
+
+describe('Order entry on mobile', () => {
+  it('takes a new customer through every step and opens a receipt showing the balance', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    expect(await screen.findByRole('heading', { name: 'কাস্টমার' })).toBeTruthy();
+    expect(screen.getByText('ধাপ ১/৫')).toBeTruthy();
+
+    await next();
+    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+    expect(screen.getByText('কাস্টমার বেছে নিন বা নতুন কাস্টমার যোগ করুন')).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম উদ্দিন');
+    await userEvent.type(screen.getByLabelText('ফোন'), '01799887766');
+    await next();
+
+    expect(await screen.findByRole('heading', { name: 'পোশাক ও মাপ' })).toBeTruthy();
+    await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'শার্ট');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'পাঞ্জাবি');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
+    await userEvent.clear(within(shirt).getByLabelText('সংখ্যা'));
+    await userEvent.type(within(shirt).getByLabelText('সংখ্যা'), '২');
+    await fill(shirt, SHIRT);
+    await fill(screen.getByRole('region', { name: 'পাঞ্জাবি ২' }), { ...SHIRT, 'ঝুল': '42' });
+    await next();
+
+    expect(await screen.findByRole('heading', { name: 'ডিজাইন ও ছবি' })).toBeTruthy();
+    await userEvent.type(within(screen.getByRole('region', { name: 'শার্ট ১' })).getByLabelText('ডিজাইনের নোট'), 'দুই পকেট');
+    await next();
+
+    expect(await screen.findByRole('heading', { name: 'দাম, তারিখ ও অগ্রিম' })).toBeTruthy();
+    expect(within(summaryRow(/^মোট/)).getByText('৳২,৪০০')).toBeTruthy();
+    await userEvent.type(screen.getByLabelText('অগ্রিম'), '১০০০');
+    expect(within(summaryRow(/^বাকি/)).getByText('৳১,৪০০')).toBeTruthy();
+    await next();
+
+    expect(await screen.findByRole('heading', { name: 'যাচাই করুন' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'অর্ডার সেভ করুন' }));
+
+    expect(await screen.findByRole('heading', { name: 'রসিদ' })).toBeTruthy();
+    const totals = screen.getByRole('table', { name: 'হিসাব' });
+    expect(within(within(totals).getByRole('row', { name: /^বাকি/ })).getByText('৳১,৪০০')).toBeTruthy();
+
+    const order = Object.values(store.getSnapshot().state.orders).find((o) => o.number === 'A-0041')!;
+    expect(order.items.map((i) => i.templateId)).toEqual(['shirt', 'shirt', 'panjabi']);
+    expect(order.items[0]!.designNotes).toBe('দুই পকেট');
+    expect(order.items[0]!.measurements?.values['collar']).toEqual({ value: 15.5, unit: 'inch' });
+    expect(moneySummary(order)).toEqual({ total: 240000, paid: 100000, balance: 140000, creditDue: 0 });
+    expect(store.getSnapshot().state.customers[order.customerId]).toMatchObject({ name: 'জসিম উদ্দিন', phone: '01799887766' });
+  });
+
+  it('keeps what was typed when going back a step', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.click(await screen.findByRole('button', { name: 'আগের ধাপ' }));
+    expect(await screen.findByLabelText('নাম')).toHaveProperty('value', 'জসিম');
+  });
+
+  it('shows missing measurements beside the fields and stays on the step', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.type(within(screen.getByRole('region', { name: 'শার্ট ১' })).getByLabelText('ঝুল'), '29');
+    await next();
+
+    expect(screen.getByRole('heading', { name: 'পোশাক ও মাপ' })).toBeTruthy();
+    const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
+    expect(within(shirt).getAllByText('এই মাপটি লাগবে')).toHaveLength(5);
+    expect(within(shirt).getByLabelText('বুক').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(within(shirt).getByLabelText('বুক'));
+  });
+
+  it('keeps the advance within the total', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await next();
+    await next();
+    await userEvent.type(await screen.findByLabelText('অগ্রিম'), '500');
+    await next();
+    expect(screen.getByRole('heading', { name: 'দাম, তারিখ ও অগ্রিম' })).toBeTruthy();
+    expect(screen.getByText('অগ্রিম মোট দামের বেশি হতে পারে না')).toBeTruthy();
+  });
+
+  it('asks before leaving a started order', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জ');
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'প্রধান মেনু' })).getByRole('link', { name: 'হোম' }));
+    expect(await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' })).toBeTruthy();
+  });
+});

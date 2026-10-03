@@ -54,9 +54,9 @@ export function MeasurementInputs({ template, values, errors = {}, onChange }: M
                   kind="measurement"
                   initialValue={values[field.key] ?? null}
                   onValueChange={(value) => change(field.key, value)}
+                  error={errors[field.key]}
                   suffix={<span className="pr-3 text-sm text-muted">{t(field.unit === 'cm' ? 'unit.cm' : 'unit.inch')}</span>}
                 />
-                {errors[field.key] && <p className="text-sm text-danger">{errors[field.key]}</p>}
               </div>
             ))}
           </div>
