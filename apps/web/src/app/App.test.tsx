@@ -1,0 +1,109 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
+import { afterEach, describe, expect, it } from 'vitest';
+import { DarziDb } from '../data/db';
+import { ShopStore } from '../data/store';
+import { App } from './App';
+
+let count = 0;
+const dbs: DarziDb[] = [];
+
+afterEach(async () => {
+  for (const db of dbs.splice(0)) await db.delete();
+});
+
+async function renderApp({ layout, path = '/', shop, as }: {
+  layout: 'mobile' | 'desktop';
+  path?: string;
+  shop?: 'rahman' | 'nakshi';
+  as?: { staffId: string; pin: string };
+}) {
+  window.localStorage.setItem('dk.layout', layout);
+  const db = new DarziDb(`app-test-${++count}`);
+  dbs.push(db);
+  const store = new ShopStore({ db });
+  if (shop) await store.startDemo(shop);
+  else await store.load();
+  if (as) {
+    await store.signOut();
+    await store.signIn(as.staffId, as.pin);
+  }
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <App store={store} />
+    </MemoryRouter>,
+  );
+  return store;
+}
+
+const mainNav = () => screen.getByRole('navigation', { name: 'প্রধান মেনু' });
+
+describe('App', () => {
+  it('opens a sample shop from the welcome screen into the desktop workspace', async () => {
+    await renderApp({ layout: 'desktop' });
+    expect(await screen.findByRole('heading', { name: 'দর্জিখাতা ডেমো' })).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: 'এই দোকান খুলুন: রহমান টেইলার্স' }));
+
+    expect(await screen.findByRole('heading', { name: 'হোম' })).toBeTruthy();
+    expect(screen.getByText('রহমান টেইলার্স')).toBeTruthy();
+    expect(screen.getByText('প্রধান দোকান')).toBeTruthy();
+    const nav = within(mainNav());
+    for (const name of ['হোম', 'অর্ডার', 'কাস্টমার ও মাপ', 'কাজের তালিকা', 'পেমেন্ট', 'সেটিংস', 'আরও']) {
+      expect(nav.getByRole('link', { name })).toBeTruthy();
+    }
+    expect(screen.getByRole('link', { name: '+ নতুন অর্ডার' })).toBeTruthy();
+  });
+
+  it('uses bottom tabs on mobile, with Payments under More', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app' });
+    const nav = within(await screen.findByRole('navigation', { name: 'প্রধান মেনু' }));
+    expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['হোম', 'অর্ডার', 'কাস্টমার', 'কাজ', 'আরও']);
+
+    await userEvent.click(nav.getByRole('link', { name: 'আরও' }));
+    expect(await screen.findByRole('link', { name: 'পেমেন্ট' })).toBeTruthy();
+  });
+
+  it('switches to a tailor by PIN and hides money from them', async () => {
+    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app' });
+    await userEvent.click(await screen.findByRole('button', { name: /ইউজার বদলান/ }));
+
+    expect(await screen.findByRole('heading', { name: 'কে ব্যবহার করছেন?' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /জামাল উদ্দিন/ }));
+    for (const digit of ['১', '১', '১', '১']) await userEvent.click(screen.getByRole('button', { name: digit }));
+    expect(await screen.findByText('পিন মেলেনি, আবার চেষ্টা করুন')).toBeTruthy();
+
+    for (const digit of ['৪', '৪', '৪', '৪']) await userEvent.click(screen.getByRole('button', { name: digit }));
+    expect(await screen.findByRole('heading', { name: 'কাজের তালিকা' })).toBeTruthy();
+    const links = within(mainNav()).getAllByRole('link').map((l) => l.textContent);
+    expect(links).toEqual(['কাজের তালিকা', 'আরও']);
+    expect(screen.queryByRole('link', { name: '+ নতুন অর্ডার' })).toBeNull();
+  });
+
+  it('shows a message instead of a page the role cannot use', async () => {
+    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/payments', as: { staffId: 'nakshi-tailor', pin: '4444' } });
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'এই অংশ দেখার অনুমতি আপনার নেই।');
+  });
+
+  it('sends people with no saved shop to the welcome screen', async () => {
+    await renderApp({ layout: 'desktop', path: '/app/orders' });
+    expect(await screen.findByRole('heading', { name: 'দর্জিখাতা ডেমো' })).toBeTruthy();
+  });
+
+  it('switches language and layout from More, and resets the demo after confirming', async () => {
+    const store = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/more' });
+    await userEvent.click(await screen.findByRole('radio', { name: 'English' }));
+    expect(await screen.findByRole('heading', { name: 'More' })).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Mobile' }));
+    expect(within(screen.getByRole('navigation', { name: 'Main menu' })).getAllByRole('link')).toHaveLength(5);
+
+    const before = Object.keys(store.getSnapshot().state.orders).length;
+    await userEvent.click(screen.getByRole('button', { name: 'Reset demo data' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reset demo data' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeTruthy();
+    expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
+  });
+});
