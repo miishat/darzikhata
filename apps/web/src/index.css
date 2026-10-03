@@ -61,6 +61,14 @@ body {
 }
 
 @media print {
+  :root {
+    --surface: #ffffff;
+    --panel: #ffffff;
+    --ink: #000000;
+    --muted: #404040;
+    --line: #bbbbbb;
+    color-scheme: light;
+  }
   .no-print {
     display: none !important;
   }

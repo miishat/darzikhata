@@ -15,7 +15,7 @@ const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage
 const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm'), 'CustomerForm');
 const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
-const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
+const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
 const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'JobSlipPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
 
