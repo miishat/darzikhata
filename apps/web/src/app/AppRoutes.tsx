@@ -14,6 +14,7 @@ import { Entry, HomeRedirect, Loading, RequireCapability, RequireShop, RequireSt
 const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage'), 'CustomersPage');
 const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm'), 'CustomerForm');
 const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
+const OrdersPage = lazyPage(() => import('../features/orders/OrdersPage'), 'OrdersPage');
 const NewOrderPage = lazyPage(() => import('../features/orders/NewOrderPage'), 'NewOrderPage');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
@@ -59,12 +60,19 @@ export function AppRoutes() {
       >
         <Route index element={<HomeRedirect />} />
         <Route path="dashboard" element={<Section nav="dashboard" />} />
-        <Route path="orders" element={<Section nav="orders" />} />
         <Route
           path="orders/new"
           element={
             <RequireCapability anyOf={['orders.create']}>
               <NewOrderPage />
+            </RequireCapability>
+          }
+        />
+        <Route
+          path="orders/:orderId?"
+          element={
+            <RequireCapability anyOf={navItem('orders').requires}>
+              <OrdersPage />
             </RequireCapability>
           }
         />
