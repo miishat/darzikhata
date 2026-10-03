@@ -10,32 +10,6 @@ import { Button, buttonClasses } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { Dialog } from '../../ui/Dialog';
 
-function Choice<T extends string>({ legend, value, options, onChange }: {
-  legend: string;
-  value: T;
-  options: Array<{ value: T; label: string }>;
-  onChange(value: T): void;
-}) {
-  return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 font-semibold">{legend}</legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <label
-            key={option.value}
-            className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${
-              value === option.value ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel'
-            }`}
-          >
-            <input type="radio" className="sr-only" checked={value === option.value} onChange={() => onChange(option.value)} />
-            {option.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
 function Section({ children }: { children: ReactNode }) {
   return <section className="flex flex-col gap-4 rounded-xl border border-line bg-panel p-4">{children}</section>;
 }
