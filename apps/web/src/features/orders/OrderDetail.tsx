@@ -2,8 +2,10 @@ import { isOrderClosed, orderProgress } from '@darzikhata/domain';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
-import { Button } from '../../ui/Button';
+import { Button, buttonClasses } from '../../ui/Button';
+import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
+import { ItemCard } from './ItemCard';
 
 interface Props {
   orderId: string;
@@ -15,6 +17,7 @@ interface Props {
 export function OrderDetail({ orderId, onClose }: Props) {
   const { t, language, date } = useI18n();
   const { state } = useSnapshot();
+  const can = useCan();
   const order = state.orders[orderId];
 
   if (!order) {
@@ -46,6 +49,29 @@ export function OrderDetail({ orderId, onClose }: Props) {
         <p className="font-semibold">{isOrderClosed(order) ? t('order.statusClosed') : t('order.statusOpen')}</p>
         <p className="text-sm">{progressText(orderProgress(order), language)}</p>
       </header>
+
+      <div className="flex flex-wrap gap-2">
+        {can('money.view') && (
+          <Link to={`/print/receipt/${order.id}`} className={buttonClasses('secondary')}>
+            {t('order.printReceipt')}
+          </Link>
+        )}
+        <Link to={`/print/job/${order.id}`} className={buttonClasses('secondary')}>
+          {t('order.jobSlip')}
+        </Link>
+        <Link to={`/print/tags/${order.id}`} className={buttonClasses('secondary')}>
+          {t('order.tags')}
+        </Link>
+        {can('orders.create') && (
+          <Link to={`/app/orders/new?repeat=${order.id}`} className={buttonClasses('secondary')}>
+            {t('order.orderAgain')}
+          </Link>
+        )}
+      </div>
+
+      {order.items.map((item) => (
+        <ItemCard key={item.id} order={order} item={item} />
+      ))}
     </div>
   );
 }
