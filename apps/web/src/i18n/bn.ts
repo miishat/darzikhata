@@ -390,6 +390,15 @@ export const bn = {
   'link.expiresAfter': 'অর্ডার শেষ হওয়ার {n} দিন পর লিংকটি নিজে থেকে বন্ধ হবে।',
   'link.expired': 'অর্ডার শেষ হওয়ার {n} দিন পার হয়েছে, তাই লিংকটি আর কাজ করে না।',
   'link.shareText': '{shop}: অর্ডার {number} এর অবস্থা দেখুন: {url}',
+  'status.garments': 'পোশাকের অবস্থা',
+  'status.group.unfinished': 'তৈরি হচ্ছে',
+  'status.group.ready': 'রেডি, নিয়ে যেতে পারেন',
+  'status.group.delivered': 'ডেলিভারি হয়েছে',
+  'status.group.cancelled': 'বাতিল',
+  'status.updated': 'সর্বশেষ আপডেট: {date}',
+  'status.phone': 'ফোন: {phone}',
+  'status.expired': 'এই লিংকটি আর কাজ করে না। দোকানে যোগাযোগ করুন।',
+  'status.notFound': 'এই লিংকটি পাওয়া যায়নি। ডেমোতে লিংক শুধু যে ব্রাউজারে তৈরি হয়েছে সেখানেই খোলে।',
 } as const;
 
 export type MessageKey = keyof typeof bn;

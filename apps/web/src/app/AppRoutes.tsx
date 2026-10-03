@@ -24,6 +24,7 @@ const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'Job
 const WorkPage = lazyPage(() => import('../features/work/WorkPage'), 'WorkPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
 const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrintPage'), 'WorkListPrintPage');
+const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
 function AppShell() {
   const { kind } = useShell();
@@ -184,6 +185,14 @@ export function AppRoutes() {
               </Suspense>
             </RequireCapability>
           </RequireStaff>
+        }
+      />
+      <Route
+        path="/s/:token"
+        element={
+          <Suspense fallback={<Loading />}>
+            <StatusPage />
+          </Suspense>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

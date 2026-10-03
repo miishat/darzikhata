@@ -391,4 +391,13 @@ export const en: Messages = {
   'link.expiresAfter': 'The link stops working {n} days after the order is finished.',
   'link.expired': 'More than {n} days have passed since the order was finished, so the link no longer works.',
   'link.shareText': '{shop}: see the progress of order {number}: {url}',
+  'status.garments': 'Garment progress',
+  'status.group.unfinished': 'Being made',
+  'status.group.ready': 'Ready to collect',
+  'status.group.delivered': 'Delivered',
+  'status.group.cancelled': 'Cancelled',
+  'status.updated': 'Last updated: {date}',
+  'status.phone': 'Phone: {phone}',
+  'status.expired': 'This link no longer works. Please contact the shop.',
+  'status.notFound': 'This link was not found. In the demo, links open only in the browser where they were created.',
 };
