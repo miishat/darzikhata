@@ -123,6 +123,30 @@ describe('Order entry on mobile', () => {
     expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
   });
 
+  it('does not move on while the advance cannot be read', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    const before = Object.keys(store.getSnapshot().state.orders).length;
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await next();
+    await next();
+    await userEvent.type(await screen.findByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(screen.getByLabelText('অগ্রিম'), '100 tk');
+    await next();
+
+    expect(screen.getByRole('heading', { name: 'দাম, তারিখ ও অগ্রিম' })).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+    expect(screen.getByLabelText('অগ্রিম').getAttribute('aria-invalid')).toBe('true');
+    expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
+
+    await userEvent.clear(screen.getByLabelText('অগ্রিম'));
+    await next();
+    expect(await screen.findByRole('heading', { name: 'যাচাই করুন' })).toBeTruthy();
+  });
+
   it('caps the quantity at 999', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));

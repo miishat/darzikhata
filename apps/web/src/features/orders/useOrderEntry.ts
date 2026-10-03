@@ -40,6 +40,8 @@ export interface OrderEntry {
   updateItem(key: string, changes: Partial<DraftItem>): void;
   removeItem(key: string): void;
   update(changes: Partial<Pick<OrderDraft, 'discount' | 'advance' | 'notes'>>): void;
+  /** Records whether the discount or advance field holds text that could not be read as an amount. */
+  setUnreadable(field: 'discount' | 'advance', unreadable: boolean): void;
   save(): Promise<SaveResult>;
 }
 
@@ -129,6 +131,13 @@ export function useOrderEntry(): OrderEntry {
   const update = (changes: Partial<Pick<OrderDraft, 'discount' | 'advance' | 'notes'>>) =>
     setDraft((d) => ({ ...d, ...changes }));
 
+  const setUnreadable = (field: 'discount' | 'advance', unreadable: boolean) =>
+    setDraft((d) => {
+      if (Boolean(d[field].unreadable) === unreadable) return d;
+      const { unreadable: _old, ...rest } = d[field];
+      return { ...d, [field]: unreadable ? { ...rest, unreadable } : rest };
+    });
+
   const save = async (): Promise<SaveResult> => {
     if (inFlight.current) return { ok: false, problem: null };
     const snapshot = store.getSnapshot();
@@ -161,5 +170,5 @@ export function useOrderEntry(): OrderEntry {
     }
   };
 
-  return { draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, setCustomer, addItem, updateItem, removeItem, update, save };
+  return { draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, setCustomer, addItem, updateItem, removeItem, update, setUnreadable, save };
 }

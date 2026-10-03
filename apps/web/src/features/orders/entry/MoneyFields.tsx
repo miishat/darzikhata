@@ -58,6 +58,7 @@ export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: Draf
         kind="money"
         initialValue={discount.amount}
         onValueChange={(amount) => entry.update({ discount: { ...entry.draft.discount, amount } })}
+        onInvalidChange={(bad) => entry.setUnreadable('discount', bad)}
         error={errorText('discount.amount')}
       />
       <TextField
@@ -71,6 +72,7 @@ export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: Draf
         kind="money"
         initialValue={advance.amount}
         onValueChange={(amount) => entry.update({ advance: { ...entry.draft.advance, amount } })}
+        onInvalidChange={(bad) => entry.setUnreadable('advance', bad)}
         error={errorText('advance.amount')}
       />
       <ChoiceGroup

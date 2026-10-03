@@ -99,6 +99,22 @@ describe('Order entry on desktop', () => {
     expect(order.items.map((i) => [i.templateId, i.price])).toEqual(lines.map((i) => [i.templateId, i.price]));
   });
 
+  it('does not save while the advance cannot be read', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'অল্টারেশন');
+    await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    const before = Object.keys(store.getSnapshot().state.orders).length;
+    const summary = region('অর্ডারের হিসাব');
+    await userEvent.type(within(summary).getByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(within(summary).getByLabelText('অগ্রিম'), '500 tk');
+    await save();
+
+    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+    expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
+    expect(screen.queryByRole('heading', { name: 'রসিদ' })).toBeNull();
+  });
+
   it('starts with the customer chosen on their profile', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });

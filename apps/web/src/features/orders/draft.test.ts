@@ -159,6 +159,21 @@ describe('validateDraft', () => {
     };
     expect(validateDraft(draft, ctx(state))).toEqual({ 'discount.amount': 'exceeds', 'advance.amount': 'exceeds' });
   });
+
+  it('reports a discount or advance whose typed text could not be read', () => {
+    const state = baseState();
+    const draft: OrderDraft = {
+      ...emptyDraft(),
+      customer: { kind: 'existing', customerId: 'c1' },
+      items: [item('alteration', state)],
+      discount: { amount: null, reason: '', unreadable: true },
+      advance: { amount: null, method: 'cash', reference: '', unreadable: true },
+    };
+    expect(validateDraft(draft, ctx(state))).toEqual({ 'discount.amount': 'invalid', 'advance.amount': 'invalid' });
+    expect(draftErrorKey('advance.amount', 'invalid')).toBe('input.invalidMoney');
+    expect(draftErrorKey('discount.amount', 'invalid')).toBe('input.invalidMoney');
+    expect(Object.keys(errorsForStep(validateDraft(draft, ctx(state)), 'money'))).toEqual(['discount.amount', 'advance.amount']);
+  });
 });
 
 describe('errorsForStep', () => {

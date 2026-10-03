@@ -59,8 +59,9 @@ export interface DraftItem {
 export interface OrderDraft {
   customer: DraftCustomer | null;
   items: DraftItem[];
-  discount: { amount: Poisha | null; reason: string };
-  advance: { amount: Poisha | null; method: PaymentMethod; reference: string };
+  /** `unreadable`: the discount field holds text that is not an amount, so there is no value to trust. */
+  discount: { amount: Poisha | null; reason: string; unreadable?: boolean };
+  advance: { amount: Poisha | null; method: PaymentMethod; reference: string; unreadable?: boolean };
   notes: string;
 }
 
@@ -208,8 +209,10 @@ export function validateDraft(draft: OrderDraft, ctx: DraftContext): DraftErrors
   }
 
   const totals = draftTotals(draft);
-  if (totals.discount > totals.subtotal) errors['discount.amount'] = 'exceeds';
-  if (totals.advance > totals.total) errors['advance.amount'] = 'exceeds';
+  if (draft.discount.unreadable) errors['discount.amount'] = 'invalid';
+  else if (totals.discount > totals.subtotal) errors['discount.amount'] = 'exceeds';
+  if (draft.advance.unreadable) errors['advance.amount'] = 'invalid';
+  else if (totals.advance > totals.total) errors['advance.amount'] = 'exceeds';
   return errors;
 }
 
@@ -219,8 +222,8 @@ export function draftErrorKey(path: string, code: DraftErrorCode): MessageKey {
   if (path === 'customer.name') return 'customerForm.error.name';
   if (path === 'customer.phone') return 'customerForm.error.phone';
   if (path === 'items') return 'draft.error.items';
-  if (path === 'discount.amount') return 'draft.error.discount';
-  if (path === 'advance.amount') return 'draft.error.advance';
+  if (path === 'discount.amount') return code === 'invalid' ? 'input.invalidMoney' : 'draft.error.discount';
+  if (path === 'advance.amount') return code === 'invalid' ? 'input.invalidMoney' : 'draft.error.advance';
   if (/\.measure\./.test(path)) return 'measure.required';
   const field = path.split('.')[2];
   switch (field) {
