@@ -11,6 +11,7 @@ import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, RequireCapability, RequireShop, RequireStaff } from './guards';
 
 const CustomersPage = lazyPage(() => import('../features/customers/CustomersPage'), 'CustomersPage');
+const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm'), 'CustomerForm');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 
 function AppShell() {
@@ -58,6 +59,22 @@ export function AppRoutes() {
           element={
             <RequireCapability anyOf={['orders.create']}>
               <PlaceholderPage title="nav.newOrder" />
+            </RequireCapability>
+          }
+        />
+        <Route
+          path="customers/new"
+          element={
+            <RequireCapability anyOf={['customers.edit']}>
+              <CustomerForm />
+            </RequireCapability>
+          }
+        />
+        <Route
+          path="customers/:customerId/edit"
+          element={
+            <RequireCapability anyOf={['customers.edit']}>
+              <CustomerForm />
             </RequireCapability>
           }
         />

@@ -93,6 +93,23 @@ export const bn = {
   'customer.orderAgain': 'আবার অর্ডার',
   'customer.edit': 'তথ্য বদলান',
   'customer.balance': 'বাকি {amount}',
+  'customerForm.newTitle': 'নতুন কাস্টমার',
+  'customerForm.editTitle': 'কাস্টমারের তথ্য বদলান',
+  'customerForm.name': 'নাম',
+  'customerForm.nameAlt': 'অন্য ভাষায় নাম',
+  'customerForm.phone': 'ফোন',
+  'customerForm.gender': 'লিঙ্গ',
+  'gender.male': 'পুরুষ',
+  'gender.female': 'মহিলা',
+  'gender.other': 'অন্যান্য',
+  'customerForm.household': 'পরিবার',
+  'customerForm.noHousehold': 'কোনো পরিবার নয়',
+  'customerForm.newHousehold': 'নতুন পরিবার',
+  'customerForm.householdName': 'পরিবারের নাম',
+  'customerForm.notes': 'নোট',
+  'customerForm.error.name': 'নাম লিখুন',
+  'customerForm.error.phone': 'ফোন নম্বর ঠিক নেই, ১১ সংখ্যার মোবাইল নম্বর দিন',
+  'customerForm.error.household': 'পরিবারের নাম লিখুন',
 } as const;
 
 export type MessageKey = keyof typeof bn;
