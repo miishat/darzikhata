@@ -141,6 +141,19 @@ export const bn = {
   'mgroup.salwar': 'সালোয়ার',
   'mgroup.blouse': 'ব্লাউজ',
   'mgroup.skirt': 'লেহেঙ্গা',
+  'draft.error.customer': 'কাস্টমার বেছে নিন বা নতুন কাস্টমার যোগ করুন',
+  'draft.error.items': 'অন্তত একটি পোশাক যোগ করুন',
+  'draft.error.template': 'এই পোশাক আর পাওয়া যাচ্ছে না',
+  'draft.error.quantity': 'সংখ্যা ১ থেকে ৫০ এর মধ্যে দিন',
+  'draft.error.price': 'দাম লিখুন',
+  'draft.error.measurements': 'মাপ দিন',
+  'draft.error.confirm': 'মাপ এখনো ঠিক আছে কিনা কাস্টমারের কাছে জেনে টিক দিন',
+  'draft.error.measurementsUnknown': 'এই মাপ আর পাওয়া যাচ্ছে না, নতুন মাপ নিন',
+  'draft.error.deliveryDate': 'ডেলিভারির তারিখ দিন',
+  'draft.error.past': 'আজকের আগের তারিখ দেওয়া যাবে না',
+  'draft.error.trialAfterDelivery': 'ট্রায়াল ডেলিভারির আগে হতে হবে',
+  'draft.error.discount': 'ছাড় মোট দামের বেশি হতে পারে না',
+  'draft.error.advance': 'অগ্রিম মোট দামের বেশি হতে পারে না',
 } as const;
 
 export type MessageKey = keyof typeof bn;
