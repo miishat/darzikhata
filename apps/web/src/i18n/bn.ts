@@ -95,6 +95,7 @@ export const bn = {
   'customer.balance': 'বাকি {amount}',
   'customerForm.newTitle': 'নতুন কাস্টমার',
   'customerForm.editTitle': 'কাস্টমারের তথ্য বদলান',
+  'customerForm.conflict': 'এর মধ্যে অন্য কেউ তথ্য বদলেছেন। তথ্য দেখে নিন, তারপর আবার সেভ করুন।',
   'customerForm.name': 'নাম',
   'customerForm.nameAlt': 'অন্য ভাষায় নাম',
   'customerForm.phone': 'ফোন',

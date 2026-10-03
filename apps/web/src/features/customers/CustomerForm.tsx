@@ -15,6 +15,7 @@ import {
   customerInputFrom,
   emptyCustomerInput,
   NEW_HOUSEHOLD,
+  rebaseCustomerInput,
   validateCustomerInput,
   type CustomerInput,
   type CustomerInputErrors,
@@ -46,9 +47,9 @@ function Form({ customer }: { customer: Customer | null }) {
   const { state } = useSnapshot();
   const navigate = useNavigate();
 
-  // What the form opened with: edits are checked against this version, not whatever is stored later.
-  const [initial] = useState<CustomerInput>(() => (customer ? customerInputFrom(customer) : emptyCustomerInput()));
-  const [baseVersion] = useState<number | null>(() => customer?.version ?? null);
+  // What edits are diffed against, and the version they are based on. Both move forward after a conflict.
+  const [initial, setInitial] = useState<CustomerInput>(() => (customer ? customerInputFrom(customer) : emptyCustomerInput()));
+  const [baseVersion, setBaseVersion] = useState<number | null>(() => customer?.version ?? null);
   const [input, setInput] = useState<CustomerInput>(initial);
   const [errors, setErrors] = useState<CustomerInputErrors>({});
   const [problem, setProblem] = useState<string | null>(null);
@@ -87,6 +88,7 @@ function Form({ customer }: { customer: Customer | null }) {
 
     const { customerId, events } = customerEvents(input, {
       existing: customer,
+      start: initial,
       baseVersion,
       newId: () => store.createId(),
     });
@@ -95,6 +97,15 @@ function Form({ customer }: { customer: Customer | null }) {
       const outcome = await store.dispatchBatch(events);
       setSaving(false);
       if (!outcome.ok) {
+        const current = customer ? store.getSnapshot().state.customers[customer.id] : undefined;
+        if (outcome.outcome.kind === 'conflict' && current) {
+          const rebased = rebaseCustomerInput(input, initial, current);
+          setInitial(rebased.start);
+          setInput(rebased.input);
+          setBaseVersion(current.version);
+          setProblem(t('customerForm.conflict'));
+          return;
+        }
         setProblem(problemText(outcome.outcome, language));
         return;
       }

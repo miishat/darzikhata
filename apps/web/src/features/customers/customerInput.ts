@@ -46,21 +46,25 @@ export function validateCustomerInput(input: CustomerInput): CustomerInputErrors
 }
 
 /**
- * Events that save the form: an optional new household, then the customer. Editing sends only
- * the fields that changed, based on the version the form was opened with, so a change made
- * elsewhere in the meantime is detected instead of overwritten. No changes means no events.
+ * Move a form onto the current customer after a conflict: fields the person edited keep their
+ * typed value, untouched fields take the current value, and the current values become the new
+ * starting point that later edits are diffed against.
  */
-export function customerEvents(
+export function rebaseCustomerInput(
   input: CustomerInput,
-  ctx: { existing: Customer | null; baseVersion: number | null; newId(): string },
-): { customerId: string; events: EventBody[] } {
-  const events: EventBody[] = [];
-  let householdId = input.householdId;
-  if (householdId === NEW_HOUSEHOLD) {
-    householdId = ctx.newId();
-    events.push({ type: 'household.created', household: { id: householdId, label: input.newHousehold.trim() } });
+  start: CustomerInput,
+  current: Customer,
+): { input: CustomerInput; start: CustomerInput } {
+  const newStart = customerInputFrom(current);
+  const next = { ...newStart } as Record<string, unknown>;
+  for (const key of Object.keys(input) as Array<keyof CustomerInput>) {
+    if (input[key] !== start[key]) next[key] = input[key];
   }
-  const values = {
+  return { input: next as unknown as CustomerInput, start: newStart };
+}
+
+function savedValues(input: CustomerInput, householdId: string | null) {
+  return {
     name: input.name.trim(),
     nameAlt: input.nameAlt.trim() || null,
     phone: input.phone.trim() ? normalizePhone(input.phone) : null,
@@ -68,6 +72,24 @@ export function customerEvents(
     gender: input.gender,
     notes: input.notes.trim(),
   };
+}
+
+/**
+ * Events that save the form: an optional new household, then the customer. Editing sends only
+ * the fields that changed from the form's starting values, based on the version the form was opened with, so a change made
+ * elsewhere in the meantime is detected instead of overwritten. No changes means no events.
+ */
+export function customerEvents(
+  input: CustomerInput,
+  ctx: { existing: Customer | null; start: CustomerInput | null; baseVersion: number | null; newId(): string },
+): { customerId: string; events: EventBody[] } {
+  const events: EventBody[] = [];
+  let householdId = input.householdId;
+  if (householdId === NEW_HOUSEHOLD) {
+    householdId = ctx.newId();
+    events.push({ type: 'household.created', household: { id: householdId, label: input.newHousehold.trim() } });
+  }
+  const values = savedValues(input, householdId);
 
   if (!ctx.existing) {
     const customerId = ctx.newId();
@@ -76,9 +98,10 @@ export function customerEvents(
   }
 
   const existing = ctx.existing;
+  const before = savedValues(ctx.start ?? customerInputFrom(existing), (ctx.start ?? customerInputFrom(existing)).householdId);
   const changes: CustomerChanges = {};
   for (const key of Object.keys(values) as Array<keyof typeof values>) {
-    if (values[key] !== existing[key]) (changes as Record<string, unknown>)[key] = values[key];
+    if (values[key] !== before[key]) (changes as Record<string, unknown>)[key] = values[key];
   }
   if (Object.keys(changes).length > 0) {
     events.push({ type: 'customer.updated', customerId: existing.id, baseVersion: ctx.baseVersion ?? existing.version, changes });

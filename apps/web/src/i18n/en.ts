@@ -96,6 +96,7 @@ export const en: Messages = {
   'customer.balance': 'Due {amount}',
   'customerForm.newTitle': 'New customer',
   'customerForm.editTitle': 'Edit customer details',
+  'customerForm.conflict': 'Someone else changed these details in the meantime. Review them and save again.',
   'customerForm.name': 'Name',
   'customerForm.nameAlt': 'Name in the other script',
   'customerForm.phone': 'Phone',

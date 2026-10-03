@@ -59,10 +59,35 @@ describe('Customer form', () => {
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
 
     expect((await screen.findByRole('alert')).textContent).toBe(
-      'এর মধ্যে অন্য কেউ এটি বদলেছেন। নতুন তথ্য দেখে আবার চেষ্টা করুন।',
+      'এর মধ্যে অন্য কেউ তথ্য বদলেছেন। তথ্য দেখে নিন, তারপর আবার সেভ করুন।',
     );
     expect(store.getSnapshot().state.customers['rahman-c1']).toMatchObject({ phone, notes: 'অন্য ডিভাইস থেকে' });
     expect(screen.getByLabelText('ফোন')).toHaveProperty('value', '01799999999');
+  });
+
+  it('rebases onto the latest details after a conflict and keeps what was typed', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/rahman-c1/edit' });
+    await screen.findByRole('heading', { name: 'কাস্টমারের তথ্য বদলান' });
+    await userEvent.clear(screen.getByLabelText('ফোন'));
+    await userEvent.type(screen.getByLabelText('ফোন'), '01799999999');
+    await act(() =>
+      store.dispatch({ type: 'customer.updated', customerId: 'rahman-c1', baseVersion: 1, changes: { name: 'নতুন নাম', notes: 'অন্য নোট' } }),
+    );
+    const staleVersion = store.getSnapshot().state.customers['rahman-c1']!.version;
+
+    await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'এর মধ্যে অন্য কেউ তথ্য বদলেছেন। তথ্য দেখে নিন, তারপর আবার সেভ করুন।',
+    );
+    expect(screen.getByLabelText('ফোন')).toHaveProperty('value', '01799999999');
+    expect(screen.getByLabelText('নাম')).toHaveProperty('value', 'নতুন নাম');
+    expect(screen.getByLabelText('নোট')).toHaveProperty('value', 'অন্য নোট');
+
+    await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
+    expect(await screen.findByRole('heading', { name: 'নতুন নাম' })).toBeTruthy();
+    const saved = store.getSnapshot().state.customers['rahman-c1']!;
+    expect(saved).toMatchObject({ name: 'নতুন নাম', notes: 'অন্য নোট', phone: '01799999999' });
+    expect(saved.version).toBeGreaterThan(staleVersion);
   });
 
   it('asks before leaving with unsaved changes', async () => {
