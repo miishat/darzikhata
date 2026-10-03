@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router';
+import { useShell } from '../../shell/ShellPreference';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
+import { DesktopOrderForm } from './DesktopOrderForm';
 import { MobileOrderSteps } from './MobileOrderSteps';
 import { useOrderEntry } from './useOrderEntry';
 
@@ -7,12 +9,13 @@ import { useOrderEntry } from './useOrderEntry';
 export function NewOrderPage() {
   const entry = useOrderEntry();
   const navigate = useNavigate();
+  const { kind } = useShell();
   const { dialog, allowNextNavigation } = useUnsavedGuard(entry.dirty);
 
-  // The step-by-step layout serves every screen until the desktop form arrives.
+  const Layout = kind === 'desktop' ? DesktopOrderForm : MobileOrderSteps;
   return (
     <>
-      <MobileOrderSteps
+      <Layout
         entry={entry}
         onSaved={(orderId) => {
           allowNextNavigation();
