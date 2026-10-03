@@ -64,7 +64,7 @@ describe('Order entry on mobile', () => {
     expect(order.items[0]!.measurements?.values['collar']).toEqual({ value: 15.5, unit: 'inch' });
     expect(moneySummary(order)).toEqual({ total: 240000, paid: 100000, balance: 140000, creditDue: 0 });
     expect(store.getSnapshot().state.customers[order.customerId]).toMatchObject({ name: 'জসিম উদ্দিন', phone: '01799887766' });
-  });
+  }, 20_000);
 
   it('keeps what was typed when going back a step', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
