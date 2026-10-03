@@ -1,5 +1,5 @@
 import { templateById, type Gender } from '@darzikhata/domain';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -77,6 +77,7 @@ export function useOrderEntry(): OrderEntry {
   const [draft, setDraft] = useState<OrderDraft>(initial);
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const inFlight = useRef(false);
 
   const genderOf = (customer: DraftCustomer | null): Gender | null => {
     if (!customer) return null;
@@ -129,6 +130,7 @@ export function useOrderEntry(): OrderEntry {
     setDraft((d) => ({ ...d, ...changes }));
 
   const save = async (): Promise<SaveResult> => {
+    if (inFlight.current) return { ok: false, problem: null };
     const snapshot = store.getSnapshot();
     if (!snapshot.config || !snapshot.session?.staffId) return { ok: false, problem: null };
     if (Object.keys(errors).length > 0) {
@@ -138,6 +140,7 @@ export function useOrderEntry(): OrderEntry {
     const device = snapshot.config.devices.find((d) => d.id === snapshot.deviceId);
     if (!device) return { ok: false, problem: null };
 
+    inFlight.current = true;
     setSaving(true);
     try {
       const { orderId, events } = buildOrderEvents(draft, {
@@ -153,6 +156,7 @@ export function useOrderEntry(): OrderEntry {
       if (outcome.ok) return { ok: true, orderId };
       return { ok: false, problem: problemText(outcome.outcome, language) };
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };

@@ -189,6 +189,7 @@ export const bn = {
   'photos.add': 'ছবি যোগ করুন',
   'photos.photo': 'ছবি {n}',
   'photos.remove': 'ছবি {n} সরান',
+  'photo.failed': 'সব ছবি সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।',
 } as const;
 
 export type MessageKey = keyof typeof bn;

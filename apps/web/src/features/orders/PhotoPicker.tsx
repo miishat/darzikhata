@@ -1,4 +1,4 @@
-import { useId, useState, type ChangeEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 import { useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { compressPhoto } from '../../lib/photos';
@@ -17,6 +17,9 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
   const store = useStore();
   const inputId = useId();
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const latestIds = useRef(photoIds);
+  latestIds.current = photoIds;
 
   const add = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
@@ -24,11 +27,14 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
     input.value = '';
     if (files.length === 0) return;
     setBusy(true);
+    setFailed(false);
+    const added: string[] = [];
     try {
-      const added: string[] = [];
       for (const file of files) added.push(await store.savePhoto(await compress(file)));
-      onChange([...photoIds, ...added]);
+    } catch {
+      setFailed(true);
     } finally {
+      if (added.length > 0) onChange([...latestIds.current, ...added]);
       setBusy(false);
     }
   };
@@ -41,6 +47,7 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
             <Thumb id={id} alt={t('photos.photo', { n: number(index + 1) })} />
             <button
               type="button"
+              disabled={busy}
               className="absolute right-0 top-0 min-h-11 min-w-11 rounded bg-surface text-text"
               aria-label={t('photos.remove', { n: number(index + 1) })}
               onClick={() => onChange(photoIds.filter((p) => p !== id))}
@@ -50,9 +57,6 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
           </li>
         ))}
       </ul>
-      <label htmlFor={inputId} className="min-h-11 cursor-pointer text-primary">
-        {t('photos.add')}
-      </label>
       <input
         id={inputId}
         type="file"
@@ -60,9 +64,20 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
         capture="environment"
         multiple
         disabled={busy}
-        className="sr-only"
+        className="peer sr-only"
         onChange={(e) => void add(e)}
       />
+      <label
+        htmlFor={inputId}
+        className="min-h-11 cursor-pointer rounded text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-brand"
+      >
+        {t('photos.add')}
+      </label>
+      {failed && (
+        <p role="alert" className="text-sm text-danger">
+          {t('photo.failed')}
+        </p>
+      )}
     </div>
   );
 }

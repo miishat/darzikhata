@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DarziDb } from '../../data/db';
 import { StoreProvider } from '../../data/StoreContext';
 import { ShopStore } from '../../data/store';
@@ -57,5 +57,36 @@ describe('PhotoPicker', () => {
     await userEvent.click(screen.getByRole('button', { name: 'ছবি ১ সরান' }));
     expect(screen.queryByRole('img', { name: 'ছবি ১' })).toBeNull();
     expect(latest).toEqual([]);
+  });
+
+  it('shows an alert and still reports the photos that saved when one fails', async () => {
+    const db = new DarziDb('photos-fail-test');
+    dbs.push(db);
+    const store = new ShopStore({ db });
+    await store.startDemo('rahman');
+    const real = store.savePhoto.bind(store);
+    let calls = 0;
+    vi.spyOn(store, 'savePhoto').mockImplementation((data: string) => {
+      calls += 1;
+      return calls === 2 ? Promise.reject(new Error('quota')) : real(data);
+    });
+    let latest: string[] = [];
+    render(
+      <StoreProvider store={store}>
+        <I18nProvider>
+          <Harness onIds={(ids) => (latest = ids)} />
+        </I18nProvider>
+      </StoreProvider>,
+    );
+
+    const input = screen.getByLabelText('ছবি যোগ করুন') as HTMLInputElement;
+    await userEvent.upload(input, [
+      new File(['x'], 'a.jpg', { type: 'image/jpeg' }),
+      new File(['y'], 'b.jpg', { type: 'image/jpeg' }),
+    ]);
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(latest).toHaveLength(1);
+    expect(await screen.findByRole('img', { name: 'ছবি ১' })).toBeTruthy();
   });
 });

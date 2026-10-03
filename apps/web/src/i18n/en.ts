@@ -190,4 +190,5 @@ export const en: Messages = {
   'photos.add': 'Add photos',
   'photos.photo': 'Photo {n}',
   'photos.remove': 'Remove photo {n}',
+  'photo.failed': 'Could not save every photo. Please try again.',
 };

@@ -2,7 +2,7 @@ import { moneySummary, profileKey } from '@darzikhata/domain';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DarziDb } from '../../data/db';
 import { StoreProvider } from '../../data/StoreContext';
 import { ShopStore } from '../../data/store';
@@ -118,5 +118,26 @@ describe('useOrderEntry', () => {
     expect(result.current.dirty).toBe(false);
     act(() => result.current.addItem('pant'));
     expect(result.current.dirty).toBe(true);
+  });
+
+  it('creates exactly one order when save is called twice before a re-render', async () => {
+    const { store, result } = await setup();
+    act(() => result.current.setCustomer({ kind: 'new', name: 'জসিম উদ্দিন', nameAlt: '', phone: '', gender: 'male' }));
+    act(() => result.current.addItem('shirt'));
+    const key = result.current.draft.items[0]!.key;
+    act(() => result.current.updateItem(key, { measurements: { kind: 'new', values: shirtValues, source: 'body', notes: '' } }));
+    expect(result.current.errors).toEqual({});
+    const ordersBefore = Object.keys(store.getSnapshot().state.orders).length;
+    const dispatch = vi.spyOn(store, 'dispatchBatch');
+
+    let results: SaveResult[] = [];
+    await act(async () => {
+      const save = result.current.save;
+      results = await Promise.all([save(), save()]);
+    });
+
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(Object.keys(store.getSnapshot().state.orders).length).toBe(ordersBefore + 1);
   });
 });
