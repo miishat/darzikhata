@@ -189,6 +189,8 @@ export const en: Messages = {
   'print.adjustments': 'Fitting changes',
   'print.measurementsHidden': 'No permission to see measurements',
   'print.notFound': 'Order not found',
+  'print.backToWork': 'Back to the work list',
+  'print.printedOn': 'Printed on {date}',
   'photos.add': 'Add photos',
   'photos.photo': 'Photo {n}',
   'photos.remove': 'Remove photo {n}',
@@ -375,4 +377,6 @@ export const en: Messages = {
   'work.skip.backward': 'Moving back needs a reason, on the garment itself',
   'work.skip.skips-required': 'Would skip a required stage',
   'work.bulkNote': 'Payments and hand-overs are never done in bulk.',
+  'work.print': 'Print this list',
+  'work.col.notes': 'Notes',
 };

@@ -23,6 +23,7 @@ const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'Rec
 const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'JobSlipPage');
 const WorkPage = lazyPage(() => import('../features/work/WorkPage'), 'WorkPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
+const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrintPage'), 'WorkListPrintPage');
 
 function AppShell() {
   const { kind } = useShell();
@@ -168,6 +169,18 @@ export function AppRoutes() {
             <RequireCapability anyOf={['orders.view', 'work.view.all', 'work.view.assigned']}>
               <Suspense fallback={<Loading />}>
                 <FabricTagsPage />
+              </Suspense>
+            </RequireCapability>
+          </RequireStaff>
+        }
+      />
+      <Route
+        path="/print/work"
+        element={
+          <RequireStaff>
+            <RequireCapability anyOf={navItem('work').requires}>
+              <Suspense fallback={<Loading />}>
+                <WorkListPrintPage />
               </Suspense>
             </RequireCapability>
           </RequireStaff>

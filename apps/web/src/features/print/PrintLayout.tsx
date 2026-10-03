@@ -11,7 +11,8 @@ export function usePrintLanguage(): [Language, (language: Language) => void] {
 }
 
 export interface PrintLayoutProps {
-  orderId: string;
+  /** Where the toolbar's back link goes. */
+  back: { to: string; label: string };
   title: string;
   language: Language;
   onLanguage(language: Language): void;
@@ -28,13 +29,13 @@ const LANGUAGES: Array<{ language: Language; name: string }> = [
 ];
 
 /** A print page: a toolbar that is hidden when printing, then the document itself. */
-export function PrintLayout({ orderId, title, language, onLanguage, onShare, notice, children }: PrintLayoutProps) {
+export function PrintLayout({ back, title, language, onLanguage, onShare, notice, children }: PrintLayoutProps) {
   const { t } = useI18n();
   return (
     <div className="min-h-dvh bg-surface text-ink">
       <div className="no-print flex flex-wrap items-center gap-2 border-b border-line bg-panel px-4 py-2">
-        <Link to={`/app/orders/${orderId}`} className={buttonClasses('ghost')}>
-          {t('print.back')}
+        <Link to={back.to} className={buttonClasses('ghost')}>
+          {back.label}
         </Link>
         <div role="group" aria-label={title} className="ml-auto flex gap-1">
           {LANGUAGES.map((option) => (

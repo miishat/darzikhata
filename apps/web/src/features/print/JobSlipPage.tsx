@@ -27,7 +27,7 @@ export function JobSlipPage() {
   const mayMeasure = customer ? hasAccess(customer) : false;
 
   return (
-    <PrintLayout orderId={order.id} title={t('print.jobSlip')} language={language} onLanguage={setLanguage}>
+    <PrintLayout back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }} title={t('print.jobSlip')} language={language} onLanguage={setLanguage}>
       <h1 className="text-2xl font-semibold">{t('print.jobSlip')}</h1>
       <p className="mb-4">
         {t('receipt.orderNumber', { number: order.number })}

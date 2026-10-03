@@ -188,6 +188,8 @@ export const bn = {
   'print.adjustments': 'ফিটিংয়ের পরিবর্তন',
   'print.measurementsHidden': 'মাপ দেখার অনুমতি নেই',
   'print.notFound': 'অর্ডার পাওয়া যায়নি',
+  'print.backToWork': 'কাজের তালিকায় ফিরে যান',
+  'print.printedOn': 'প্রিন্টের তারিখ: {date}',
   'photos.add': 'ছবি যোগ করুন',
   'photos.photo': 'ছবি {n}',
   'photos.remove': 'ছবি {n} সরান',
@@ -374,6 +376,8 @@ export const bn = {
   'work.skip.backward': 'পেছনে নিতে হলে পোশাকের পাতায় কারণসহ করুন',
   'work.skip.skips-required': 'মাঝের জরুরি ধাপ বাদ পড়ে',
   'work.bulkNote': 'টাকা নেওয়া আর হস্তান্তর একসাথে করা যায় না।',
+  'work.print': 'তালিকা প্রিন্ট করুন',
+  'work.col.notes': 'নোট',
 } as const;
 
 export type MessageKey = keyof typeof bn;

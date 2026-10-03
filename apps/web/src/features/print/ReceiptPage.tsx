@@ -86,7 +86,7 @@ export function ReceiptPage() {
 
   return (
     <PrintLayout
-      orderId={order.id}
+      back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }}
       title={t('receipt.title')}
       language={language}
       onLanguage={(next) => {

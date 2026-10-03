@@ -1,8 +1,9 @@
 import type { ItemRef } from '@darzikhata/domain';
 import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
-import { Button } from '../../ui/Button';
+import { Button, buttonClasses } from '../../ui/Button';
 import { SelectField } from '../../ui/SelectField';
 import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
@@ -20,6 +21,8 @@ export function WorkPage() {
   const { config } = useSnapshot();
   const { branchIds } = useBranchScope();
   const { viewer, query, setQuery, all, shown, groups } = useWorkList();
+  const [params] = useSearchParams();
+  const search = params.toString();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [open, setOpen] = useState<Open>(null);
 
@@ -58,7 +61,12 @@ export function WorkPage() {
 
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-xl font-semibold">{t('nav.work')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">{t('nav.work')}</h1>
+        <Link to={`/print/work${search ? `?${search}` : ''}`} className={buttonClasses('secondary')}>
+          {t('work.print')}
+        </Link>
+      </div>
       {selected.size > 0 && selectable && (
         <div className="sticky top-14 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-brand-soft p-3 md:top-0">
           <span className="font-semibold">{t('work.selected', { n: number(selected.size) })}</span>
