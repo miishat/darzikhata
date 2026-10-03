@@ -42,3 +42,9 @@ describe('money', () => {
     expect(parseTaka('-5')).toBeNull();
   });
 });
+
+describe('parseTaka limits', () => {
+  it('returns null instead of throwing for amounts beyond safe poisha', () => {
+    expect(parseTaka('12345678901234567890')).toBeNull();
+  });
+});

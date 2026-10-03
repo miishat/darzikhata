@@ -110,3 +110,30 @@ describe('measurement events', () => {
     ]);
   });
 });
+
+describe('customer.updated hardening', () => {
+  it('ignores undefined values and unknown keys', () => {
+    const ev = eventFactory();
+    const changes = { name: undefined, version: 99, phone: '01800000000' };
+    const { state } = replay([
+      ev({ type: 'customer.created', customer: newCustomer() }),
+      ev({
+        type: 'customer.updated',
+        customerId: 'c1',
+        baseVersion: 1,
+        changes: changes as unknown as Extract<Parameters<typeof ev>[0], { type: 'customer.updated' }>['changes'],
+      }),
+    ]);
+    expect(state.customers.c1).toMatchObject({ name: 'রহিম উদ্দিন', phone: '01800000000', version: 2 });
+  });
+
+  it('moves a customer into a household through an update', () => {
+    const ev = eventFactory();
+    const { state } = replay([
+      ev({ type: 'household.created', household: { id: 'h1', label: 'Uddin family' } }),
+      ev({ type: 'customer.created', customer: newCustomer() }),
+      ev({ type: 'customer.updated', customerId: 'c1', baseVersion: 1, changes: { householdId: 'h1' } }),
+    ]);
+    expect(state.customers.c1!.householdId).toBe('h1');
+  });
+});

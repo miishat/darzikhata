@@ -135,3 +135,25 @@ describe('payment.recorded', () => {
     expect(moneySummary(state.orders.o1!)).toEqual({ total: 140000, paid: 240000, balance: 0, creditDue: 100000 });
   });
 });
+
+describe('net paid floor', () => {
+  it('rejects a correction that would push net paid below zero', () => {
+    const { ev, base } = shop();
+    const { outcomes, state } = replay([
+      ...base,
+      ev({ type: 'payment.recorded', orderId: 'o1', payment: pay({ id: 'p1', amount: 100000 }) }),
+      ev({
+        type: 'payment.recorded',
+        orderId: 'o1',
+        payment: pay({ id: 'p2', amount: 50000, kind: 'refund', reason: 'returned' }),
+      }),
+      ev({
+        type: 'payment.recorded',
+        orderId: 'o1',
+        payment: pay({ id: 'p3', amount: 80000, kind: 'correction', corrects: 'p2', reason: 'typo' }),
+      }),
+    ]);
+    expect(outcomes.at(-1)).toMatchObject({ outcome: 'rejected', reason: 'net-paid-below-zero' });
+    expect(state.orders.o1!.payments).toHaveLength(2);
+  });
+});

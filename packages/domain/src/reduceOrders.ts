@@ -32,9 +32,21 @@ function replaceItem(order: Order, item: OrderItem): Order {
   return { ...order, items: order.items.map((i) => (i.id === item.id ? item : i)) };
 }
 
+const ITEM_EDIT_KEYS = ['price', 'designNotes', 'fabricNote', 'trialDate', 'deliveryDate', 'wearer'] as const;
+
+/** Copies only the allowed keys, skipping undefined values, so a malformed event cannot overwrite other fields. */
+function pickDefined<T extends object, K extends keyof T>(source: T, keys: readonly K[]): Partial<Pick<T, K>> {
+  const out: Partial<Pick<T, K>> = {};
+  for (const key of keys) {
+    if (Object.hasOwn(source, key) && source[key] !== undefined) out[key] = source[key];
+  }
+  return out;
+}
+
 function newItem(input: NewOrderItem): OrderItem {
   return {
     ...input,
+    stages: input.stages.map((s) => ({ ...s, label: { ...s.label } })),
     stageKey: input.stages[0]!.key,
     stageHistory: [],
     adjustments: [],
@@ -163,7 +175,7 @@ function reduceItemEvent(state: ShopState, order: Order, event: ItemEvent): Step
     case 'item.updated': {
       const { price } = event.changes;
       if (price !== undefined && (!isPoisha(price) || price < 0)) return rejected('invalid-price');
-      const updated = { ...item, ...event.changes, version: item.version + 1 };
+      const updated = { ...item, ...pickDefined(event.changes, ITEM_EDIT_KEYS), version: item.version + 1 };
       const next = replaceItem(order, updated);
       if ((order.discount?.amount ?? 0) > subtotal(next)) return rejected('discount-exceeds-subtotal');
       return save(state, next, event.at);

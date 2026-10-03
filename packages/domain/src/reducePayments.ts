@@ -33,6 +33,8 @@ export function reducePaymentEvent(state: ShopState, event: PaymentEvent): Step 
   }
 
   const recorded = { ...payment, at: event.at, by: event.staffId };
-  const updated = { ...order, payments: [...order.payments, recorded], updatedAt: event.at };
+  const payments = [...order.payments, recorded];
+  if (netPaid(payments) < 0) return rejected('net-paid-below-zero');
+  const updated = { ...order, payments, updatedAt: event.at };
   return applied({ ...state, orders: { ...state.orders, [order.id]: updated } });
 }

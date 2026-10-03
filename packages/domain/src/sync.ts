@@ -29,8 +29,10 @@ export function createServer(events: DomainEvent[] = []): SyncServer {
 }
 
 /**
- * Applies events sent by a device. Re-sending is always safe: events already applied
- * come back as 'duplicate', and events already waiting for review are not queued twice.
+ * Applies events sent by a device. Re-sending is safe for events already applied (they
+ * come back as 'duplicate') and for events still waiting in the review queue (they are
+ * not queued twice). It is not safe for events already resolved from the review queue:
+ * once resolved they leave the queue, so re-pushing the original pending event queues it again.
  */
 export function pushEvents(server: SyncServer, events: DomainEvent[]): { server: SyncServer; results: PushOutcome[] } {
   let { state } = server;

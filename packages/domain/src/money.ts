@@ -44,5 +44,6 @@ export function formatTaka(amount: Poisha, script: DigitScript = 'bn'): string {
 export function parseTaka(input: string): Poisha | null {
   const cleaned = toEnglishDigits(input).replace(/[,\s৳]/g, '');
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
-  return takaToPoisha(Number(cleaned));
+  const poisha = Math.round(Number(cleaned) * 100);
+  return Number.isSafeInteger(poisha) ? poisha : null;
 }

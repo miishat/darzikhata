@@ -241,3 +241,47 @@ describe('status links', () => {
     expect(run(state, [last]).state.orders.o1!.updatedAt).toBe(last.at);
   });
 });
+
+describe('edit event hardening', () => {
+  it('ignores undefined values in item.updated', () => {
+    const { ev, state } = shopWithOrder();
+    const item = run(state, [
+      ev({ type: 'item.updated', orderId: 'o1', itemId: 'shirt-1', baseVersion: 1, changes: { price: undefined } }),
+    ]).state.orders.o1!.items[0]!;
+    expect(item.price).toBe(70000);
+    expect(item.version).toBe(2);
+  });
+
+  it('ignores keys outside the item whitelist', () => {
+    const { ev, state } = shopWithOrder();
+    const changes = { stageKey: 'delivered', cancelled: { reason: 'x' }, id: 'zzz', deliveryDate: '2026-10-10' };
+    const item = run(state, [
+      ev({
+        type: 'item.updated',
+        orderId: 'o1',
+        itemId: 'shirt-1',
+        baseVersion: 1,
+        changes: changes as unknown as Extract<DomainEvent, { type: 'item.updated' }>['changes'],
+      }),
+    ]).state.orders.o1!.items[0]!;
+    expect(item.stageKey).toBe('booked');
+    expect(item.cancelled).toBeNull();
+    expect(item.id).toBe('shirt-1');
+    expect(item.deliveryDate).toBe('2026-10-10');
+  });
+
+  it('does not share the caller stages array with the stored item', () => {
+    const ev = eventFactory();
+    const stages = newOrderItem({ id: 'shirt-1' }).stages;
+    const originalLabel = stages[0]!.label.en;
+    const { state } = replay([
+      ev({ type: 'customer.created', customer: newCustomer() }),
+      ev({ type: 'order.created', order: newOrder({ items: [newOrderItem({ id: 'shirt-1', stages })] }) }),
+    ]);
+    stages[0]!.label.en = 'mutated';
+    stages.pop();
+    const stored = state.orders.o1!.items[0]!.stages;
+    expect(stored.length).toBeGreaterThan(stages.length);
+    expect(stored[0]!.label.en).toBe(originalLabel);
+  });
+});

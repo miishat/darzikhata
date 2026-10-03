@@ -7,6 +7,17 @@ type CustomerEvent = Extract<
   { type: 'customer.created' | 'customer.updated' | 'household.created' | 'measurement.recorded' }
 >;
 
+const CUSTOMER_EDIT_KEYS = ['name', 'nameAlt', 'phone', 'householdId', 'gender', 'notes'] as const;
+
+/** Copies only the allowed keys, skipping undefined values, so a malformed event cannot overwrite other fields. */
+function pickDefined<T extends object, K extends keyof T>(source: T, keys: readonly K[]): Partial<Pick<T, K>> {
+  const out: Partial<Pick<T, K>> = {};
+  for (const key of keys) {
+    if (Object.hasOwn(source, key) && source[key] !== undefined) out[key] = source[key];
+  }
+  return out;
+}
+
 export function reduceCustomerEvent(state: ShopState, event: CustomerEvent): Step {
   switch (event.type) {
     case 'customer.created': {
@@ -32,7 +43,7 @@ export function reduceCustomerEvent(state: ShopState, event: CustomerEvent): Ste
         ...state,
         customers: {
           ...state.customers,
-          [current.id]: { ...current, ...event.changes, version: current.version + 1 },
+          [current.id]: { ...current, ...pickDefined(event.changes, CUSTOMER_EDIT_KEYS), version: current.version + 1 },
         },
       });
     }
