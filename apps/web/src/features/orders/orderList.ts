@@ -90,7 +90,7 @@ function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {
   }
 }
 
-function matchesText(row: OrderRow, text: string): boolean {
+export function matchesText(row: OrderRow, text: string): boolean {
   const trimmed = text.trim();
   if (!trimmed) return true;
   return (

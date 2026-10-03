@@ -20,7 +20,7 @@ export interface ItemDialogProps {
 }
 
 /** Saves one event; closes on success, otherwise keeps the dialog open and says why. */
-function useSave(onClose: () => void) {
+export function useSave(onClose: () => void) {
   const store = useStore();
   const { language } = useI18n();
   const [problem, setProblem] = useState<string | null>(null);
@@ -56,7 +56,7 @@ interface ShellProps {
 }
 
 /** The dialog frame: cancel and save buttons and the failure message. Not a form, so Enter saves nothing. */
-function Shell({ title, onClose, onSave, working, problem, saveLabel, children }: ShellProps) {
+export function Shell({ title, onClose, onSave, working, problem, saveLabel, children }: ShellProps) {
   const { t } = useI18n();
   return (
     <Dialog
