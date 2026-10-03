@@ -320,6 +320,10 @@ export const bn = {
   'payments.due': 'বাকি টাকা',
   'payments.dueTotal': 'মোট বাকি',
   'payments.credit': 'ফেরত পাওনা',
+
+  'search.label': 'অর্ডার বা কাস্টমার খুঁজুন',
+  'search.placeholder': 'খুঁজুন (/)',
+  'search.none': 'কিছু পাওয়া যায়নি',
 } as const;
 
 export type MessageKey = keyof typeof bn;

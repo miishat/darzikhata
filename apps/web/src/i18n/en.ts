@@ -321,4 +321,8 @@ export const en: Messages = {
   'payments.due': 'Money due',
   'payments.dueTotal': 'Total due',
   'payments.credit': 'Credit due',
+
+  'search.label': 'Search orders or customers',
+  'search.placeholder': 'Search (/)',
+  'search.none': 'Nothing found',
 };

@@ -1,11 +1,13 @@
 import { can, type Role } from '@darzikhata/domain';
-import { Suspense } from 'react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { Suspense, useRef } from 'react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
+import { GlobalSearch } from './GlobalSearch';
 import { visibleNav } from './nav';
 import { ConnectionBadge, LanguageToggle, SwitchUserButton, useShopHeader } from './ShellParts';
+import { useShortcuts } from './useShortcuts';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand ${
@@ -16,6 +18,15 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export function DesktopShell({ role }: { role: Role }) {
   const { t } = useI18n();
   const { shopName, branchName } = useShopHeader();
+  const navigate = useNavigate();
+  const searchInput = useRef<HTMLInputElement>(null);
+
+  useShortcuts({
+    onSearch: () => searchInput.current?.focus(),
+    onNewOrder: () => {
+      if (can(role, 'orders.create')) navigate('/app/orders/new');
+    },
+  });
 
   return (
     <div className="flex min-h-dvh">
@@ -42,6 +53,7 @@ export function DesktopShell({ role }: { role: Role }) {
             {branchName && <p className="truncate text-xs text-muted">{branchName}</p>}
           </div>
           <div className="flex-1" />
+          <GlobalSearch role={role} inputRef={searchInput} />
           <ConnectionBadge />
           <LanguageToggle />
           {can(role, 'orders.create') && (
