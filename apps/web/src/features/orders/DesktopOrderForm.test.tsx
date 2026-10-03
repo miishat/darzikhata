@@ -36,6 +36,47 @@ describe('Order entry on desktop', () => {
     expect(order.items[0]!.measurements?.versionId).toBe(state.profiles[profileKey(customer.id, 'shirt')]!.versions.at(-1)!.id);
   });
 
+  it('keeps each line’s measurements to itself when switching lines', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    await userEvent.click(within(left).getByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(within(left).getByLabelText('নাম'), 'জসিম উদ্দিন');
+    const addShirt = async () => {
+      await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'শার্ট');
+      await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    };
+    const middle = () => region('মাপ ও ডিজাইন');
+    const fillAll = async (values: Record<string, string>) => {
+      for (const [label, value] of Object.entries(values)) await userEvent.type(within(middle()).getByLabelText(label), value);
+    };
+
+    await addShirt();
+    await userEvent.type(within(middle()).getByLabelText('বুক'), '40');
+    await userEvent.type(within(middle()).getByLabelText('ঝুল'), '30');
+    await userEvent.type(within(middle()).getByLabelText('পেট'), '34');
+    await addShirt();
+    await userEvent.click(within(left).getByRole('button', { name: 'শার্ট ২' }));
+
+    for (const label of ['বুক', 'ঝুল', 'পেট']) expect(within(middle()).getByLabelText(label)).toHaveProperty('value', '');
+    await userEvent.type(within(middle()).getByLabelText('ঝুল'), '28');
+    await fillAll({ 'বুক': '36', 'পেট': '32', 'কাঁধ (পুট)': '16', 'হাতা': '22', 'গলা': '14' });
+    await userEvent.type(within(region('অর্ডারের হিসাব')).getByLabelText('দাম (প্রতিটি)'), '500');
+
+    await userEvent.click(within(left).getByRole('button', { name: 'শার্ট ১' }));
+    expect(within(middle()).getByLabelText('বুক')).toHaveProperty('value', '৪০');
+    await fillAll({ 'কাঁধ (পুট)': '17', 'হাতা': '23', 'গলা': '15' });
+    await userEvent.type(within(region('অর্ডারের হিসাব')).getByLabelText('দাম (প্রতিটি)'), '500');
+    await save();
+
+    expect(await screen.findByRole('heading', { name: 'রসিদ' })).toBeTruthy();
+    const order = Object.values(store.getSnapshot().state.orders).find((o) => o.number === 'A-0041')!;
+    const values = order.items.map((i) => [i.measurements?.values['chest']?.value, i.measurements?.values['length']?.value]);
+    expect(values).toEqual([
+      [40, 30],
+      [36, 28],
+    ]);
+  }, 30_000);
+
   it('repeats an earlier order after each garment’s measurements are confirmed', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?repeat=rahman-o40' });
     const previous = store.getSnapshot().state.orders['rahman-o40']!;

@@ -115,9 +115,9 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
           {chosen ? (
             <>
               <h3 className="font-semibold">{title(chosen)}</h3>
-              <ItemHeader key={chosen.key} entry={entry} item={chosen} errors={errors} />
-              <ItemMeasurements entry={entry} item={chosen} errors={errors} />
-              <ItemDetails entry={entry} item={chosen} />
+              <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} />
+              <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />
+              <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} />
             </>
           ) : (
             <p className="text-muted">{t('entry.chooseItem')}</p>
