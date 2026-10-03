@@ -8,16 +8,48 @@ export interface DialogProps {
   actions?: ReactNode;
 }
 
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
 /** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
 export function Dialog({ open, title, onClose, children, actions }: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
     panel.current?.focus();
-    return () => previous?.focus();
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab' || !panel.current) return;
+      const items = Array.from(panel.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.current.focus();
+        return;
+      }
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel.current || !panel.current.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !panel.current.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      previous?.focus();
+    };
   }, [open]);
 
   if (!open) return null;
@@ -34,12 +66,6 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            onClose();
-          }
-        }}
         className="w-full max-w-md rounded-xl bg-panel p-5 shadow-xl outline-none"
       >
         <h2 id={titleId} className="text-lg font-semibold">
