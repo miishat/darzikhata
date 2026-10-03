@@ -12,6 +12,7 @@ import {
   type Stage,
   type Staff,
 } from '@darzikhata/domain';
+import { translate } from '../../i18n/format';
 import { problemText } from '../common/problemText';
 
 export type WorkGrouping = 'worker' | 'stage';
@@ -231,8 +232,12 @@ export async function runBatch(
 ): Promise<BatchResult[]> {
   const results: BatchResult[] = [];
   for (const { ref, body } of steps) {
-    const outcome = await dispatch(body);
-    results.push({ ref, problem: problemText(outcome, language) });
+    try {
+      const outcome = await dispatch(body);
+      results.push({ ref, problem: problemText(outcome, language) });
+    } catch {
+      results.push({ ref, problem: translate(language, 'save.failed') });
+    }
   }
   return results;
 }

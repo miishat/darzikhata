@@ -179,4 +179,21 @@ describe('runBatch', () => {
       ['d', 'এর মধ্যে অন্য কেউ এটি বদলেছেন। নতুন তথ্য দেখে আবার চেষ্টা করুন।'],
     ]);
   });
+
+  it('contains a failed save to its garment and still tries the rest', async () => {
+    const state = emptyState();
+    const dispatch = vi
+      .fn<(body: unknown) => Promise<ApplyOutcome>>()
+      .mockResolvedValueOnce({ kind: 'applied', state })
+      .mockRejectedValueOnce(new Error('IndexedDB failed'))
+      .mockResolvedValueOnce({ kind: 'applied', state });
+    const steps = ['a', 'b', 'd'].map((id) => ({ ref: ref(id), body: assignBody(ref(id), 'tailor-1') }));
+    const results = await runBatch(dispatch, steps, 'en');
+    expect(dispatch).toHaveBeenCalledTimes(3);
+    expect(results.map((r) => [r.ref.item.id, r.problem])).toEqual([
+      ['a', null],
+      ['b', 'Could not save. Please try again.'],
+      ['d', null],
+    ]);
+  });
 });

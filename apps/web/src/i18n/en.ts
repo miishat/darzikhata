@@ -78,6 +78,7 @@ export const en: Messages = {
   'method.bank': 'Bank',
   'save.conflict': 'Someone else changed this in the meantime. Check the latest details and try again.',
   'save.rejected': 'Could not save ({reason})',
+  'save.failed': 'Could not save. Please try again.',
 
   'customers.list': 'Customer list',
   'customers.search': 'Search customers',

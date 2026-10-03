@@ -77,6 +77,7 @@ export const bn = {
   'method.bank': 'ব্যাংক',
   'save.conflict': 'এর মধ্যে অন্য কেউ এটি বদলেছেন। নতুন তথ্য দেখে আবার চেষ্টা করুন।',
   'save.rejected': 'সেভ করা যায়নি ({reason})',
+  'save.failed': 'সেভ করা যায়নি। আবার চেষ্টা করুন।',
 
   'customers.list': 'কাস্টমার তালিকা',
   'customers.search': 'কাস্টমার খুঁজুন',
