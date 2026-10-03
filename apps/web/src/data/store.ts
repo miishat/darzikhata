@@ -11,6 +11,7 @@ import {
   type EventBody,
   type ShopConfig,
   type ShopState,
+  validateShopConfig,
 } from '@darzikhata/domain';
 import { generateShop } from '../seed/generate';
 import type { SeedShopKey } from '../seed/shops';
@@ -42,6 +43,9 @@ export interface StoreDeps {
 export type BatchOutcome =
   | { ok: true; outcomes: ApplyOutcome[] }
   | { ok: false; failedIndex: number; outcome: ApplyOutcome };
+
+/** Result of changing the shop setup: saved, or the problems that stopped it. */
+export type ConfigOutcome = { ok: true } | { ok: false; problems: string[] };
 
 const LOADING: StoreSnapshot = { status: 'loading', config: null, state: emptyState(), session: null, deviceId: null };
 
@@ -210,6 +214,27 @@ export class ShopStore {
 
   async getPhoto(id: string): Promise<string | null> {
     return (await this.db.photos.get(id))?.dataUrl ?? null;
+  }
+
+  /**
+   * Changes the shop setup (profile, settings, templates, staff, branches, devices). The change is
+   * made to the latest setup, after any change already queued, and saved only when the result is
+   * valid, the signed-in person stays active and this device still exists. The event log is untouched:
+   * garments already ordered keep their own copies of stages and measurements.
+   */
+  updateConfig(change: (config: ShopConfig) => ShopConfig): Promise<ConfigOutcome> {
+    return this.enqueue(async (): Promise<ConfigOutcome> => {
+      const { status, config, session, deviceId } = this.snapshot;
+      if (status !== 'ready' || !config || !session?.staffId) throw new Error('No one is signed in to a shop');
+      const next = change(config);
+      const problems = validateShopConfig(next);
+      if (!staffById(next, session.staffId)?.active) problems.push('self-inactive');
+      if (!next.devices.some((d) => d.id === deviceId)) problems.push('device-missing');
+      if (problems.length > 0) return { ok: false, problems };
+      await this.db.meta.put({ key: 'config', value: next });
+      this.publish({ ...this.snapshot, config: next });
+      return { ok: true };
+    });
   }
 
   /** Returns to the "who is using this device?" screen without touching shop data. */

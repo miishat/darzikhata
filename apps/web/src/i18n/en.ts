@@ -326,4 +326,9 @@ export const en: Messages = {
   'search.label': 'Search orders or customers',
   'search.placeholder': 'Search (/)',
   'search.none': 'Nothing found',
+  'settings.problem.shopName': 'Enter the shop name.',
+  'settings.problem.noManager': 'At least one active person must be able to manage staff.',
+  'settings.problem.self': 'You cannot deactivate yourself.',
+  'settings.problem.linkExpiry': 'Link expiry must be 1 to 365 days.',
+  'settings.problem.pin': 'A PIN must be 4 digits.',
 };
