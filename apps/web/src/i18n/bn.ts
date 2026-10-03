@@ -333,6 +333,17 @@ export const bn = {
   'settings.problem.self': 'নিজেকে নিষ্ক্রিয় করা যাবে না।',
   'settings.problem.linkExpiry': 'লিংকের মেয়াদ ১ থেকে ৩৬৫ দিনের মধ্যে দিন।',
   'settings.problem.pin': 'পিন ৪ সংখ্যার হতে হবে।',
+  'dashboard.summary': 'সারসংক্ষেপ',
+  'dashboard.openOrders': 'চলমান অর্ডার',
+  'dashboard.inProgress': 'তৈরি হচ্ছে',
+  'dashboard.readyGarments': 'রেডি পোশাক',
+  'dashboard.overdueGarments': 'দেরির পোশাক',
+  'dashboard.collectedToday': 'আজ জমা',
+  'dashboard.trialsToday': 'আজ ট্রায়াল',
+  'dashboard.deliveriesToday': 'আজ ডেলিভারি',
+  'dashboard.overdue': 'দেরি হয়েছে',
+  'dashboard.ready': 'নেওয়ার জন্য রেডি',
+  'dashboard.none': 'কিছু নেই',
 } as const;
 
 export type MessageKey = keyof typeof bn;

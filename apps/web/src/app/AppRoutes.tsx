@@ -16,6 +16,7 @@ const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm')
 const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
 const OrdersPage = lazyPage(() => import('../features/orders/OrdersPage'), 'OrdersPage');
 const NewOrderPage = lazyPage(() => import('../features/orders/NewOrderPage'), 'NewOrderPage');
+const DashboardPage = lazyPage(() => import('../features/dashboard/DashboardPage'), 'DashboardPage');
 const PaymentsPage = lazyPage(() => import('../features/payments/PaymentsPage'), 'PaymentsPage');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
@@ -60,7 +61,14 @@ export function AppRoutes() {
         }
       >
         <Route index element={<HomeRedirect />} />
-        <Route path="dashboard" element={<Section nav="dashboard" />} />
+        <Route
+          path="dashboard"
+          element={
+            <RequireCapability anyOf={navItem('dashboard').requires}>
+              <DashboardPage />
+            </RequireCapability>
+          }
+        />
         <Route
           path="orders/new"
           element={
