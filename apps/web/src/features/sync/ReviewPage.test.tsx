@@ -56,6 +56,23 @@ describe('Review queue', () => {
     expect(store.getSnapshot().state.customers['rahman-c4']).toMatchObject({ phone: '01712345678', notes: 'কলার একটু ঢিলা পছন্দ করেন' });
   });
 
+  it('moves focus to the result message once a change is settled', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    await userEvent.click(within(await entry()).getByRole('button', { name: 'এখন যা আছে রাখুন' }));
+    const status = await screen.findByRole('status');
+    expect(document.activeElement).toBe(status);
+  });
+
+  it('starts from the current choices again after cancelling a merge', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    const section = await entry();
+    await userEvent.click(within(section).getByRole('button', { name: 'মিলিয়ে নিন' }));
+    await userEvent.click(within(section).getByRole('radio', { name: 'অপেক্ষমাণ পরিবর্তন: 01712345678' }));
+    await userEvent.click(within(section).getByRole('button', { name: 'বাতিল' }));
+    await userEvent.click(within(section).getByRole('button', { name: 'মিলিয়ে নিন' }));
+    expect(within(section).getByRole('radio', { name: 'এখন যা আছে: 01347594519' })).toHaveProperty('checked', true);
+  });
+
   it('needs the connection to settle anything', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
     const section = await entry();

@@ -1,5 +1,5 @@
 import type { ReviewItem } from '@darzikhata/domain';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/bn';
@@ -15,7 +15,14 @@ export function ReviewPage() {
   const { t } = useI18n();
   const { sync } = useSnapshot();
   const items = useVisibleReview();
-  const [result, setResult] = useState<'settled' | 'gone' | null>(null);
+  const [outcome, setOutcome] = useState<{ ok: boolean; n: number } | null>(null);
+  const result = outcome ? (outcome.ok ? 'settled' : 'gone') : null;
+  const message = useRef<HTMLParagraphElement>(null);
+
+  // The button that was pressed is gone by now, so keep the keyboard user's place on the result.
+  useEffect(() => {
+    if (outcome) message.current?.focus();
+  }, [outcome]);
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
@@ -23,18 +30,18 @@ export function ReviewPage() {
       <p>{t('review.intro')}</p>
       {!sync.online && <p>{t('review.offline')}</p>}
       {result === 'settled' && (
-        <p role="status" className="text-brand-strong">
+        <p ref={message} tabIndex={-1} role="status" className="text-brand-strong outline-none">
           {t('review.settled')}
         </p>
       )}
       {result === 'gone' && (
-        <p role="alert" className="text-danger">
+        <p ref={message} tabIndex={-1} role="alert" className="text-danger outline-none">
           {t('review.gone')}
         </p>
       )}
       {items.length === 0 && <p>{t('review.empty')}</p>}
       {items.map((item) => (
-        <ReviewCard key={item.event.id} item={item} disabled={!sync.online} onDone={(ok) => setResult(ok ? 'settled' : 'gone')} />
+        <ReviewCard key={item.event.id} item={item} disabled={!sync.online} onDone={(ok) => setOutcome((o) => ({ ok, n: (o?.n ?? 0) + 1 }))} />
       ))}
     </div>
   );
@@ -61,9 +68,12 @@ function ReviewCard({ item, disabled, onDone }: { item: ReviewItem; disabled: bo
   async function settle(decision: Parameters<typeof store.resolveReview>[1]) {
     if (busy) return;
     setBusy(true);
-    const result = await store.resolveReview(entry.eventId, decision);
-    setBusy(false);
-    onDone(result.ok);
+    try {
+      const result = await store.resolveReview(entry.eventId, decision);
+      onDone(result.ok);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function saveMerge() {
@@ -133,7 +143,10 @@ function ReviewCard({ item, disabled, onDone }: { item: ReviewItem; disabled: bo
             <Button disabled={off} onClick={saveMerge}>
               {t('review.saveMerge')}
             </Button>
-            <Button variant="secondary" disabled={off} onClick={() => setMerging(false)}>
+            <Button variant="secondary" disabled={off} onClick={() => {
+                setMerging(false);
+                setTaken({});
+              }}>
               {t('common.cancel')}
             </Button>
           </div>
