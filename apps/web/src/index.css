@@ -19,30 +19,30 @@
 }
 
 :root {
-  --brand: #0f766e;
-  --brand-strong: #115e59;
-  --brand-soft: #ccfbf1;
+  --brand: #2563eb;
+  --brand-strong: #1e40af;
+  --brand-soft: #dbeafe;
   --accent: #b45309;
-  --surface: #f6f8f7;
+  --surface: #f8fafc;
   --panel: #ffffff;
-  --ink: #1c2420;
-  --muted: #56655e;
-  --line: #d9e2de;
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: #e2e8f0;
   --danger: #b91c1c;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #2dd4bf;
-    --brand-strong: #5eead4;
-    --brand-soft: #134e4a;
-    --accent: #f59e0b;
-    --surface: #0f1513;
-    --panel: #18201d;
-    --ink: #e7eeeb;
-    --muted: #a0b1a9;
-    --line: #2c3833;
+    --brand: #60a5fa;
+    --brand-strong: #93c5fd;
+    --brand-soft: #1e3a8a;
+    --accent: #fbbf24;
+    --surface: #0b1220;
+    --panel: #121b2e;
+    --ink: #e2e8f0;
+    --muted: #94a3b8;
+    --line: #243049;
     --danger: #f87171;
     color-scheme: dark;
   }
