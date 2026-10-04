@@ -1,5 +1,5 @@
 import { isOrderClosed, moneySummary, orderProgress, type Order } from '@darzikhata/domain';
-import { ArrowLeft, Banknote, EllipsisVertical, MessageCircle, Phone, Printer, Share2 } from 'lucide-react';
+import { ArrowLeft, EllipsisVertical, MessageCircle, Phone, Printer, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -14,39 +14,27 @@ import { useCan } from '../common/hooks';
 import { itemTitle, progressText } from '../common/orderText';
 import { StatusLinkSection } from '../links/StatusLinkSection';
 import { MoneyCard, useMoneyDialogs } from '../payments/OrderMoney';
-import { HandOverDialog } from './itemDialogs';
 import { MobileItemCard } from './MobileItemCard';
-import { nextMove } from './stageMoves';
 import { wearerGroups } from './wearers';
 
 const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
-const BAR_BUTTON = 'min-h-[54px]! rounded-2xl! text-base';
 
-/** The phone order screen: customer, money, garments, and a bottom bar for printing, handing over and taking payment. */
+/** The phone order screen: customer, money, garments, and a bottom bar for printing and taking payment. */
 export function MobileOrderDetail({ order }: { order: Order }) {
-  const { t, language, date } = useI18n();
+  const { t, language, date, money: formatMoney } = useI18n();
   const can = useCan();
   const { state, config } = useSnapshot();
   const { search } = useLocation();
   const money = useMoneyDialogs(order);
   const [sharing, setSharing] = useState(false);
-  const [picking, setPicking] = useState(false);
-  const [handingId, setHandingId] = useState<string | null>(null);
 
   const customer = state.customers[order.customerId];
   const takenBy = config?.staff.find((s) => s.id === order.createdBy)?.name;
   const groups = wearerGroups(order);
   const taken = date(order.createdAt.slice(0, 10));
 
-  const ready = order.items.filter((item) => can('work.updateStage') && nextMove(item)?.stage.group === 'delivered');
   const showTake = can('money.view') && can('payments.record') && moneySummary(order).balance > 0;
-  const hasBar = can('money.view') || ready.length > 0;
-  const handing = order.items.find((item) => item.id === handingId);
-
-  const startHandOver = () => {
-    if (ready.length === 1) setHandingId(ready[0]!.id);
-    else if (ready.length > 1) setPicking(true);
-  };
+  const hasBar = can('money.view');
 
   return (
     <div className={`flex flex-col gap-3 ${hasBar ? BOTTOM_BAR_SPACE : ''}`}>
@@ -97,7 +85,9 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         </section>
       )}
 
-      {can('money.view') && <MoneyCard order={order} open={money.open} />}
+      {can('money.view') && (
+<MoneyCard order={order} open={money.open} />
+      )}
 
       <p className="flex flex-wrap items-center gap-x-2 text-sm">
         <span data-tour="order-status" className="font-semibold">
@@ -133,20 +123,14 @@ export function MobileOrderDetail({ order }: { order: Order }) {
             <Printer aria-hidden="true" size={22} />
           </Link>
         )}
-        {ready.length > 0 && (
-          <Button
-            variant={showTake ? 'secondary' : 'primary'}
-            className={`${BAR_BUTTON} flex-1`}
-            onClick={startHandOver}
-          >
-            {t('order.handOverBar')}
-          </Button>
-        )}
         {showTake && (
-          <Button className={`${BAR_BUTTON} flex-[1.4]`} onClick={() => money.open({ kind: 'take' })}>
-            <Banknote aria-hidden="true" size={20} />
-            {t('payments.take')}
-          </Button>
+          <button
+            type="button"
+            onClick={() => money.open({ kind: 'take' })}
+            className="flex min-h-[54px] flex-[1.4] items-center justify-center rounded-2xl bg-brand-soft px-3 text-base font-bold text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            {t('payments.take')} · {formatMoney(moneySummary(order).balance)}
+          </button>
         )}
       </BottomBar>
       )}
@@ -168,37 +152,6 @@ export function MobileOrderDetail({ order }: { order: Order }) {
           </div>
         </Dialog>
       )}
-      {picking && (
-        <Dialog
-          open
-          title={t('order.handOverPick')}
-          onClose={() => setPicking(false)}
-          actions={
-            <Button variant="secondary" onClick={() => setPicking(false)}>
-              {t('common.cancel')}
-            </Button>
-          }
-        >
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {ready.map((item) => (
-              <li key={item.id}>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setPicking(false);
-                    setHandingId(item.id);
-                  }}
-                >
-                  {itemTitle(order, item, language)}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Dialog>
-      )}
-      {handing && <HandOverDialog order={order} item={handing} onClose={() => setHandingId(null)} />}
     </div>
   );
 }

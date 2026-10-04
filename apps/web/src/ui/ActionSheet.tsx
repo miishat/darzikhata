@@ -11,18 +11,20 @@ export interface ActionSheetProps {
   label: string;
   icon: LucideIcon;
   title: string;
+  /** Extra classes for the opening button. */
+  triggerClassName?: string;
   /** The items; call close() before opening something else so two sheets are never stacked. */
   children(close: () => void): ReactNode;
 }
 
 /** An overflow menu: an icon button that opens a sheet holding a list of actions. */
-export function ActionSheet({ label, icon, title, children }: ActionSheetProps) {
+export function ActionSheet({ label, icon, title, triggerClassName = '', children }: ActionSheetProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
     <>
-      <IconButton label={label} icon={icon} aria-haspopup="dialog" onClick={() => setOpen(true)} />
+      <IconButton label={label} icon={icon} className={triggerClassName} aria-haspopup="dialog" onClick={() => setOpen(true)} />
       <Dialog
         open={open}
         title={title}

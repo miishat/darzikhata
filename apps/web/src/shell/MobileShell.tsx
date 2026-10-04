@@ -1,11 +1,10 @@
 import { can, type Role } from '@darzikhata/domain';
-import { Plus } from 'lucide-react';
+import { Plus, UserRound } from 'lucide-react';
 import { Suspense, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Loading } from '../app/guards';
 import { useCurrentStaff } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { initialsOf } from '../ui/Avatar';
 import { AccountMenu } from './AccountMenu';
 import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
@@ -60,7 +59,7 @@ export function MobileShell({ role }: { role: Role }) {
             className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-navy font-display font-semibold text-on-navy">
-              {initialsOf(current.staff.name.trim().split(/\s+/)[0] ?? '')}
+              <UserRound size={20} />
             </span>
           </button>
         )}

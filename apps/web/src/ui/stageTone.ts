@@ -17,3 +17,14 @@ export function stageTone(stage: Stage | undefined, group: SummaryGroup, index: 
   if (stage && BY_KEY[stage.key]) return BY_KEY[stage.key]!;
   return index === 0 ? 'booked' : 'working';
 }
+
+/** Full literal class names (so Tailwind can see them) for a tinted band in a stage's colours. */
+export const TONE_BAND: Record<Tone, string> = {
+  booked: 'bg-tone-booked-bg text-tone-booked-fg',
+  cutting: 'bg-tone-cutting-bg text-tone-cutting-fg',
+  working: 'bg-tone-working-bg text-tone-working-fg',
+  trial: 'bg-tone-trial-bg text-tone-trial-fg',
+  ready: 'bg-tone-ready-bg text-tone-ready-fg',
+  done: 'bg-tone-done-bg text-tone-done-fg',
+  cancelled: 'bg-tone-cancelled-bg text-tone-cancelled-fg',
+};
