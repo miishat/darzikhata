@@ -13,7 +13,7 @@ import {
   type ShopState,
 } from '@darzikhata/domain';
 
-export type OrderStatusFilter = 'all' | 'open' | 'ready' | 'overdue' | 'closed';
+export type OrderStatusFilter = 'all' | 'open' | 'trial' | 'ready' | 'overdue' | 'closed';
 export type OrderSort = 'newest' | 'oldest' | 'delivery' | 'balance';
 
 export interface OrderListQuery {
@@ -35,6 +35,8 @@ export interface OrderRow {
   /** Earliest promised date among garments not yet handed over. */
   nextDelivery: string | null;
   overdue: boolean;
+  /** A garment is at the trial stage or has its trial today (not delivered, not cancelled). */
+  trial: boolean;
   total: Poisha;
   /** Negative when the shop owes the customer. */
   balance: Poisha;
@@ -52,12 +54,14 @@ export interface OrderPage {
 export function orderRow(order: Order, state: ShopState, today: string): OrderRow {
   let nextDelivery: string | null = null;
   let overdue = false;
+  let trial = false;
   const workers: string[] = [];
   for (const item of order.items) {
     if (item.cancelled) continue;
     if (item.assignedTo && !workers.includes(item.assignedTo)) workers.push(item.assignedTo);
     const group = itemSummaryGroup(item);
     if (group === 'delivered') continue;
+    if (group === 'unfinished' && (item.stageKey === 'trial' || item.trialDate === today)) trial = true;
     if (item.deliveryDate) {
       if (nextDelivery === null || item.deliveryDate < nextDelivery) nextDelivery = item.deliveryDate;
       if (group === 'unfinished' && item.deliveryDate < today) overdue = true;
@@ -69,6 +73,7 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
     progress: orderProgress(order),
     nextDelivery,
     overdue,
+    trial,
     total: orderTotal(order),
     balance: balanceDue(order),
     workers,
@@ -81,6 +86,8 @@ function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {
       return true;
     case 'open':
       return !isOrderClosed(row.order);
+    case 'trial':
+      return row.trial;
     case 'ready':
       return row.progress.ready > 0;
     case 'overdue':
@@ -119,6 +126,17 @@ function compare(sort: OrderSort): (a: OrderRow, b: OrderRow) => number {
   }
 }
 
+/** Orders per chip. The search text is ignored on purpose, so the numbers stay put while typing. */
+export function statusCounts(state: ShopState, today: string): Record<OrderStatusFilter | 'owed', number> {
+  const counts = { all: 0, open: 0, trial: 0, ready: 0, overdue: 0, closed: 0, owed: 0 };
+  for (const order of Object.values(state.orders)) {
+    const row = orderRow(order, state, today);
+    for (const status of STATUSES) if (matchesStatus(row, status)) counts[status] += 1;
+    if (row.balance > 0) counts.owed += 1;
+  }
+  return counts;
+}
+
 export function queryOrders(state: ShopState, query: OrderListQuery, today: string, pageSize = PAGE_SIZE): OrderPage {
   const matched = Object.values(state.orders)
     .map((order) => orderRow(order, state, today))
@@ -129,7 +147,7 @@ export function queryOrders(state: ShopState, query: OrderListQuery, today: stri
   return { rows: matched.slice((page - 1) * pageSize, page * pageSize), total: matched.length, page, pages };
 }
 
-const STATUSES: readonly OrderStatusFilter[] = ['all', 'open', 'ready', 'overdue', 'closed'];
+const STATUSES: readonly OrderStatusFilter[] = ['all', 'open', 'trial', 'ready', 'overdue', 'closed'];
 const SORTS: readonly OrderSort[] = ['newest', 'oldest', 'delivery', 'balance'];
 
 /** Reads the list state from the URL; anything unknown falls back to the default. */

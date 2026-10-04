@@ -1,7 +1,7 @@
 import { emptyState, type ShopState } from '@darzikhata/domain';
 import { makeItem, makeOrder, makePayment } from '@darzikhata/domain/testing';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LIST_QUERY, orderRow, queryOrders, readListQuery, writeListQuery, type OrderListQuery } from './orderList';
+import { DEFAULT_LIST_QUERY, orderRow, queryOrders, statusCounts, readListQuery, writeListQuery, type OrderListQuery } from './orderList';
 
 const TODAY = '2026-10-03';
 const customer = (id: string, name: string, phone: string) => ({
@@ -67,6 +67,24 @@ describe('queryOrders', () => {
     expect(numbers({ status: 'closed' })).toEqual(['A-0003']);
   });
 
+  it('filters trials: a garment at the trial stage or with its trial today, not finished or cancelled', () => {
+    const s = state();
+    const extra = [
+      makeOrder({ id: 'o5', number: 'C-0001', customerId: 'rahim', createdAt: '2026-10-02T06:00:00.000Z', items: [makeItem({ id: 'g', stageKey: 'trial' })] }),
+      makeOrder({ id: 'o6', number: 'C-0002', customerId: 'karim', createdAt: '2026-10-02T07:00:00.000Z', items: [makeItem({ id: 'h', stageKey: 'stitching', trialDate: TODAY })] }),
+      makeOrder({ id: 'o7', number: 'C-0003', customerId: 'karim', createdAt: '2026-10-02T08:00:00.000Z', items: [makeItem({ id: 'i', stageKey: 'stitching', trialDate: '2026-10-05' })] }),
+      makeOrder({ id: 'o8', number: 'C-0004', customerId: 'karim', createdAt: '2026-10-02T09:00:00.000Z', items: [makeItem({ id: 'j', stageKey: 'trial', cancelled: { reason: 'x', at: '', by: '' } })] }),
+      makeOrder({ id: 'o9', number: 'C-0005', customerId: 'karim', createdAt: '2026-10-02T10:00:00.000Z', items: [makeItem({ id: 'k', stageKey: 'delivered', trialDate: TODAY })] }),
+    ];
+    for (const o of extra) s.orders[o.id] = o;
+    const found = queryOrders(s, { ...DEFAULT_LIST_QUERY, status: 'trial', sort: 'oldest' }, TODAY).rows.map((r) => r.order.number);
+    expect(found).toEqual(['C-0001', 'C-0002']);
+  });
+
+  it('counts orders per chip, ignoring the search text', () => {
+    expect(statusCounts(state(), TODAY)).toEqual({ all: 4, open: 3, trial: 0, ready: 1, overdue: 1, closed: 1, owed: 2 });
+  });
+
   it('searches order numbers, names and phones, combined with other filters', () => {
     expect(numbers({ text: '1' })).toEqual(['B-0001', 'A-0001']);
     expect(numbers({ text: 'রহিম' })).toEqual(['A-0003', 'A-0001']);
@@ -92,9 +110,9 @@ describe('queryOrders', () => {
 
 describe('list query in the URL', () => {
   it('round-trips and leaves defaults out', () => {
-    const query: OrderListQuery = { text: 'রহিম', status: 'overdue', dueOnly: true, sort: 'delivery', page: 3 };
+    const query: OrderListQuery = { text: 'রহিম', status: 'trial', dueOnly: true, sort: 'delivery', page: 3 };
     const params = writeListQuery(query);
-    expect(params.toString()).toBe('q=%E0%A6%B0%E0%A6%B9%E0%A6%BF%E0%A6%AE&status=overdue&due=1&sort=delivery&page=3');
+    expect(params.toString()).toBe('q=%E0%A6%B0%E0%A6%B9%E0%A6%BF%E0%A6%AE&status=trial&due=1&sort=delivery&page=3');
     expect(readListQuery(params)).toEqual(query);
     expect(writeListQuery(DEFAULT_LIST_QUERY).toString()).toBe('');
   });

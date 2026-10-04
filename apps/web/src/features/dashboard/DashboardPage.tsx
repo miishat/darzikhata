@@ -105,7 +105,7 @@ export function DashboardPage() {
             <span className="text-sm text-on-navy-muted">{date(today, { year: false })}</span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} />
+            <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} />
             <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} />
             <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} />
             <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late />

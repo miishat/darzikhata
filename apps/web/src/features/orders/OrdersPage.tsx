@@ -7,9 +7,11 @@ import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useToday } from '../common/hooks';
 import { OrderCards } from './OrderCards';
 import { OrderDetail } from './OrderDetail';
-import { OrderFilters } from './OrderFilters';
+import { OrderFilters, SortButton } from './OrderFilters';
 import { OrderTable } from './OrderTable';
-import { DEFAULT_LIST_QUERY, queryOrders, readListQuery, writeListQuery, type OrderListQuery } from './orderList';
+import { DEFAULT_LIST_QUERY, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
+
+const EMPTY_COUNTS = { all: 0, open: 0, trial: 0, ready: 0, overdue: 0, closed: 0, owed: 0 };
 
 /**
  * The orders list. One route serves it with and without an open order, so the list,
@@ -38,13 +40,14 @@ export function OrdersPage() {
     [state, text, status, dueOnly, sort, page, today],
   );
 
+  const counts = useMemo(() => (kind === 'mobile' ? statusCounts(state, today) : null), [kind, state, today]);
   const update = (next: OrderListQuery) => setParams(writeListQuery(next), { replace: true });
   const change = (fields: Partial<OrderListQuery>) => update({ ...query, ...fields, page: fields.page ?? 1 });
   const closeOrder = () => navigate({ pathname: '/app/orders', search });
 
   const list = (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
-      <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} />
+      <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts ?? EMPTY_COUNTS} />
       <p className="text-sm text-muted">{t('orders.count', { n: number(result.total) })}</p>
       {result.rows.length === 0 ? (
         <p className="text-muted">{t('orders.empty')}</p>
@@ -75,7 +78,10 @@ export function OrdersPage() {
       </div>
     ) : (
       <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-semibold">{t('nav.orders')}</h1>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="font-display text-2xl font-bold">{t('nav.orders')}</h1>
+          <SortButton sort={sort} onChange={(next) => change({ sort: next })} />
+        </div>
         {list}
       </div>
     );

@@ -36,6 +36,39 @@ describe('Orders list', () => {
     expect(await screen.findByText('৪০টি অর্ডার')).toBeTruthy();
   });
 
+  it('filters with chips on a phone, with counts that ignore the search, and Owed maps to money due', async () => {
+    const { store, router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    const today = todayInDhaka(new Date());
+    const state = store.getSnapshot().state;
+    const bn = (n: number) => toBanglaDigits(String(n));
+    const chips = within(await screen.findByRole('group', { name: 'অবস্থা অনুযায়ী দেখুন' }));
+    const late = queryOrders(state, { ...DEFAULT_LIST_QUERY, status: 'overdue' }, today).total;
+    const owed = queryOrders(state, { ...DEFAULT_LIST_QUERY, dueOnly: true }, today).total;
+    expect(chips.getAllByRole('button').map((b) => b.textContent!.replace(/[০-৯]+$/, ''))).toEqual([
+      'সব', 'চলমান', 'ট্রায়াল', 'রেডি', 'দেরি', 'বাকি আছে',
+    ]);
+
+    await userEvent.click(chips.getByRole('button', { name: new RegExp(`^দেরি\s*${bn(late)}$`) }));
+    expect(await screen.findByText(`${bn(late)}টি অর্ডার`)).toBeTruthy();
+    expect(router.state.location.search).toBe('?status=overdue');
+
+    await userEvent.type(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }), 'zzzz');
+    expect(chips.getByRole('button', { name: new RegExp(`^দেরি\s*${bn(late)}$`) })).toBeTruthy();
+
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }));
+    await userEvent.click(chips.getByRole('button', { name: new RegExp(`^বাকি আছে\s*${bn(owed)}$`) }));
+    expect(await screen.findByText(`${bn(owed)}টি অর্ডার`)).toBeTruthy();
+    expect(router.state.location.search).toBe('?due=1');
+  });
+
+  it('sorts from a sheet opened by the header button on a phone', async () => {
+    const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    await userEvent.click(await screen.findByRole('button', { name: 'সাজান: নতুন আগে' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'ডেলিভারির তারিখ' }));
+    expect(router.state.location.search).toBe('?sort=delivery');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('finds an order by its number typed in Bangla digits', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
     await userEvent.type(await screen.findByLabelText('অর্ডার নম্বর, নাম বা ফোন'), '৪০');

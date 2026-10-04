@@ -84,6 +84,14 @@ describe('Dashboard on a phone', () => {
     expect(router.state.location.search).toBe('?status=ready');
   });
 
+  it('points the Trial tile at the Trial filter', async () => {
+    const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
+    await screen.findByRole('region', { name: 'আজকের কাজ' });
+    await userEvent.click(tile(/ট্রায়াল/));
+    expect(router.state.location.pathname).toBe('/app/orders');
+    expect(router.state.location.search).toBe('?status=trial&sort=delivery');
+  });
+
   it('lists at most six rows, each the whole link to its order, with money cards linking to Payments', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
     const list = within(await screen.findByRole('region', { name: 'এখন যা করতে হবে' }));
