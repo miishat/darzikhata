@@ -13,6 +13,7 @@
   --font-display: 'Anek Bangla', 'Noto Sans Bengali', system-ui, sans-serif;
   --color-navy: var(--navy);
   --color-navy-raised: var(--navy-raised);
+  --color-on-navy: var(--on-navy);
   --color-on-navy-muted: var(--on-navy-muted);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
@@ -71,6 +72,8 @@
   --brand-soft: #e7eeff;
   --navy: #13235b;
   --navy-raised: #1e3375;
+  --on-navy: #ffffff;
+
   --on-navy-muted: #b9c6f0;
   --accent: #b45309;
   --surface: #f4f6fb;
@@ -136,6 +139,8 @@
     --on-brand: #0b1220;
     --navy: #0f1a44;
     --navy-raised: #1a2a63;
+    --on-navy: #f1f5f9;
+
     --on-navy-muted: #b9c6f0;
     --warn: #fb923c;
     --warn-soft: #3b1d0c;
@@ -193,6 +198,8 @@
   --on-brand: #0b1220;
   --navy: #0f1a44;
   --navy-raised: #1a2a63;
+  --on-navy: #f1f5f9;
+
   --on-navy-muted: #b9c6f0;
   --warn: #fb923c;
   --warn-soft: #3b1d0c;

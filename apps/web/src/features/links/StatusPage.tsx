@@ -55,11 +55,11 @@ export function StatusPage() {
       <div className="flex justify-end p-3">
         <LanguageToggle />
       </div>
-      <header className="rounded-b-[28px] bg-navy px-6 pt-6 pb-6 text-white">
+      <header className="rounded-b-[28px] bg-navy px-6 pt-6 pb-6 text-on-navy">
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-white font-display text-xl font-bold text-navy"
+            className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-on-navy font-display text-xl font-bold text-navy"
           >
             {shopInitial}
           </span>

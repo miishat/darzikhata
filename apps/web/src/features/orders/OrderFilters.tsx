@@ -80,7 +80,6 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
   );
 }
 
-
 /** Search, status, money and sort controls, and the chips for whatever is switched on. */
 export function OrderFilters({ query, onChange, onClear, counts }: Props) {
   const { t, number } = useI18n();
@@ -89,10 +88,36 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
   const money = can('money.view');
   const sorts = useSortOptions();
 
+  const active: string[] = [];
+  if (query.status !== DEFAULT_LIST_QUERY.status) active.push(t('orders.filterStatus', { status: t(`orders.status.${query.status}`) }));
+  if (query.text.trim()) active.push(t('orders.filterText', { text: query.text.trim() }));
+  if (query.dueOnly && money) active.push(t('orders.dueOnly'));
+
+  const activeList = (list: string[]) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <ul aria-label={t('orders.activeFilters')} className="flex flex-wrap gap-2">
+        {list.map((chip) => (
+          <li key={chip} className="rounded-full border border-line bg-brand-soft px-3 py-1 text-sm text-brand-strong">
+            {chip}
+          </li>
+        ))}
+      </ul>
+      <Button variant="ghost" onClick={onClear}>
+        {t('orders.clearFilters')}
+      </Button>
+    </div>
+  );
+
   if (kind === 'mobile') {
     // A phone filters by one chip at a time; Owed is the money filter and stands in for the status.
     const chips = CHIPS.filter((value) => value !== 'owed' || money);
     const selected = query.dueOnly && money ? 'owed' : query.status;
+    // One chip cannot show closed orders, or money due together with a status; list those so they are not hidden.
+    const hidden: string[] = [];
+    if (query.status === 'closed' || (query.dueOnly && money && query.status !== 'all')) {
+      if (query.status !== 'all') hidden.push(t('orders.filterStatus', { status: t(`orders.status.${query.status}`) }));
+      if (query.dueOnly && money) hidden.push(t('orders.dueOnly'));
+    }
     return (
       <div className="flex flex-col gap-2">
         <label className="flex min-h-12 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">
@@ -114,14 +139,10 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
             onChange(value === 'owed' ? { status: 'all', dueOnly: true } : { status: value as OrderStatusFilter, dueOnly: false })
           }
         />
+        {hidden.length > 0 && activeList(hidden)}
       </div>
     );
   }
-
-  const chips: string[] = [];
-  if (query.status !== DEFAULT_LIST_QUERY.status) chips.push(t('orders.filterStatus', { status: t(`orders.status.${query.status}`) }));
-  if (query.text.trim()) chips.push(t('orders.filterText', { text: query.text.trim() }));
-  if (query.dueOnly && money) chips.push(t('orders.dueOnly'));
 
   return (
     <div className="flex flex-col gap-3">
@@ -147,20 +168,7 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
         />
       </div>
       {money && <Checkbox label={t('orders.dueOnly')} checked={query.dueOnly} onChange={(dueOnly) => onChange({ dueOnly })} />}
-      {chips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <ul aria-label={t('orders.activeFilters')} className="flex flex-wrap gap-2">
-            {chips.map((chip) => (
-              <li key={chip} className="rounded-full border border-line bg-brand-soft px-3 py-1 text-sm text-brand-strong">
-                {chip}
-              </li>
-            ))}
-          </ul>
-          <Button variant="ghost" onClick={onClear}>
-            {t('orders.clearFilters')}
-          </Button>
-        </div>
-      )}
+      {active.length > 0 && activeList(active)}
     </div>
   );
 }

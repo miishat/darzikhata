@@ -1,12 +1,13 @@
 import { balanceDue, orderProgress, type Order } from '@darzikhata/domain';
 import { ArrowLeft, MessageCircle, Phone } from 'lucide-react';
-import { useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
 import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
 import { buttonClasses } from '../../ui/Button';
+import { rovingTabsKeyDown } from '../../ui/rovingTabs';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { progressText } from '../common/orderText';
@@ -41,9 +42,15 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
 
   if (!customer) {
     return (
-      <p role="alert" className="text-danger">
-        {t('customers.notFound')}
-      </p>
+      <div className="flex flex-col gap-3">
+        <Link to="/app/customers" className="inline-flex min-h-11 items-center gap-2 self-start text-brand-strong focus-visible:outline-2 focus-visible:outline-brand">
+          <ArrowLeft aria-hidden="true" size={20} />
+          {t('customers.back')}
+        </Link>
+        <p role="alert" className="text-danger">
+          {t('customers.notFound')}
+        </p>
+      </div>
     );
   }
 
@@ -65,19 +72,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
     { key: 'orders', label: t('customer.tab.orders') },
     ...(showMoney ? [{ key: 'money' as const, label: t('customer.tab.money') }] : []),
   ];
-  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const index = tabs.findIndex((x) => x.key === tab);
-    let target = -1;
-    if (e.key === 'ArrowRight') target = (index + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') target = (index - 1 + tabs.length) % tabs.length;
-    else if (e.key === 'Home') target = 0;
-    else if (e.key === 'End') target = tabs.length - 1;
-    if (target < 0) return;
-    e.preventDefault();
-    const next = tabs[target]!;
-    setTab(next.key);
-    document.getElementById(`customer-tab-${next.key}`)?.focus();
-  };
+  const onKeyDown = rovingTabsKeyDown(tabs.map((x) => x.key), tab, setTab, (k) => `customer-tab-${k}`);
 
   return (
     <div className={`flex flex-col gap-3 ${canMeasure || canOrder ? BOTTOM_BAR_SPACE : ''}`}>

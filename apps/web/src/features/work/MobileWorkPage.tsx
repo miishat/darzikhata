@@ -6,6 +6,7 @@ import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { rovingTabsKeyDown } from '../../ui/rovingTabs';
 import { DueLabel } from '../../ui/DueLabel';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
@@ -105,6 +106,7 @@ export function MobileWorkPage() {
   const phase: WorkPhase = chosen ?? (['making', 'start', 'finish'] as const).find((p) => counts[p] > 0) ?? 'making';
   const refs = all.filter((r) => workPhase(r.item) === phase);
   const search = params.toString();
+  const onKeyDown = rovingTabsKeyDown(WORK_PHASES, phase, setChosen, (p) => `work-tab-${p}`);
 
   return (
     <div className="flex flex-col gap-3">
@@ -133,7 +135,9 @@ export function MobileWorkPage() {
               role="tab"
               aria-selected={active}
               aria-controls="work-panel"
+              tabIndex={active ? 0 : -1}
               onClick={() => setChosen(p)}
+              onKeyDown={onKeyDown}
               className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-1 text-[15px] focus-visible:outline-2 focus-visible:outline-brand ${
                 active ? 'bg-panel font-bold text-brand-strong shadow-sm' : 'text-muted'
               }`}

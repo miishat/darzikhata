@@ -48,7 +48,7 @@ function Tile({ to, label, count, icon: Icon, late }: { to: string; label: strin
     <Link
       to={to}
       className={`flex min-h-11 flex-col gap-1.5 rounded-2xl p-3.5 focus-visible:outline-2 focus-visible:outline-brand ${
-        late ? 'bg-warn-soft text-warn-ink' : 'bg-navy-raised text-white'
+        late ? 'bg-warn-soft text-warn-ink' : 'bg-navy-raised text-on-navy'
       }`}
     >
       <span className={`flex items-center gap-2 text-sm ${late ? 'font-semibold' : 'text-on-navy-muted'}`}>
@@ -99,7 +99,7 @@ export function DashboardPage() {
     return (
       <section className="flex flex-col gap-4">
         <h1 className="sr-only">{t('nav.dashboard')}</h1>
-        <section aria-label={t('dashboard.title')} className="flex flex-col gap-3.5 rounded-3xl bg-navy p-4 text-white">
+        <section aria-label={t('dashboard.title')} className="flex flex-col gap-3.5 rounded-3xl bg-navy p-4 text-on-navy">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="font-display text-xl font-semibold">{t('dashboard.title')}</h2>
             <span className="text-sm text-on-navy-muted">{date(today, { year: false })}</span>

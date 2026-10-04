@@ -62,7 +62,7 @@ export function MeasureKeypad({ value, onChange, onNext, label, previous }: Meas
         <span className="font-semibold">{label}</span>
         {previous && <span className="text-sm text-muted">{t('ui.keypadPrevious', { value: previous })}</span>}
       </div>
-      <output data-testid="keypad-value" className="block min-h-10 font-display text-3xl font-semibold">
+      <output data-testid="keypad-value" aria-label={`${label} ${value}`.trim()} className="block min-h-10 font-display text-3xl font-semibold">
         {value}
       </output>
       <div className="grid grid-cols-4 gap-2">

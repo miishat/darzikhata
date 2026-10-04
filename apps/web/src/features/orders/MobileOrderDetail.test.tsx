@@ -138,7 +138,7 @@ describe('Order detail on a phone', () => {
     const { store, order } = await openOrder('rahman', (o) => o.items.some((i) => !i.cancelled && i.stageKey === 'cutting'));
     const item = order.items.find((i) => !i.cancelled && i.stageKey === 'cutting')!;
     const card = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(order.items.indexOf(item) + 1))}` });
-    const button = within(card).getByRole('button', { name: 'কাটিং শেষ, সেলাই এ দিন' });
+    const button = within(card).getByRole('button', { name: 'কাটিং শেষ, পরের ধাপ: সেলাই' });
     expect(button.className).not.toMatch(/(^|\s)bg-brand(\s|$)/);
     await userEvent.click(button);
     await act(async () => undefined);

@@ -2,9 +2,19 @@ import { avatarTone } from './avatarTone';
 
 const SIZES = { sm: 'size-8 text-xs', md: 'size-10 text-sm', lg: 'size-14 text-xl', xl: 'size-[72px] text-3xl' };
 
-/** One letter with its attached vowel signs and marks, so "মোহাম্মদ" gives "মো". */
-function firstCluster(word: string): string {
-  return /^[\p{L}\p{N}]\p{M}*/u.exec(word)?.[0] ?? '';
+/** Fallback when Intl.Segmenter is missing: a letter, its marks, and any conjunct after a virama. */
+const CLUSTER = new RegExp(
+  String.raw`^[\p{L}\p{N}](?:[\p{M}‌‍]|(?<=[्্੍્୍்్್്])\p{L})*`,
+  'u',
+);
+
+/** One user-perceived letter, so "মোহাম্মদ" gives "মো" and "স্বপন" gives "স্ব", never a dangling virama. */
+export function firstCluster(word: string, useSegmenter = typeof Intl !== 'undefined' && 'Segmenter' in Intl): string {
+  if (useSegmenter) {
+    const first = new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(word)[Symbol.iterator]().next().value?.segment ?? '';
+    return /^[\p{L}\p{N}]/u.test(first) ? first : '';
+  }
+  return CLUSTER.exec(word)?.[0] ?? '';
 }
 
 /** One cluster for a single word, the first clusters of the first two words otherwise. */

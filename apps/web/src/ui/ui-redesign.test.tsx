@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { Bell } from 'lucide-react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../i18n/I18nProvider';
-import { Avatar, initialsOf } from './Avatar';
+import { Avatar, firstCluster, initialsOf } from './Avatar';
 import { BottomBar } from './BottomBar';
 import { ChipGroup } from './ChipGroup';
 import { DueLabel } from './DueLabel';
@@ -60,6 +60,13 @@ describe('Avatar', () => {
     inBangla(<Avatar id="c1" name="মোহাম্মদ" />);
     const avatar = screen.getByText('মো');
     expect(avatar.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps a conjunct whole, with or without Intl.Segmenter', () => {
+    expect(initialsOf('স্বপন')).toBe('স্ব');
+    expect(firstCluster('স্বপন', true)).toBe('স্ব');
+    expect(firstCluster('স্বপন', false)).toBe('স্ব');
+    expect(firstCluster('মোহাম্মদ', false)).toBe('মো');
   });
 
   it('uses two initials for two Latin words', () => {
@@ -164,6 +171,12 @@ describe('MeasureKeypad', () => {
     expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮½');
     await userEvent.click(screen.getByRole('button', { name: 'তিন চতুর্থাংশ' }));
     expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮¾');
+  });
+
+  it('names the value display with the measurement label', async () => {
+    inBangla(<Harness />);
+    await userEvent.click(screen.getByRole('button', { name: '৩' }));
+    expect(screen.getByTestId('keypad-value').getAttribute('aria-label')).toBe('বুক ৩');
   });
 
   it('deletes one character and moves on', async () => {

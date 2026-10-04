@@ -427,7 +427,7 @@ export const bn = {
   'item.price': 'দাম',
   'item.cancel': 'আইটেম বাতিল',
   'item.cancelReason': 'বাতিলের কারণ',
-  'item.nextFromTo': '{from} শেষ, {to} এ দিন',
+  'item.nextFromTo': '{from} শেষ, পরের ধাপ: {to}',
   'item.details': 'নোট ও ইতিহাস',
   'item.measureSummary': 'মাপ',
   'item.measureTitle': '{item} এর মাপ',

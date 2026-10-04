@@ -48,17 +48,26 @@ describe('Orders list', () => {
       'সব', 'চলমান', 'ট্রায়াল', 'রেডি', 'দেরি', 'বাকি আছে',
     ]);
 
-    await userEvent.click(chips.getByRole('button', { name: new RegExp(`^দেরি\s*${bn(late)}$`) }));
+    await userEvent.click(chips.getByRole('button', { name: new RegExp(String.raw`^দেরি\s*${bn(late)}$`) }));
     expect(await screen.findByText(`${bn(late)}টি অর্ডার`)).toBeTruthy();
     expect(router.state.location.search).toBe('?status=overdue');
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }), 'zzzz');
-    expect(chips.getByRole('button', { name: new RegExp(`^দেরি\s*${bn(late)}$`) })).toBeTruthy();
+    expect(chips.getByRole('button', { name: new RegExp(String.raw`^দেরি\s*${bn(late)}$`) })).toBeTruthy();
 
     await userEvent.clear(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }));
-    await userEvent.click(chips.getByRole('button', { name: new RegExp(`^বাকি আছে\s*${bn(owed)}$`) }));
+    await userEvent.click(chips.getByRole('button', { name: new RegExp(String.raw`^বাকি আছে\s*${bn(owed)}$`) }));
     expect(await screen.findByText(`${bn(owed)}টি অর্ডার`)).toBeTruthy();
     expect(router.state.location.search).toBe('?due=1');
+  });
+
+  it('lists a phone filter that no chip shows, with a way to clear it', async () => {
+    const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders?status=closed' });
+    const list = within(await screen.findByRole('list', { name: 'চালু ফিল্টার' }));
+    expect(list.getByText('অবস্থা: শেষ')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'সব ফিল্টার মুছুন' }));
+    expect(router.state.location.search).toBe('');
+    expect(screen.queryByRole('list', { name: 'চালু ফিল্টার' })).toBeNull();
   });
 
   it('sorts from a sheet opened by the header button on a phone', async () => {

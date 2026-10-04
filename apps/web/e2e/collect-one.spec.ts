@@ -26,8 +26,9 @@ test('handing over one garment leaves the order open', async ({ page }) => {
   await expect(dialog).toBeHidden();
 
   // The laptop panel says "ধাপ: ডেলিভারি হয়েছে"; the phone card shows a stage pill and tracker instead,
-  // so there the fewer hand-over buttons below are the proof.
+  // so there the delivered pill and the fewer hand-over buttons below are the proof.
   if (!isPhone(page)) await expect(detail.getByText('ধাপ: ডেলিভারি হয়েছে')).toHaveCount(1);
+  else await expect(detail.getByText('ডেলিভারি হয়েছে', { exact: true }).first()).toBeVisible();
   await expect(detail.getByRole('button', { name: 'হস্তান্তর করুন' })).toHaveCount(2);
   await expect(detail.getByText('চলমান', { exact: true })).toBeVisible();
 });

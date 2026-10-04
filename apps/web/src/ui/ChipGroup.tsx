@@ -22,7 +22,7 @@ export function ChipGroup({ label, options, value, onChange, trailing }: ChipGro
     <div
       role="group"
       aria-label={label}
-      className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 -my-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {options.map((option) => {
         const selected = option.value === value;
