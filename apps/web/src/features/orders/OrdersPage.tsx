@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
@@ -70,12 +70,7 @@ export function OrdersPage() {
 
   if (kind === 'mobile') {
     return orderId ? (
-      <div className="flex flex-col gap-3">
-        <Link to={{ pathname: '/app/orders', search }} className="w-fit text-brand-strong underline">
-          {t('orders.back')}
-        </Link>
-        <OrderDetail orderId={orderId} />
-      </div>
+      <OrderDetail orderId={orderId} />
     ) : (
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">

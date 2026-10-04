@@ -68,7 +68,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="w-full max-w-md rounded-xl bg-panel p-5 shadow-xl outline-none"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl bg-panel p-5 shadow-xl outline-none"
       >
         <h2 id={titleId} className="text-lg font-semibold">
           {title}

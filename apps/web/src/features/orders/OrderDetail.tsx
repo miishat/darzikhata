@@ -1,7 +1,8 @@
-import { isOrderClosed, orderProgress } from '@darzikhata/domain';
+import { isOrderClosed, orderProgress, type Order } from '@darzikhata/domain';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { Button, buttonClasses } from '../../ui/Button';
 import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
@@ -9,6 +10,7 @@ import { StatusLinkSection } from '../links/StatusLinkSection';
 import { progressText } from '../common/orderText';
 import { OrderMoney } from '../payments/OrderMoney';
 import { ItemCard } from './ItemCard';
+import { MobileOrderDetail } from './MobileOrderDetail';
 import { wearerGroups } from './wearers';
 
 interface Props {
@@ -19,7 +21,8 @@ interface Props {
 
 /** One order: number, customer, when it was taken, whether it is still open, and progress. */
 export function OrderDetail({ orderId, onClose }: Props) {
-  const { t, language, date } = useI18n();
+  const { t } = useI18n();
+  const { kind } = useShell();
   const { state } = useSnapshot();
   const can = useCan();
   const { allowed } = useBranchScope();
@@ -39,6 +42,15 @@ export function OrderDetail({ orderId, onClose }: Props) {
       </p>
     );
   }
+  if (kind === 'mobile') return <MobileOrderDetail order={order} />;
+  return <DesktopOrderDetail order={order} {...(onClose ? { onClose } : {})} />;
+}
+
+/** The desktop order panel: everything on one scrolling column, with its buttons inline. */
+function DesktopOrderDetail({ order, onClose }: { order: Order; onClose?: () => void }) {
+  const { t, language, date } = useI18n();
+  const { state } = useSnapshot();
+  const can = useCan();
   const customer = state.customers[order.customerId];
   const groups = wearerGroups(order);
 
