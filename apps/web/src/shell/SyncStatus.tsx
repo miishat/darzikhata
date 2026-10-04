@@ -29,11 +29,10 @@ const DOT: Record<string, string> = {
 
 /** The header's sync status. It opens the sync dialog: online switch, waiting changes, review and the demo's other device. */
 export function SyncButton({ block = false }: { block?: boolean }) {
-  const { t, number } = useI18n();
+  const { t, number, dateTime } = useI18n();
   const { sync } = useSnapshot();
   const status = useSyncStatus();
   const [open, setOpen] = useState(false);
-  const { dateTime } = useI18n();
   const label = t(STATUS_KEY[status]!) + (sync.pending > 0 ? ` · ${t('sync.waiting', { count: number(sync.pending) })}` : '');
   return (
     <>

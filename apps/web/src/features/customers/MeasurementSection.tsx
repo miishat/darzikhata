@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { buttonClasses } from '../../ui/Button';
+import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { MeasurementComparisonTable } from './MeasurementTable';
 import { comparisonColumns } from './measurementView';
@@ -110,10 +111,11 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
 function GarmentPanel({ customerId, template }: { customerId: string; template: GarmentTemplate }) {
   const { t } = useI18n();
   const { state, config } = useSnapshot();
+  const scoped = useScopedState();
 
   const profile = state.profiles[`${customerId}:${template.id}`];
   const current = profile ? currentVersion(profile) : null;
-  const orders = Object.values(state.orders).filter((o) => o.customerId === customerId);
+  const orders = Object.values(scoped.orders).filter((o) => o.customerId === customerId);
   const comparison = profile ? comparisonColumns(profile, orders, template.fields) : null;
   if (!profile || !current || !comparison) return <p className="text-muted">{t('measure.none')}</p>;
 

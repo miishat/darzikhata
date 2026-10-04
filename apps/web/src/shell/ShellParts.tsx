@@ -3,14 +3,14 @@ import { useCurrentStaff, useSnapshot, useStore } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 
 export function LanguageToggle({ compact = false }: { compact?: boolean }) {
-  const { language, setLanguage } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const next = language === 'bn' ? 'en' : 'bn';
   return (
     <button
       type="button"
       onClick={() => setLanguage(next)}
       lang={next}
-      aria-label={compact ? (next === 'en' ? 'English' : 'বাংলা') : undefined}
+      aria-label={compact ? t(next === 'en' ? 'more.language.english' : 'more.language.bangla') : undefined}
       className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
     >
       {compact ? (next === 'en' ? 'EN' : 'বাং') : next === 'en' ? 'English' : 'বাংলা'}

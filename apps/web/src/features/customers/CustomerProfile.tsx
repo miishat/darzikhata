@@ -91,7 +91,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             {customer.phone && (
-              <a href={`tel:${customer.phone}`} aria-label={t('customer.call')} className={buttonClasses('secondary')}>
+              <a href={`tel:${customer.phone}`} className={buttonClasses('secondary')}>
                 <Phone aria-hidden="true" size={16} />
                 {t('customer.call')}
               </a>
@@ -116,7 +116,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
           <Tile label={t('customer.stat.orders')} value={number(orders.length)} />
           {showMoney && <Tile label={t('customer.stat.orderValue')} value={money(orderValue)} />}
           {showMoney && <Tile label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'bg-warn-soft text-warn-ink' : ''} />}
-          <Tile label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: false }) : t('customer.stat.none')} />
+          <Tile label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: Number(latest.createdAt.slice(0, 4)) !== new Date().getFullYear() }) : t('customer.stat.none')} />
         </dl>
       </header>
 

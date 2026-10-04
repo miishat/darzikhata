@@ -106,7 +106,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                 data-order-id={order.id}
                 aria-selected={selected}
                 tabIndex={order.id === stop ? 0 : -1}
-                onClick={() => navigate(target(order.id))}
+                onClick={() => navigate(target(order.id), { replace: true })}
                 className={`cursor-pointer border-b border-line last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${
                   selected ? 'bg-brand-soft' : 'hover:bg-surface'
                 }`}
@@ -117,6 +117,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     <div className="flex min-w-0 flex-col">
                       <Link
                         to={target(order.id)}
+                        replace
                         aria-current={selected ? 'page' : undefined}
                         onClick={(event) => event.stopPropagation()}
                         className="truncate font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand"

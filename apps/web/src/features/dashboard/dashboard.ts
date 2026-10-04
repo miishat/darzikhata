@@ -60,15 +60,14 @@ export function firstTrialTime(refs: ItemRef[]): string | null {
   return times.length === 0 ? null : times.sort()[0]!;
 }
 
-export type DayPart = 'morning' | 'afternoon' | 'evening' | 'night';
+export type DayPart = 'morning' | 'afternoon' | 'evening';
 
-/** The part of the day in Dhaka (UTC+6), for the greeting. */
+/** The part of the day in Dhaka (UTC+6), for the greeting. Evening runs to midnight, then the morning greeting returns. */
 export function dayPart(now: Date): DayPart {
   const hour = new Date(now.getTime() + 6 * 3_600_000).getUTCHours();
-  if (hour >= 5 && hour < 12) return 'morning';
   if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 20) return 'evening';
-  return 'night';
+  if (hour >= 17) return 'evening';
+  return 'morning';
 }
 
 /**

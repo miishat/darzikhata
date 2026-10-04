@@ -15,7 +15,6 @@ export function SelectionBar({ count, children, onClear }: SelectionBarProps) {
   return (
     <div className="pointer-events-none sticky bottom-4 z-20 flex justify-center px-4">
       <section
-        role="region"
         aria-label={t('desk.selection.label')}
         className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-xl bg-navy px-4 py-2 text-on-navy shadow-xl"
       >
@@ -27,7 +26,7 @@ export function SelectionBar({ count, children, onClear }: SelectionBarProps) {
           className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-on-navy-muted hover:bg-navy-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-navy"
         >
           <X aria-hidden="true" size={16} />
-          {t('desk.selection.clear')}
+          {t('work.clearSelection')}
         </button>
       </section>
     </div>

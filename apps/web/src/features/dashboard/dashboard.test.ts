@@ -242,8 +242,9 @@ describe('dayPart', () => {
     ['2026-10-03T00:00:00Z', 'morning'],
     ['2026-10-03T06:30:00Z', 'afternoon'],
     ['2026-10-03T11:30:00Z', 'evening'],
-    ['2026-10-03T15:00:00Z', 'night'],
-    ['2026-10-02T21:59:00Z', 'night'],
+    ['2026-10-03T15:00:00Z', 'evening'],
+    ['2026-10-02T17:59:00Z', 'evening'],
+    ['2026-10-02T18:00:00Z', 'morning'],
   ])('%s is %s in Dhaka', (iso, part) => {
     expect(dayPart(new Date(iso))).toBe(part);
   });

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
+import { itemSummaryGroup } from '@darzikhata/domain';
 import { dashboardModel } from './dashboard';
 
 const bn = (n: number) => toBanglaDigits(String(n));
@@ -35,8 +36,21 @@ describe('Dashboard', () => {
   it('greets the signed-in person and offers the work list print', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await screen.findByRole('heading', { name: 'হোম' });
-    expect(screen.getByText(/^শুভ (সকাল|দুপুর|সন্ধ্যা|রাত্রি), /)).toBeTruthy();
+    expect(screen.getByText(/^শুভ (সকাল|দুপুর|সন্ধ্যা), /)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work');
+  });
+
+  it('lists the orders with the most ready garments first', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    await screen.findByRole('heading', { name: 'হোম' });
+    const counted = model(store).ready.map((order) => ({
+      number: order.number,
+      n: order.items.filter((i) => itemSummaryGroup(i) === 'ready').length,
+    }));
+    expect(new Set(counted.map((c) => c.n)).size).toBeGreaterThan(1);
+    const expected = [...counted].sort((a, b) => b.n - a.n).slice(0, 5);
+    const shown = rows('নেওয়ার জন্য রেডি');
+    expected.forEach((row, i) => expect(shown[i]!.textContent).toContain(row.number));
   });
 
   it('opens an order from a list', async () => {
