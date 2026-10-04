@@ -48,7 +48,7 @@ describe('Measurements', () => {
     await userEvent.click(screen.getByRole('button', { name: 'মাপ সেভ করুন' }));
 
     const panel = within(await screen.findByRole('region', { name: 'মাপ' })).getByRole('tabpanel');
-    expect(within(row(panel, 'বুক')).getAllByText('৪০½ ইঞ্চি').length).toBeGreaterThan(0);
+    expect(within(row(panel, 'বুক')).getAllByText('৪০.৫ ইঞ্চি').length).toBeGreaterThan(0);
     expect(within(panel).getAllByText(/তারিখে, নমুনা পোশাক থেকে$/).length).toBeGreaterThan(0);
 
     const { state } = store.getSnapshot();

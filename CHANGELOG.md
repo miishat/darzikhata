@@ -13,8 +13,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The order status line on the phone shows a status pill, the garment counts and one coloured segment per garment.
 - The phone header shows a person icon for the signed-in user in place of an initial.
 - New tilted-shears app icon, shown in the sidebar, the phone header and the sign-in page.
+- Popups on a phone are bottom sheets: full width, flush to the bottom edge, with rounded top corners, a drag handle and a slide-up. Desktop keeps the centred card.
+- Menu rows have a tinted icon and a chevron.
+- A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Bangla measurements are written as decimals (৩৮.৫) instead of ½ ¼ ¾, which no Bangla font has, so they looked English beside Bangla digits. The keypad's fraction keys type .২৫, .৫ and .৭৫ in Bangla, and English keeps the fraction signs. Typed fractions such as ৩৮ ১/২ are still understood.
+- The phone payment bar shows only while there is a balance to take. A fully paid order has no bar, and receipt printing stays in the more menu.
+- The status link popup has one heading instead of two.
+- The more menu sheet on a phone has no title and no Close button; tapping outside closes it.
+- A cancelled garment on the phone shows just the reason, without the "Cancelled:" prefix.
+- The order list no longer shows the "n orders" line; the status chips already carry the counts.
 - The phone payment bar is a single soft button, "Take payment" with the amount owed, next to print. Hand over is no longer in the bar; each ready garment has its own Hand over button, and a production supervisor with no money access sees no bar.
 - The garment's main action is one filled button named for the next stage, with the notes and history row below it.
 - Customer profile tabs and the garment chips on the measurements screen share the full width on a phone.
@@ -22,6 +31,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The desktop garment menu no longer offers Cancel on a garment that is already cancelled.
 - The payment bar no longer covers the top of the raised New order button, and pages leave room for both.
 - Switching user no longer signs the current person out first. The picker opens with the person still signed in and has a Cancel button, and they are only switched once a PIN is entered.
 

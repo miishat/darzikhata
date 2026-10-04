@@ -42,7 +42,7 @@ describe('NumberField', () => {
     const input = screen.getByLabelText('হাতা') as HTMLInputElement;
     await userEvent.type(input, '23 1/4');
     await userEvent.tab();
-    expect(input.value).toBe('২৩¼');
+    expect(input.value).toBe('২৩.২৫');
     await userEvent.clear(input);
     expect(onValueChange).toHaveBeenLastCalledWith(null);
   });
@@ -51,7 +51,7 @@ describe('NumberField', () => {
     const onValueChange = vi.fn();
     inBangla(<NumberField label="বুক" kind="measurement" onValueChange={onValueChange} />);
     await userEvent.type(screen.getByLabelText('বুক'), 'abc');
-    expect(screen.getByText('মাপ বোঝা যায়নি। যেমন ৩৮½ বা 38.5 লিখুন')).toBeTruthy();
+    expect(screen.getByText('মাপ বোঝা যায়নি। যেমন ৩৮.৫ বা ৩৮ ১/২ লিখুন')).toBeTruthy();
     expect(onValueChange).toHaveBeenLastCalledWith(null);
   });
 

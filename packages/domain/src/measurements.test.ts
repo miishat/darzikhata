@@ -52,8 +52,15 @@ describe('parseMeasurement', () => {
 });
 
 describe('formatMeasurement', () => {
-  it('uses unicode fractions for eighths', () => {
-    expect(formatMeasurement(38.5)).toBe('৩৮½');
+  it('writes Bangla as a decimal, since Bangla fonts have no fraction glyphs', () => {
+    expect(formatMeasurement(38.5)).toBe('৩৮.৫');
+    expect(formatMeasurement(0.75, 'bn')).toBe('০.৭৫');
+    expect(formatMeasurement(15.125, 'bn')).toBe('১৫.১২৫');
+    expect(formatMeasurement(40, 'bn')).toBe('৪০');
+    expect(formatMeasurement(10.333, 'bn')).toBe('১০.৩৩');
+  });
+
+  it('uses unicode fractions for eighths in English', () => {
     expect(formatMeasurement(15.25, 'en')).toBe('15¼');
     expect(formatMeasurement(0.375, 'en')).toBe('⅜');
     expect(formatMeasurement(40, 'en')).toBe('40');

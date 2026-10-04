@@ -7,6 +7,10 @@ export interface DialogProps {
   onClose(): void;
   children?: ReactNode;
   actions?: ReactNode;
+  /** On a phone the sheet is announced by its title but shows none, as for a menu whose rows speak for themselves. */
+  hideTitleOnPhone?: boolean;
+  /** The action buttons show only on larger screens; on a phone the sheet closes by tapping outside it. */
+  actionsDesktopOnly?: boolean;
 }
 
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -15,7 +19,7 @@ const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:n
 const openStack: symbol[] = [];
 
 /** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
-export function Dialog({ open, title, onClose, children, actions }: DialogProps) {
+export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false }: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const onCloseRef = useRef(onClose);
@@ -65,7 +69,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
   // Portalled to the body so a header's or panel's stacking context cannot put the page's fixed bars over it.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center sm:p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -76,13 +80,14 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl bg-panel-raised p-5 shadow-xl outline-1 -outline-offset-1 outline-raised-line"
+        className="dialog-panel max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-panel-raised px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl outline-1 -outline-offset-1 outline-raised-line sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:rounded-xl sm:p-5"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
+        <div aria-hidden="true" className="mx-auto mb-3 h-1 w-9 rounded-full bg-muted/40 sm:hidden" />
+        <h2 id={titleId} className={`text-lg font-semibold ${hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
           {title}
         </h2>
-        {children && <div className="mt-2 text-muted">{children}</div>}
-        {actions && <div className="mt-5 flex flex-wrap justify-end gap-2">{actions}</div>}
+        {children && <div className={`text-muted ${hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
+        {actions && <div className={`mt-5 flex flex-wrap justify-end gap-2 max-sm:[&>*]:flex-1 ${actionsDesktopOnly ? 'max-sm:hidden' : ''}`}>{actions}</div>}
       </div>
     </div>,
     document.body,

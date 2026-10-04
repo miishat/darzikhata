@@ -1,6 +1,6 @@
 import { formatMeasurement, itemDeliveredAt, itemSummaryGroup, labelIn, type Order, type OrderItem } from '@darzikhata/domain';
 import type { LucideIcon } from 'lucide-react';
-import { ChevronDown, ChevronRight, Check, Ellipsis, Scissors, Shirt, UserPlus, UserRound } from 'lucide-react';
+import { ArrowRightLeft, Ban, ChevronDown, ChevronRight, Check, Ellipsis, MessageSquare, Pencil, Scissors, Shirt, UserPlus, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -57,12 +57,15 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
   const canSee = customer ? hasAccess(customer) : false;
   const summary = canSee ? measureSummary(item, template, language) : '';
   const tone = stageTone(stage, group, Math.max(stageIndex, 0));
-  const menu = canMove || can('orders.edit') || (can('orders.cancel') && !delivered);
+  const canCancel = can('orders.cancel') && !delivered && !item.cancelled;
+  const menu = canMove || can('orders.edit') || canCancel;
 
   const menuItems = (done: () => void) => (
                 <>
                   {canMove && (
                     <ActionSheetItem
+                      icon={ArrowRightLeft}
+                      tone="neutral"
                       onClick={() => {
                         done();
                         setDialog('stage');
@@ -74,6 +77,8 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                   {can('orders.edit') && (
                     <>
                       <ActionSheetItem
+                        icon={MessageSquare}
+                        tone="neutral"
                         onClick={() => {
                           done();
                           setDialog('adjust');
@@ -82,6 +87,8 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                         {t('item.addAdjustment')}
                       </ActionSheetItem>
                       <ActionSheetItem
+                        icon={Pencil}
+                        tone="neutral"
                         onClick={() => {
                           done();
                           setDialog('edit');
@@ -91,9 +98,10 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                       </ActionSheetItem>
                     </>
                   )}
-                  {can('orders.cancel') && !delivered && (
+                  {canCancel && (
                     <ActionSheetItem
                       danger
+                      icon={Ban}
                       onClick={() => {
                         done();
                         setDialog('cancel');
@@ -193,7 +201,10 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
           ))}
 
         {item.cancelled ? (
-          <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-semibold text-danger">{item.cancelled.reason}</p>
+            {menu && moreActions('size-11! rounded-xl! border border-line')}
+          </div>
         ) : (
           alone ? (
             <div className="flex items-center justify-between gap-3">

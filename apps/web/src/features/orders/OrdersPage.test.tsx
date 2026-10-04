@@ -1,9 +1,9 @@
 import { itemSummaryGroup, moneySummary, toBanglaDigits, todayInDhaka, type Order } from '@darzikhata/domain';
-import { act, cleanup, screen, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
-import { DEFAULT_LIST_QUERY, queryOrders } from './orderList';
+import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders } from './orderList';
 import { countViews } from './orderViews';
 
 const table = () => screen.getByRole('table', { name: 'অর্ডার তালিকা' });
@@ -184,7 +184,7 @@ describe('Orders list', () => {
     ]);
 
     await userEvent.click(chips.getByRole('button', { name: new RegExp(String.raw`^দেরি\s*${bn(late)}$`) }));
-    expect(await screen.findByText(`${bn(late)}টি অর্ডার`)).toBeTruthy();
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'অর্ডার তালিকা' })).getAllByRole('listitem')).toHaveLength(Math.min(late, PAGE_SIZE)));
     expect(router.state.location.search).toBe('?status=overdue');
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }), 'zzzz');
@@ -192,7 +192,7 @@ describe('Orders list', () => {
 
     await userEvent.clear(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }));
     await userEvent.click(chips.getByRole('button', { name: new RegExp(String.raw`^বাকি আছে\s*${bn(owed)}$`) }));
-    expect(await screen.findByText(`${bn(owed)}টি অর্ডার`)).toBeTruthy();
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'অর্ডার তালিকা' })).getAllByRole('listitem')).toHaveLength(Math.min(owed, PAGE_SIZE)));
     expect(router.state.location.search).toBe('?due=1');
   });
 

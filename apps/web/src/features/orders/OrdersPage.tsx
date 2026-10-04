@@ -63,7 +63,6 @@ export function OrdersPage() {
   const list = (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts} />
-      <p className="text-sm text-muted">{t('orders.count', { n: number(result.total) })}</p>
       {result.rows.length === 0 ? (
         <p className="text-muted">{t('orders.empty')}</p>
       ) : (
