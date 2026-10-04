@@ -121,7 +121,7 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
           </Button>
         )}
         {step === 'review' ? (
-          <Button size="lg" disabled={entry.saving} onClick={() => void save()}>
+          <Button size="lg" data-tour="save-order" disabled={entry.saving} onClick={() => void save()}>
             {entry.saving ? t('entry.saving') : t('entry.save')}
           </Button>
         ) : (
@@ -166,7 +166,7 @@ function GarmentsStep({ entry, errors }: { entry: OrderEntry; errors: DraftError
         onChange={setChosen}
         error={errorText('items')}
       />
-      <Button variant="secondary" disabled={!chosen} onClick={() => entry.addItem(chosen)}>
+      <Button variant="secondary" data-tour="add-garment" disabled={!chosen} onClick={() => entry.addItem(chosen)}>
         {t('entry.addGarment')}
       </Button>
     </div>

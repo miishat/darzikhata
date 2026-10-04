@@ -319,7 +319,7 @@ function EditorForm({ initial, isNew }: { initial: TemplateForm; isNew: boolean 
           </p>
         )}
         <div>
-          <Button variant="secondary" onClick={() => update(addStage)}>
+          <Button variant="secondary" data-tour="add-stage" onClick={() => update(addStage)}>
             {t('settings.stage.add')}
           </Button>
         </div>

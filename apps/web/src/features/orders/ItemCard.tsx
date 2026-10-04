@@ -100,7 +100,7 @@ export function ItemCard({ order, item }: { order: Order; item: OrderItem }) {
             {canMove && next && (
               <>
                 {next.stage.group === 'delivered' ? (
-                  <Button onClick={() => setDialog('handOver')}>{t('item.handOver')}</Button>
+                  <Button data-tour="hand-over" onClick={() => setDialog('handOver')}>{t('item.handOver')}</Button>
                 ) : (
                   <MoveOn order={order} item={item} stageKey={next.stage.key} label={t('item.moveTo', { stage: label(next.stage.label) })} />
                 )}

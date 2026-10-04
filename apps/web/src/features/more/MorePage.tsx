@@ -52,7 +52,7 @@ export function MorePage() {
           <ul className="flex flex-col gap-2">
             {extraSections.map((item) => (
               <li key={item.key}>
-                <Link to={item.path} className={`${buttonClasses('secondary', 'lg')} w-full justify-start`}>
+                <Link to={item.path} data-tour={`nav-${item.key}`} className={`${buttonClasses('secondary', 'lg')} w-full justify-start`}>
                   {t(item.label)}
                 </Link>
               </li>

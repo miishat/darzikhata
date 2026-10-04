@@ -33,6 +33,7 @@ export function MobileShell({ role }: { role: Role }) {
       {can(role, 'orders.create') && (
         <Link
           to="/app/orders/new"
+          data-tour="new-order"
           className="fixed bottom-20 left-1/2 z-10 flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-white shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:text-surface"
         >
           + {t('nav.newOrder')}
@@ -44,7 +45,7 @@ export function MobileShell({ role }: { role: Role }) {
         style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}
       >
         {tabs.map((item) => (
-          <NavLink key={item.key} to={item.path} className={tabClass}>
+          <NavLink key={item.key} to={item.path} className={tabClass} data-tour={`nav-${item.key}`}>
             {t(item.shortLabel)}
           </NavLink>
         ))}

@@ -38,12 +38,14 @@ export function ItemMeasurements({ entry, item, errors }: { entry: OrderEntry; i
       ? state.profiles[profileKey(customerId, template.id)]?.versions.find((v) => v.id === m.versionId)
       : undefined;
     const confirm = (
-      <Checkbox
-        label={t('entry.confirmMeasurements')}
-        checked={m.confirmed}
-        onChange={(confirmed) => entry.updateItem(item.key, { measurements: { ...m, confirmed } })}
-        error={errorText(`${at}.measurements`)}
-      />
+      <div data-tour="confirm-measurements">
+        <Checkbox
+          label={t('entry.confirmMeasurements')}
+          checked={m.confirmed}
+          onChange={(confirmed) => entry.updateItem(item.key, { measurements: { ...m, confirmed } })}
+          error={errorText(`${at}.measurements`)}
+        />
+      </div>
     );
     if (!entry.canSeeMeasurements) {
       return (

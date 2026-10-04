@@ -36,7 +36,7 @@ export function MoneyTable({ model, language }: { model: ReceiptModel; language:
     <table aria-label={t('receipt.money')} className="w-full border-collapse text-left">
       <tbody>
         {rows.map((row) => (
-          <tr key={row.key} className="border-t border-line">
+          <tr key={row.key} data-tour={row.key === 'balance' ? 'receipt-balance' : undefined} className="border-t border-line">
             <th scope="row" className={`py-2 pr-3 ${row.strong ? 'font-semibold' : 'font-normal'}`}>
               {row.label}
               {row.note && <span className="ml-2 text-sm font-normal text-muted">{row.note}</span>}

@@ -24,9 +24,9 @@ function Card({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Block({ title, empty, children }: { title: string; empty: string; children: ReactNode[] }) {
+function Block({ title, empty, children, tour }: { title: string; empty: string; children: ReactNode[]; tour?: string }) {
   return (
-    <section aria-label={title} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
+    <section aria-label={title} data-tour={tour} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
       <h2 className="text-base font-semibold">{title}</h2>
       {children.length === 0 ? (
         <p className="text-muted">{empty}</p>
@@ -79,7 +79,7 @@ export function DashboardPage() {
         <Block title={t('dashboard.overdue')} empty={t('dashboard.none')}>
           {model.overdue.map((ref) => garmentRow(ref, true))}
         </Block>
-        <Block title={t('dashboard.ready')} empty={t('dashboard.none')}>
+        <Block title={t('dashboard.ready')} tour="ready-list" empty={t('dashboard.none')}>
           {model.ready.map((order) => {
             const readyCount = order.items.filter((i) => itemSummaryGroup(i) === 'ready').length;
             const owed = balanceDue(order);

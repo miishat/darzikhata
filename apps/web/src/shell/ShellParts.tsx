@@ -34,6 +34,7 @@ export function SwitchUserButton({ compact = false }: { compact?: boolean }) {
   return (
     <button
       type="button"
+      data-tour="switch-user"
       title={who}
       onClick={async () => {
         await store.signOut();
