@@ -1,4 +1,4 @@
-import { isOrderClosed, moneySummary, orderProgress, type Order } from '@darzikhata/domain';
+import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order } from '@darzikhata/domain';
 import { ArrowLeft, EllipsisVertical, MessageCircle, Phone, Printer, Share2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
@@ -19,6 +19,13 @@ import { wearerGroups } from './wearers';
 
 const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
+const GROUP_DOT = {
+  unfinished: 'bg-tone-working-dot',
+  ready: 'bg-tone-ready-dot',
+  delivered: 'bg-tone-done-dot',
+  cancelled: 'bg-tone-cancelled-dot',
+};
+
 /** The phone order screen: customer, money, garments, and a bottom bar for printing and taking payment. */
 export function MobileOrderDetail({ order }: { order: Order }) {
   const { t, language, date, money: formatMoney } = useI18n();
@@ -26,6 +33,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
   const { state, config } = useSnapshot();
   const { search } = useLocation();
   const money = useMoneyDialogs(order);
+  const closed = isOrderClosed(order);
   const [sharing, setSharing] = useState(false);
 
   const customer = state.customers[order.customerId];
@@ -85,16 +93,25 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         </section>
       )}
 
-      {can('money.view') && (
-<MoneyCard order={order} open={money.open} />
-      )}
+      {can('money.view') && <MoneyCard order={order} open={money.open} />}
 
-      <p className="flex flex-wrap items-center gap-x-2 text-sm">
-        <span data-tour="order-status" className="font-semibold">
-          {isOrderClosed(order) ? t('order.statusClosed') : t('order.statusOpen')}
-        </span>
-        <span className="text-muted">{progressText(orderProgress(order), language)}</span>
-      </p>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <span
+            data-tour="order-status"
+            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-sm font-semibold ring-1 ring-line ring-inset"
+          >
+            <span aria-hidden="true" className={`size-[7px] rounded-full ${closed ? 'bg-tone-done-dot' : 'bg-tone-working-dot'}`} />
+            {closed ? t('order.statusClosed') : t('order.statusOpen')}
+          </span>
+          <span className="text-sm text-muted">{progressText(orderProgress(order), language)}</span>
+        </div>
+        <div className="flex gap-1" role="img" aria-label={progressText(orderProgress(order), language)}>
+          {order.items.map((item) => (
+            <span key={item.id} className={`h-1.5 flex-1 rounded-full ${GROUP_DOT[itemSummaryGroup(item)]}`} />
+          ))}
+        </div>
+      </div>
 
       {groups.length === 0 && order.items.map((item) => <MobileItemCard key={item.id} order={order} item={item} />)}
       {groups.map((group) => {

@@ -258,7 +258,7 @@ function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
   return (
     <>
       <section aria-label={title} className="flex flex-col gap-2.5 rounded-xl border border-line bg-panel p-3">
-        <div className="flex items-start gap-2">
+        <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-base font-semibold">{title}</h3>
             {item.wearer && <p className="truncate text-sm text-muted">{item.wearer}</p>}
