@@ -1,21 +1,12 @@
-import {
-  currentVersion,
-  staffById,
-  type GarmentTemplate,
-  type MeasurementSource,
-  type MeasurementValue,
-  type Order,
-} from '@darzikhata/domain';
-import { useState, type KeyboardEvent } from 'react';
+import { currentVersion, staffById, type GarmentTemplate } from '@darzikhata/domain';
+import { type KeyboardEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { buttonClasses } from '../../ui/Button';
-import { SelectField } from '../../ui/SelectField';
 import { useCan, useMeasurementAccess } from '../common/hooks';
-import { MeasurementTable } from './MeasurementTable';
-
-const NOTHING = '';
+import { MeasurementComparisonTable } from './MeasurementTable';
+import { comparisonColumns } from './measurementView';
 
 /** The customer's measurements, one tab per garment. */
 export function MeasurementSection({ customerId }: { customerId: string }) {
@@ -116,57 +107,22 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
   );
 }
 
-interface Choice {
-  id: string;
-  label: string;
-  values: Record<string, MeasurementValue>;
-}
-
 function GarmentPanel({ customerId, template }: { customerId: string; template: GarmentTemplate }) {
-  const { t, date } = useI18n();
+  const { t } = useI18n();
   const { state, config } = useSnapshot();
-  const [choice, setChoice] = useState(NOTHING);
 
   const profile = state.profiles[`${customerId}:${template.id}`];
   const current = profile ? currentVersion(profile) : null;
-  if (!profile || !current) return <p className="text-muted">{t('measure.none')}</p>;
+  const orders = Object.values(state.orders).filter((o) => o.customerId === customerId);
+  const comparison = profile ? comparisonColumns(profile, orders, template.fields) : null;
+  if (!profile || !current || !comparison) return <p className="text-muted">{t('measure.none')}</p>;
 
-  const older: Choice[] = profile.versions
-    .slice(0, -1)
-    .reverse()
-    .map((v) => ({ id: `version:${v.id}`, label: t('measure.version', { date: date(v.takenAt) }), values: v.values }));
-  const orders: Order[] = Object.values(state.orders)
-    .filter((o) => o.customerId === customerId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const snapshots: Choice[] = orders.flatMap((order) =>
-    order.items
-      .filter((i) => i.templateId === template.id && i.cancelled === null && i.measurements !== null)
-      .map((i) => ({ id: `item:${i.id}`, label: t('measure.snapshot', { number: order.number }), values: i.measurements!.values })),
-  );
-  const choices = [...older, ...snapshots];
-  const chosen = choices.find((c) => c.id === choice);
-
-  const sourceText = (source: MeasurementSource) => t(source === 'sample' ? 'source.sample' : 'source.body');
-  const taker = config ? staffById(config, current.takenBy) : null;
+  const takerName = (id: string) => (config ? staffById(config, id)?.name : undefined) ?? id;
 
   return (
     <>
-      <MeasurementTable
-        template={template}
-        values={current.values}
-        {...(chosen ? { compare: { label: chosen.label, values: chosen.values } } : {})}
-      />
-      <p>{t('measure.takenOn', { date: date(current.takenAt, { year: true }), source: sourceText(current.source) })}</p>
-      <p className="text-sm text-muted">{t('measure.takenBy', { name: taker?.name ?? current.takenBy })}</p>
+      <MeasurementComparisonTable template={template} comparison={comparison} takerName={takerName} />
       {current.notes && <p className="whitespace-pre-line text-muted">{current.notes}</p>}
-      {choices.length > 0 && (
-        <SelectField
-          label={t('measure.compare')}
-          value={choice}
-          onChange={setChoice}
-          options={[{ value: NOTHING, label: t('measure.compareNone') }, ...choices.map((c) => ({ value: c.id, label: c.label }))]}
-        />
-      )}
     </>
   );
 }

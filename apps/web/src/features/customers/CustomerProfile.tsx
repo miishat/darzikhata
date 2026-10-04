@@ -1,11 +1,16 @@
-import { balanceDue, orderProgress, type Order } from '@darzikhata/domain';
+import { balanceDue, orderProgress, orderTotal, type Order } from '@darzikhata/domain';
+import { Phone, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import type { MessageKey } from '../../i18n/bn';
+import { Avatar } from '../../ui/Avatar';
 import { buttonClasses } from '../../ui/Button';
+import { StagePill } from '../../ui/StagePill';
+import type { Tone } from '../../ui/stageTone';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
-import { progressText } from '../common/orderText';
+import { garmentSummary } from '../common/orderText';
 import { useShell } from '../../shell/ShellPreference';
 import { MeasurementSection } from './MeasurementSection';
 import { MobileCustomerProfile } from './MobileCustomerProfile';
@@ -21,9 +26,29 @@ function Region({ id, title, children }: { id: string; title: string; children: 
   );
 }
 
+const RECENT_ORDERS = 4;
+
+function Tile({ label, value, tone = '' }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className={`flex min-w-32 flex-1 flex-col-reverse justify-end rounded-xl px-4 py-3 ${tone || 'bg-surface'}`}>
+      <dt className="text-sm">{label}</dt>
+      <dd className="m-0 font-display text-xl font-bold">{value}</dd>
+    </div>
+  );
+}
+
+/** One pill for an order: where most of its garments are right now. */
+function orderPill(order: Order, t: (key: MessageKey) => string): { label: string; tone: Tone } {
+  const p = orderProgress(order);
+  if (p.unfinished > 0) return { label: t('stageGroup.unfinished'), tone: 'working' };
+  if (p.ready > 0) return { label: t('stageGroup.ready'), tone: 'ready' };
+  if (p.delivered > 0) return { label: t('stageGroup.delivered'), tone: 'done' };
+  return { label: t('status.group.cancelled'), tone: 'cancelled' };
+}
+
 /** Who the customer is, their household and their orders. */
 function DesktopCustomerProfile({ customerId }: { customerId: string }) {
-  const { t, language, money, date } = useI18n();
+  const { t, language, money, date, number } = useI18n();
   const can = useCan();
   const { state } = useSnapshot();
   const scoped = useScopedState();
@@ -44,28 +69,56 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
   const orders: Order[] = Object.values(scoped.orders)
     .filter((o) => o.customerId === customer.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const latest = orders[0];
+  const showMoney = can('money.view');
+  const owed = orders.reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0);
+  const orderValue = orders.reduce((sum, o) => sum + orderTotal(o), 0);
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">{customer.name}</h1>
-        {customer.nameAlt && <p className="text-muted">{customer.nameAlt}</p>}
-        <p>{customer.phone ?? t('customer.noPhone')}</p>
-        {customer.notes && <p className="whitespace-pre-line text-muted">{customer.notes}</p>}
+    <div className="flex max-w-5xl flex-col gap-4">
+      <header className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-5">
+        <div className="flex flex-wrap items-center gap-4">
+          <Avatar id={customer.id} name={customer.name} size="xl" />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <h1 className="font-display text-2xl font-bold">{customer.name}</h1>
+            {customer.nameAlt && <p className="text-muted">{customer.nameAlt}</p>}
+            <p className="text-muted">
+              {customer.phone ?? t('customer.noPhone')}
+              {household && ` · ${t('customer.householdOf', { label: household.label, n: number(members.length + 1) })}`}
+              {` · ${t('customer.since', { date: date(customer.createdAt, { year: true }) })}`}
+            </p>
+            {customer.notes && <p className="whitespace-pre-line text-muted">{customer.notes}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {customer.phone && (
+              <a href={`tel:${customer.phone}`} aria-label={t('customer.call')} className={buttonClasses('secondary')}>
+                <Phone aria-hidden="true" size={16} />
+                {t('customer.call')}
+              </a>
+            )}
+            {can('customers.edit') && (
+              <Link to={`/app/customers/${customer.id}/edit`} className={buttonClasses('secondary')}>
+                {t('customer.edit')}
+              </Link>
+            )}
+            {can('orders.create') && (
+              <Link
+                to={latest ? `/app/orders/new?repeat=${latest.id}` : `/app/orders/new?customer=${customer.id}`}
+                data-tour="order-again"
+                className={buttonClasses('primary')}
+              >
+                {latest ? t('customer.orderAgain') : t('customer.newOrder')}
+              </Link>
+            )}
+          </div>
+        </div>
+        <dl className="m-0 flex flex-wrap gap-3">
+          <Tile label={t('customer.stat.orders')} value={number(orders.length)} />
+          {showMoney && <Tile label={t('customer.stat.orderValue')} value={money(orderValue)} />}
+          {showMoney && <Tile label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'bg-warn-soft text-warn-ink' : ''} />}
+          <Tile label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: false }) : t('customer.stat.none')} />
+        </dl>
       </header>
-
-      <div className="flex flex-wrap gap-2">
-        {can('orders.create') && (
-          <Link to={`/app/orders/new?customer=${customer.id}`} className={buttonClasses('primary')}>
-            {t('customer.newOrder')}
-          </Link>
-        )}
-        {can('customers.edit') && (
-          <Link to={`/app/customers/${customer.id}/edit`} className={buttonClasses('secondary')}>
-            {t('customer.edit')}
-          </Link>
-        )}
-      </div>
 
       {household && (
         <Region id="customer-household" title={t('customer.household')}>
@@ -84,39 +137,58 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
         </Region>
       )}
 
-      <MeasurementSection customerId={customer.id} />
-
-      <Region id="customer-orders" title={t('customer.orders')}>
-        {orders.length === 0 ? (
-          <p className="text-muted">{t('customer.noOrders')}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {orders.map((order) => {
-              const due = balanceDue(order);
-              return (
-                <li key={order.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-line p-2">
-                  <Link
-                    to={`/app/orders/${order.id}`}
-                    className="flex min-w-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-brand"
-                  >
-                    <span className="font-semibold">{order.number}</span>
-                    <span className="text-sm text-muted">{date(order.createdAt)}</span>
-                    <span className="text-sm">{progressText(orderProgress(order), language)}</span>
-                    {can('money.view') && due > 0 && (
-                      <span className="text-sm font-semibold text-accent">{t('customer.balance', { amount: money(due) })}</span>
-                    )}
-                  </Link>
-                  {can('orders.create') && (
-                    <Link to={`/app/orders/new?repeat=${order.id}`} data-tour="order-again" className={buttonClasses('secondary')}>
-                      {t('customer.orderAgain')}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Region>
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="min-w-0 flex-[1.6_1_28rem]">
+          <MeasurementSection customerId={customer.id} />
+        </div>
+        <div className="min-w-0 flex-[1_1_20rem]">
+          <Region id="customer-orders" title={t('customer.orders')}>
+            {orders.length === 0 ? (
+              <p className="text-muted">{t('customer.noOrders')}</p>
+            ) : (
+              <>
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                  {orders.slice(0, RECENT_ORDERS).map((order) => {
+                    const due = balanceDue(order);
+                    const pill = orderPill(order, t);
+                    return (
+                      <li key={order.id}>
+                        <Link
+                          to={`/app/orders/${order.id}`}
+                          className="flex flex-col gap-1 rounded-lg border border-line p-3 hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+                        >
+                          <span className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold">{order.number}</span>
+                            <StagePill label={pill.label} tone={pill.tone} />
+                          </span>
+                          <span className="text-sm text-muted">
+                            {date(order.createdAt)} · {garmentSummary(order, language)}
+                          </span>
+                          {showMoney &&
+                            (due > 0 ? (
+                              <span className="inline-flex items-center gap-1 self-start rounded-md bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
+                                <TriangleAlert aria-hidden="true" size={14} />
+                                {t('customer.balance', { amount: money(due) })}
+                              </span>
+                            ) : (
+                              <span className="text-sm font-semibold">{money(orderTotal(order))}</span>
+                            ))}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link
+                  to={`/app/orders?q=${encodeURIComponent(customer.phone ?? customer.name)}`}
+                  className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand"
+                >
+                  {t('customer.allOrders', { n: number(orders.length) })}
+                </Link>
+              </>
+            )}
+          </Region>
+        </div>
+      </div>
     </div>
   );
 }

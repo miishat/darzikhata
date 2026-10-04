@@ -2,6 +2,7 @@ import { balanceDue, formatTaka, type Customer } from '@darzikhata/domain';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { formatNumber } from '../../i18n/format';
 import { renderApp } from '../../test/renderApp';
 
 const customerList = () => screen.getByRole('list', { name: 'কাস্টমার তালিকা' });
@@ -23,7 +24,7 @@ describe('Customers', () => {
     expect(within(customerList()).getAllByRole('link')).toHaveLength(customers.length);
 
     const target = uniquelyNamed(customers);
-    await userEvent.type(screen.getByLabelText('কাস্টমার খুঁজুন'), target.nameAlt!);
+    await userEvent.type(screen.getByLabelText('নাম বা ফোন (বাংলা/English)'), target.nameAlt!);
     expect(within(customerList()).getByRole('link', { name: startsWith(target.name) })).toBeTruthy();
     expect(within(customerList()).getAllByRole('link').length).toBeLessThan(customers.length);
   });
@@ -33,11 +34,11 @@ describe('Customers', () => {
     const target = uniquelyNamed(Object.values(store.getSnapshot().state.customers));
     expect(await screen.findByText('বাম পাশ থেকে একজন কাস্টমার বেছে নিন')).toBeTruthy();
 
-    await userEvent.type(screen.getByLabelText('কাস্টমার খুঁজুন'), target.name);
+    await userEvent.type(screen.getByLabelText('নাম বা ফোন (বাংলা/English)'), target.name);
     await userEvent.click(within(customerList()).getByRole('link', { name: startsWith(target.name) }));
 
     expect(await screen.findByRole('heading', { name: target.name })).toBeTruthy();
-    expect(screen.getByLabelText('কাস্টমার খুঁজুন')).toHaveProperty('value', target.name);
+    expect(screen.getByLabelText('নাম বা ফোন (বাংলা/English)')).toHaveProperty('value', target.name);
     const link = within(customerList()).getByRole('link', { name: startsWith(target.name) });
     expect(link.getAttribute('aria-current')).toBe('page');
   });
@@ -51,7 +52,7 @@ describe('Customers', () => {
     expect(member.getAttribute('href')).toBe('/app/customers/rahman-c3');
   });
 
-  it('lists orders newest first with balances and repeat links', async () => {
+  it('lists the four newest orders with balances, and repeats the latest from the header', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers' });
     const { state } = store.getSnapshot();
     const customerId = state.orders['rahman-o40']!.customerId;
@@ -62,18 +63,25 @@ describe('Customers', () => {
       .filter((o) => o.customerId === customerId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const orderLinks = within(history).getAllByRole('link', { name: /^[A-Z]-\d{4}/ });
-    expect(orderLinks.map((l) => l.textContent!.slice(0, 6))).toEqual(orders.map((o) => o.number));
+    expect(orderLinks.map((l) => l.textContent!.slice(0, 6))).toEqual(orders.slice(0, 4).map((o) => o.number));
     expect(orderLinks[0]!.getAttribute('href')).toBe(`/app/orders/${orders[0]!.id}`);
+    expect(within(history).getByRole('link', { name: `সব ${formatNumber(orders.length, 'bn')}টি` })).toBeTruthy();
 
-    const repeat = within(history).getAllByRole('link', { name: 'আবার অর্ডার' });
-    expect(repeat).toHaveLength(orders.length);
-    expect(repeat[0]!.getAttribute('href')).toBe(`/app/orders/new?repeat=${orders[0]!.id}`);
-    for (const order of orders.filter((o) => balanceDue(o) > 0)) {
+    for (const order of orders.slice(0, 4).filter((o) => balanceDue(o) > 0)) {
       expect(within(history).getAllByText(`বাকি ${formatTaka(balanceDue(order), 'bn')}`).length).toBeGreaterThan(0);
     }
-    expect(screen.getByRole('link', { name: 'এই কাস্টমারের নতুন অর্ডার' }).getAttribute('href')).toBe(
-      `/app/orders/new?customer=${customerId}`,
-    );
+    expect(screen.getByRole('link', { name: 'আবার অর্ডার' }).getAttribute('href')).toBe(`/app/orders/new?repeat=${orders[0]!.id}`);
+  });
+
+  it('labels the order value as order value and shows owed in the stat tiles', async () => {
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers' });
+    const { state } = store.getSnapshot();
+    const customerId = state.orders['rahman-o40']!.customerId;
+    await act(() => router.navigate(`/app/customers/${customerId}`));
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.getByText('অর্ডারের মোট মূল্য')).toBeTruthy();
+    expect(screen.queryByText(/লাভ|profit/i)).toBeNull();
+    expect(screen.getByText('বাকি', { selector: 'dt' })).toBeTruthy();
   });
 
   it('hides balances and order actions from staff without those permissions', async () => {
@@ -87,7 +95,9 @@ describe('Customers', () => {
     await act(() => router.navigate(`/app/customers/${order.customerId}`));
     const history = await screen.findByRole('region', { name: 'অর্ডারের ইতিহাস' });
     expect(within(history).queryByText(/^বাকি/)).toBeNull();
-    expect(within(history).queryByRole('link', { name: 'আবার অর্ডার' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'আবার অর্ডার' })).toBeNull();
+    expect(screen.queryByText('অর্ডারের মোট মূল্য')).toBeNull();
+    expect(screen.queryByText('বাকি', { selector: 'dt' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'তথ্য বদলান' })).toBeNull();
   });
 

@@ -27,8 +27,10 @@ describe('Measurements', () => {
     const panel = within(section).getByRole('tabpanel');
     const current = profile.versions.at(-1)!;
     const chest = current.values['chest']!.value;
-    expect(within(row(panel, 'বুক')).getByText(`${formatMeasurement(chest, 'bn')} ইঞ্চি`)).toBeTruthy();
-    expect(within(panel).getByText(/তারিখে, (শরীর থেকে|নমুনা পোশাক থেকে)$/)).toBeTruthy();
+    expect(within(row(panel, 'বুক')).getAllByText(`${formatMeasurement(chest, 'bn')} ইঞ্চি`).length).toBeGreaterThan(0);
+    expect(within(panel).getAllByText(/তারিখে, (শরীর থেকে|নমুনা পোশাক থেকে)$/).length).toBeGreaterThan(0);
+    expect(within(panel).getByRole('columnheader', { name: /^এখনকার/ })).toBeTruthy();
+    expect(within(panel).getByText(/^এখনকার: /)).toBeTruthy();
     expect(within(section).queryByRole('tab', { name: 'অল্টারেশন' })).toBeNull();
   });
 
@@ -46,8 +48,8 @@ describe('Measurements', () => {
     await userEvent.click(screen.getByRole('button', { name: 'মাপ সেভ করুন' }));
 
     const panel = within(await screen.findByRole('region', { name: 'মাপ' })).getByRole('tabpanel');
-    expect(within(row(panel, 'বুক')).getByText('৪০½ ইঞ্চি')).toBeTruthy();
-    expect(within(panel).getByText(/তারিখে, নমুনা পোশাক থেকে$/)).toBeTruthy();
+    expect(within(row(panel, 'বুক')).getAllByText('৪০½ ইঞ্চি').length).toBeGreaterThan(0);
+    expect(within(panel).getAllByText(/তারিখে, নমুনা পোশাক থেকে$/).length).toBeGreaterThan(0);
 
     const { state } = store.getSnapshot();
     const versions = state.profiles[profileKey(customerId, 'shirt')]!.versions;
@@ -56,8 +58,8 @@ describe('Measurements', () => {
     expect(state.orders[order.id]!.items.find((i) => i.templateId === 'shirt')!.measurements).toEqual(frozen);
   });
 
-  it('compares the current values with an order’s frozen copy', async () => {
-    const { order } = await shirtCustomer();
+  it('shows the previous version and the order copy beside the current one, with a text delta', async () => {
+    await shirtCustomer();
     const section = await screen.findByRole('region', { name: 'মাপ' });
     await userEvent.click(within(section).getByRole('link', { name: 'নতুন মাপ নিন' }));
     await userEvent.clear(await screen.findByLabelText('বুক'));
@@ -65,8 +67,11 @@ describe('Measurements', () => {
     await userEvent.click(screen.getByRole('button', { name: 'মাপ সেভ করুন' }));
 
     const panel = within(await screen.findByRole('region', { name: 'মাপ' })).getByRole('tabpanel');
-    await userEvent.selectOptions(within(panel).getByLabelText('তুলনা করুন'), `অর্ডার ${order.number}`);
-    expect(within(row(panel, 'বুক')).getByText('বদলেছে')).toBeTruthy();
+    expect(within(panel).getByRole('columnheader', { name: /^আগের/ })).toBeTruthy();
+    expect(within(panel).getByRole('columnheader', { name: /^অর্ডার [A-Z]-[0-9]{4}/ })).toBeTruthy();
+    const chest = row(panel, 'বুক');
+    expect(within(chest).getByText(/^[+−]/)).toBeTruthy();
+    expect(within(chest).getByText('বদলেছে')).toBeTruthy();
   });
 
   it('requires every required measurement', async () => {
@@ -92,6 +97,8 @@ describe('Measurements', () => {
     expect(within(section).getByText('এই কাস্টমারের মাপ দেখার অনুমতি আপনার নেই।')).toBeTruthy();
     expect(within(section).queryByRole('tab')).toBeNull();
     expect(within(section).queryByText(/ইঞ্চি/)).toBeNull();
+    expect(within(section).queryByRole('table')).toBeNull();
+    expect(within(section).queryByText(/আগের|বদলেছে/)).toBeNull();
   });
 
   it('shows them to cutting staff who have the permission', async () => {

@@ -1,6 +1,6 @@
-import { STARTER_TEMPLATES, type MeasurementField } from '@darzikhata/domain';
+import { STARTER_TEMPLATES, type MeasurementField, type MeasurementProfile, type MeasurementValue, type Order } from '@darzikhata/domain';
 import { describe, expect, it } from 'vitest';
-import { changedFromPrevious, compareValues, deltaText, fieldGroups, nextFieldKey, valueDeltas } from './measurementView';
+import { changedFromPrevious, compareValues, comparisonColumns, deltaText, fieldGroups, nextFieldKey, valueDeltas } from './measurementView';
 
 const shirt = STARTER_TEMPLATES.find((t) => t.id === 'shirt')!;
 
@@ -62,5 +62,95 @@ describe('valueDeltas', () => {
     expect(deltaText(0.5, 'bn')).toBe('+½');
     expect(deltaText(0.75, 'en')).toBe('+¾');
     expect(deltaText(-1.25, 'bn')).toBe('−১¼');
+  });
+});
+
+describe('comparisonColumns', () => {
+  const inch = (value: number): MeasurementValue => ({ value, unit: 'inch' });
+  const version = (id: string, takenAt: string, values: Record<string, MeasurementValue>, takenBy = 'staff-a') => ({
+    id,
+    takenAt,
+    takenBy,
+    source: 'body' as const,
+    notes: '',
+    values,
+  });
+  const profile = (versions: MeasurementProfile['versions']): MeasurementProfile => ({ customerId: 'c1', templateId: 'shirt', versions });
+  const order = (id: string, number: string, createdAt: string, versionId: string, values: Record<string, MeasurementValue>, templateId = 'shirt') =>
+    ({
+      id,
+      number,
+      createdAt,
+      customerId: 'c1',
+      items: [{ id: `${id}-i`, templateId, cancelled: null, measurements: { versionId, takenAt: createdAt, source: 'sample', values } }],
+    }) as unknown as Order;
+  const fields = shirt.fields.slice(0, 3);
+
+  it('has only the current column for a first version and no deltas', () => {
+    const result = comparisonColumns(profile([version('v1', '2026-01-01', { length: inch(29), chest: inch(38) })]), [], fields);
+    expect(result.columns.map((c) => c.kind)).toEqual(['current']);
+    expect(result.columns[0]).toMatchObject({ versionId: 'v1', takenAt: '2026-01-01', source: 'body', takenBy: 'staff-a' });
+    expect(result.rows.map((r) => [r.key, r.delta])).toEqual([['length', null], ['chest', null], ['waist', null]]);
+    expect(result.rows[0]!.values.current).toEqual(inch(29));
+    expect(result.rows[2]!.values.current).toBeNull();
+  });
+
+  it('adds the previous version and the delta of current against it', () => {
+    const p = profile([
+      version('v1', '2026-01-01', { length: inch(29), chest: inch(38) }, 'staff-b'),
+      version('v2', '2026-03-01', { length: inch(29), chest: inch(39.25) }),
+    ]);
+    const result = comparisonColumns(p, [], fields);
+    expect(result.columns.map((c) => c.kind)).toEqual(['current', 'previous']);
+    expect(result.columns[1]).toMatchObject({ versionId: 'v1', takenBy: 'staff-b' });
+    expect(result.rows.map((r) => r.delta)).toEqual([null, 1.25, null]);
+    expect(result.rows[1]!.values.previous).toEqual(inch(38));
+  });
+
+  it('takes the snapshot from the most recent order using the template, with the version it came from', () => {
+    const p = profile([
+      version('v1', '2026-01-01', { chest: inch(38) }, 'staff-b'),
+      version('v2', '2026-03-01', { chest: inch(39) }),
+    ]);
+    const orders = [
+      order('o1', 'R-0001', '2026-01-02', 'v1', { chest: inch(38) }),
+      order('o2', 'R-0002', '2026-02-02', 'v1', { chest: inch(38.5) }),
+      order('o3', 'R-0003', '2026-03-05', 'v2', { chest: inch(39) }, 'trouser'),
+    ];
+    const result = comparisonColumns(p, orders, fields);
+    expect(result.columns.map((c) => c.kind)).toEqual(['current', 'previous', 'snapshot']);
+    expect(result.columns[2]).toMatchObject({ orderNumber: 'R-0002', versionId: 'v1', takenBy: 'staff-b', source: 'sample' });
+    expect(result.rows[1]!.values.snapshot).toEqual(inch(38.5));
+  });
+
+  it('treats a field added to the template later as having no earlier value and no delta', () => {
+    const p = profile([
+      version('v1', '2026-01-01', { length: inch(29) }),
+      version('v2', '2026-03-01', { length: inch(30), waist: inch(34) }),
+    ]);
+    const result = comparisonColumns(p, [], fields);
+    const waist = result.rows.find((r) => r.key === 'waist')!;
+    expect(waist.values.previous).toBeNull();
+    expect(waist.delta).toBeNull();
+    expect(result.rows.find((r) => r.key === 'length')!.delta).toBe(1);
+  });
+
+  it('shows no difference for a snapshot equal to the current version', () => {
+    const values = { length: inch(29), chest: inch(39) };
+    const p = profile([version('v1', '2026-01-01', { length: inch(29), chest: inch(38) }), version('v2', '2026-03-01', values)]);
+    const result = comparisonColumns(p, [order('o1', 'R-0001', '2026-03-02', 'v2', values)], fields);
+    expect(result.rows.every((r) => !r.snapshotDiffers)).toBe(true);
+    const other = comparisonColumns(p, [order('o1', 'R-0001', '2026-03-02', 'v1', { length: inch(29), chest: inch(38) })], fields);
+    expect(other.rows.map((r) => r.snapshotDiffers)).toEqual([false, true, false]);
+  });
+
+  it('does not compare values saved in different units', () => {
+    const p = profile([
+      version('v1', '2026-01-01', { chest: inch(38) }),
+      version('v2', '2026-03-01', { chest: { value: 99, unit: 'cm' } }),
+    ]);
+    const chest = comparisonColumns(p, [], fields).rows.find((r) => r.key === 'chest')!;
+    expect(chest.delta).toBeNull();
+    expect(chest.unitsDiffer).toBe(true);
   });
 });

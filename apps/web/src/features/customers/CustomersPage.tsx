@@ -11,7 +11,7 @@ export function CustomersPage() {
   const { kind } = useShell();
   const { customerId } = useParams();
   const [query, setQuery] = useState('');
-  const list = <CustomerList query={query} onQueryChange={setQuery} activeId={customerId} />;
+  const list = <CustomerList query={query} onQueryChange={setQuery} activeId={customerId} desktop={kind !== 'mobile'} />;
 
   if (kind === 'mobile') {
     return customerId ? <CustomerProfile customerId={customerId} /> : list;
@@ -19,7 +19,7 @@ export function CustomersPage() {
 
   return (
     <div className="flex items-start gap-6">
-      <div className="sticky top-0 flex max-h-[calc(100dvh-8.5rem)] w-80 shrink-0 flex-col">{list}</div>
+      <div className="sticky top-0 flex max-h-[calc(100dvh-8.5rem)] w-[300px] shrink-0 flex-col rounded-2xl border border-line bg-panel p-3">{list}</div>
       <div className="min-w-0 flex-1">
         {customerId ? <CustomerProfile customerId={customerId} /> : <p className="text-muted">{t('customers.choose')}</p>}
       </div>
