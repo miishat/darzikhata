@@ -44,6 +44,15 @@ describe('Branch scope', () => {
     expect(screen.queryByRole('option', { name: new RegExp(`^${shopOrder.number}`) })).toBeNull();
   });
 
+  it('keeps orders of other branches off a customer profile', async () => {
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders', as: supervisor });
+    await screen.findByText('১টি অর্ডার');
+    const shopOrder = Object.values(store.getSnapshot().state.orders).find((o) => o.branchId === 'shop')!;
+    await act(() => router.navigate(`/app/customers/${shopOrder.customerId}`));
+    const region = await screen.findByRole('region', { name: 'অর্ডারের ইতিহাস' });
+    expect(within(region).queryByRole('link', { name: new RegExp(shopOrder.number) })).toBeNull();
+  });
+
   it('offers the switcher under More on a phone', async () => {
     await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/more' });
     await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'দোকান');

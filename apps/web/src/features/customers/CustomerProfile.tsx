@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { buttonClasses } from '../../ui/Button';
+import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
 import { MeasurementSection } from './MeasurementSection';
@@ -23,6 +24,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
   const { t, language, money, date } = useI18n();
   const can = useCan();
   const { state } = useSnapshot();
+  const scoped = useScopedState();
   const customer = state.customers[customerId];
 
   if (!customer) {
@@ -37,7 +39,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
   const members = household
     ? Object.values(state.customers).filter((c) => c.householdId === household.id && c.id !== customer.id)
     : [];
-  const orders: Order[] = Object.values(state.orders)
+  const orders: Order[] = Object.values(scoped.orders)
     .filter((o) => o.customerId === customer.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
