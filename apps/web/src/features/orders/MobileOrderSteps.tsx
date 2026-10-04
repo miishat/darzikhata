@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Plus } from 'lucide-react';
@@ -36,6 +36,8 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
   const [showErrors, setShowErrors] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [focusTick, setFocusTick] = useState(0);
+  const [keypadSpace, setKeypadSpace] = useState(0);
+  const onKeypadSpace = useCallback((h: number) => setKeypadSpace(h), []);
   const body = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
@@ -120,7 +122,7 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
       )}
 
       {step === 'customer' && <CustomerPicker entry={entry} errors={errors} />}
-      {step === 'garments' && <GarmentsStep entry={entry} errors={errors} onDone={next} />}
+      {step === 'garments' && <GarmentsStep entry={entry} errors={errors} onDone={next} onKeypadSpace={onKeypadSpace} />}
       {step === 'details' && <DetailsStep entry={entry} />}
       {step === 'money' && <MoneyStep entry={entry} errors={errors} />}
       {step === 'review' && <ReviewStep entry={entry} />}
@@ -146,6 +148,8 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
           </Button>
         )}
       </div>
+      {/* Room after Back/Next so they can be scrolled above the pinned keypad. */}
+      {keypadSpace > 0 && <div aria-hidden="true" data-testid="keypad-space" style={{ height: keypadSpace }} />}
     </div>
   );
 }
@@ -159,7 +163,17 @@ function ItemRegion({ title, children }: { title: string; children: ReactNode })
   );
 }
 
-function GarmentsStep({ entry, errors, onDone }: { entry: OrderEntry; errors: DraftErrors; onDone(): void }) {
+function GarmentsStep({
+  entry,
+  errors,
+  onDone,
+  onKeypadSpace,
+}: {
+  entry: OrderEntry;
+  errors: DraftErrors;
+  onDone(): void;
+  onKeypadSpace(height: number): void;
+}) {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const title = useItemTitle(entry);
@@ -205,7 +219,7 @@ function GarmentsStep({ entry, errors, onDone }: { entry: OrderEntry; errors: Dr
       {shown && (
         <ItemRegion key={shown.key} title={title(shown)}>
           <ItemHeader entry={entry} item={shown} errors={errors} />
-          <ItemMeasurements entry={entry} item={shown} errors={errors} tiles onDone={onDone} />
+          <ItemMeasurements entry={entry} item={shown} errors={errors} tiles onDone={onDone} onKeypadSpace={onKeypadSpace} />
         </ItemRegion>
       )}
       <div ref={adder} className="flex flex-col gap-4">

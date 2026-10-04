@@ -1,7 +1,7 @@
 import { moneySummary } from '@darzikhata/domain';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 
 const SHIRT = { 'ঝুল': '29', 'বুক': '38', 'পেট': '34', 'কাঁধ (পুট)': '17', 'হাতা': '23', 'গলা': '15½' };
@@ -193,4 +193,31 @@ describe('Measuring a shirt with the keypad on a phone', () => {
     }
     expect(await screen.findByRole('heading', { name: 'ডিজাইন ও ছবি' })).toBeTruthy();
   }, 20_000);
+
+  it('keeps room after Back and Next for the keypad only while it is open', async () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(240);
+    try {
+      await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+      await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+      await userEvent.type(screen.getByLabelText('নাম'), 'জসিম উদ্দিন');
+      await userEvent.type(screen.getByLabelText('ফোন'), '01799887766');
+      await next();
+      await screen.findByRole('heading', { name: 'পোশাক ও মাপ' });
+      await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'শার্ট');
+      await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+
+      expect(screen.queryByTestId('keypad-space')).toBeNull();
+      await userEvent.click(screen.getByLabelText('বুক'));
+      const space = screen.getByTestId('keypad-space');
+      expect(space.style.height).toBe('240px');
+      // The space comes after the Back/Next buttons, at the very end of the step.
+      const nextButton = screen.getByRole('button', { name: 'পরের ধাপ' });
+      expect(nextButton.compareDocumentPosition(space) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+      await userEvent.click(screen.getByRole('button', { name: 'বন্ধ করুন' }));
+      expect(screen.queryByTestId('keypad-space')).toBeNull();
+    } finally {
+      height.mockRestore();
+    }
+  });
 });

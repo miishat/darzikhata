@@ -38,8 +38,6 @@ export async function takeFirstOrder(page: Page) {
     await fill(shirt, SHIRT);
     await page.getByRole('button', { name: 'পাঞ্জাবি ২', exact: true }).click();
     await fill(page.getByRole('region', { name: 'পাঞ্জাবি ২' }), { ...SHIRT, 'ঝুল': '42' });
-    // The keypad stays open under the last field; Escape puts it away before the page's own buttons.
-    await page.keyboard.press('Escape');
     await next();
     await next();
 

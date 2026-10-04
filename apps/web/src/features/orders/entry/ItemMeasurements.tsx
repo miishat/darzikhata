@@ -20,9 +20,11 @@ export interface ItemMeasurementsProps {
   tiles?: boolean;
   /** With tiles: called when "next" is pressed on the last field. */
   onDone?(): void;
+  /** With tiles: told how much room the page must keep free for the open keypad. */
+  onKeypadSpace?(height: number): void;
 }
 
-export function ItemMeasurements({ entry, item, errors, tiles = false, onDone }: ItemMeasurementsProps) {
+export function ItemMeasurements({ entry, item, errors, tiles = false, onDone, onKeypadSpace }: ItemMeasurementsProps) {
   const { t, label, date } = useI18n();
   const { config, state } = useSnapshot();
   const errorText = useErrorText(errors);
@@ -124,6 +126,7 @@ export function ItemMeasurements({ entry, item, errors, tiles = false, onDone }:
           errors={fieldErrors}
           onChange={(values) => entry.updateItem(item.key, { measurements: { ...m, values } })}
           onDone={() => onDone?.()}
+          onKeypadSpace={onKeypadSpace}
         />
       </div>
     );

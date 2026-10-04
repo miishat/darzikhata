@@ -16,6 +16,8 @@ export interface MeasureTilesProps {
   onChange(values: Record<string, number>): void;
   /** Called when "next" is pressed on the last field. */
   onDone(): void;
+  /** Height in px the page must keep free under its content while the keypad is open; 0 when closed. */
+  onKeypadSpace?(height: number): void;
 }
 
 /**
@@ -23,7 +25,7 @@ export interface MeasureTilesProps {
  * hardware typing still work; with the keypad on the input uses inputmode="none" and a keypad
  * pinned at the bottom builds the text. Parsing is the domain's `parseMeasurement`.
  */
-export function MeasureTiles({ template, values, previous, errors, onChange, onDone }: MeasureTilesProps) {
+export function MeasureTiles({ template, values, previous, errors, onChange, onDone, onKeypadSpace }: MeasureTilesProps) {
   const { t, label, language } = useI18n();
   const { keypadOn } = useKeypadOn();
   const prefix = useId();
@@ -65,6 +67,10 @@ export function MeasureTiles({ template, values, previous, errors, onChange, onD
   useLayoutEffect(() => {
     setPadding(open ? (keypadRef.current?.offsetHeight ?? 0) : 0);
   }, [open, active]);
+  useLayoutEffect(() => {
+    onKeypadSpace?.(padding);
+  }, [padding, onKeypadSpace]);
+  useLayoutEffect(() => () => onKeypadSpace?.(0), [onKeypadSpace]);
   useEffect(() => {
     if (!open || !active) return;
     const tile = document.getElementById(`${prefix}-tile-${active}`);
@@ -147,10 +153,9 @@ export function MeasureTiles({ template, values, previous, errors, onChange, onD
       ))}
       {open && activeField && (
         <>
-          <div aria-hidden="true" style={{ height: padding }} />
           <div
             ref={keypadRef}
-            className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-t-3xl border-t border-line bg-panel px-3 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-6px_18px_rgba(0,0,0,0.08)]"
+            className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-t-3xl border-t border-line bg-panel px-3 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg"
           >
             <div className="flex justify-end">
               <IconButton label={t('common.close')} icon={X} onClick={close} className="-my-1" />
