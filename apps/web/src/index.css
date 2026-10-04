@@ -68,6 +68,7 @@
   --color-brand-hover: var(--brand-hover);
   --color-focus: var(--focus);
   --color-panel-raised: var(--panel-raised);
+  --color-raised-line: var(--raised-line);
   --color-navy-line: var(--navy-line);
   --color-chip-selected: var(--chip-selected);
   --color-on-chip-selected: var(--on-chip-selected);
@@ -136,6 +137,7 @@
   --brand-hover: #163ba6;
   --focus: #1f4fd8;
   --panel-raised: #ffffff;
+  --raised-line: transparent;
   --navy-line: transparent;
   --chip-selected: var(--navy);
   --on-chip-selected: #ffffff;
@@ -151,6 +153,7 @@
     --surface: #0f131a;
     --panel: #181e29;
     --panel-raised: #202734;
+    --raised-line: #2d3442;
     --line: #2d3442;
     --ink: #e6ebf4;
     --muted: #9aa6ba;
@@ -220,6 +223,7 @@
   --surface: #0f131a;
   --panel: #181e29;
   --panel-raised: #202734;
+  --raised-line: #2d3442;
   --line: #2d3442;
   --ink: #e6ebf4;
   --muted: #9aa6ba;
