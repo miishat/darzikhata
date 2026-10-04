@@ -1,21 +1,32 @@
 import {
   applyEvent,
+  createServer,
+  currentVersionOf,
   emptyState,
+  isEditEvent,
   nextOrderNumber,
+  pushEvents,
   replay,
+  resolveReview,
   staffById,
   todayInDhaka,
   verifyPin,
   type ApplyOutcome,
   type DomainEvent,
+  type EditEvent,
   type EventBody,
+  type PushOutcome,
+  type ReviewItem,
   type ShopConfig,
   type ShopState,
+  type SyncServer,
   validateShopConfig,
 } from '@darzikhata/domain';
+import { OTHER_DEVICE_ID, seedConflict } from '../seed/conflict';
 import { generateShop } from '../seed/generate';
 import type { SeedShopKey } from '../seed/shops';
-import type { DarziDb } from './db';
+import type { DarziDb, EventRow } from './db';
+import { DemoServer } from './demoServer';
 
 export interface Session {
   shopKey: SeedShopKey;
@@ -25,18 +36,35 @@ export interface Session {
 
 export type StoreStatus = 'loading' | 'empty' | 'ready';
 
+/** Where this device stands with the demo server. */
+export interface SyncInfo {
+  /** The demo's online switch. While off, changes wait on this device. */
+  online: boolean;
+  syncing: boolean;
+  /** Changes made on this device that the server has not accepted yet. */
+  pending: number;
+  /** Changes the server could not apply, waiting for a person to decide, oldest first. */
+  review: ReviewItem[];
+  lastSyncAt: string | null;
+}
+
 export interface StoreSnapshot {
   status: StoreStatus;
   config: ShopConfig | null;
   state: ShopState;
   session: Session | null;
   deviceId: string | null;
+  sync: SyncInfo;
 }
 
 export interface StoreDeps {
   db: DarziDb;
   now?: () => Date;
   newId?: () => string;
+  /** How long a sync takes to start, so people can see it happen. Tests leave it out. */
+  syncDelay?: () => Promise<void>;
+  /** How long after a change to sync it, so a burst of changes goes in one sync. */
+  autoSyncAfterMs?: number;
 }
 
 /** Result of saving several changes together: all were saved, or none were. */
@@ -47,7 +75,33 @@ export type BatchOutcome =
 /** Result of changing the shop setup: saved, or the problems that stopped it. */
 export type ConfigOutcome = { ok: true } | { ok: false; problems: string[] };
 
-const LOADING: StoreSnapshot = { status: 'loading', config: null, state: emptyState(), session: null, deviceId: null };
+/** An edit, without the meta the store adds when it is sent. */
+export type EditBody = Extract<EventBody, { baseVersion: number }>;
+
+/** How a person settles a review item. 'merge' sends a new edit with the parts they chose to keep. */
+export type ReviewDecision = { kind: 'keepCurrent' } | { kind: 'applyMine' } | { kind: 'merge'; body: EditBody };
+
+/** Result of an action that needs the server: done, or why not. */
+export type ServerOutcome = { ok: true } | { ok: false; reason: 'offline' | 'not-on-server' | 'gone' };
+
+interface SavedSync {
+  online: boolean;
+  lastSyncAt: string | null;
+}
+
+const NO_SYNC: SyncInfo = { online: true, syncing: false, pending: 0, review: [], lastSyncAt: null };
+
+const LOADING: StoreSnapshot = {
+  status: 'loading',
+  config: null,
+  state: emptyState(),
+  session: null,
+  deviceId: null,
+  sync: NO_SYNC,
+};
+
+const sameIds = (rows: EventRow[], log: DomainEvent[]) =>
+  rows.length === log.length && rows.every((row, i) => row.id === log[i]!.id);
 
 /**
  * Holds the open shop in memory and keeps it in step with IndexedDB.
@@ -59,13 +113,20 @@ export class ShopStore {
   /** Dispatches, sign-in/out, reset and clear run one at a time so memory, saved order and applied order agree. */
   private queue: Promise<unknown> = Promise.resolve();
   private readonly db: DarziDb;
+  private readonly server: DemoServer;
   private readonly now: () => Date;
   private readonly newId: () => string;
+  private readonly syncDelay: () => Promise<void>;
+  private readonly autoSyncAfterMs: number;
+  private autoSync: ReturnType<typeof setTimeout> | null = null;
 
   constructor(deps: StoreDeps) {
     this.db = deps.db;
+    this.server = new DemoServer(deps.db);
     this.now = deps.now ?? (() => new Date());
     this.newId = deps.newId ?? (() => crypto.randomUUID());
+    this.syncDelay = deps.syncDelay ?? (() => Promise.resolve());
+    this.autoSyncAfterMs = deps.autoSyncAfterMs ?? 0;
   }
 
   getSnapshot = (): StoreSnapshot => this.snapshot;
@@ -91,7 +152,7 @@ export class ShopStore {
     for (const listener of this.listeners) listener();
   }
 
-  private async meta<T>(key: 'config' | 'session' | 'deviceId'): Promise<T | null> {
+  private async meta<T>(key: 'config' | 'session' | 'deviceId' | 'sync'): Promise<T | null> {
     const row = await this.db.meta.get(key);
     return row ? (row.value as T) : null;
   }
@@ -105,9 +166,12 @@ export class ShopStore {
     }
     const session = await this.meta<Session>('session');
     const deviceId = await this.meta<string>('deviceId');
+    const saved = (await this.meta<SavedSync>('sync')) ?? { online: true, lastSyncAt: null };
     const rows = await this.db.events.orderBy('seq').toArray();
     const { state } = replay(rows.map((r) => r.event));
-    this.publish({ status: 'ready', config, state, session, deviceId });
+    const review = (await this.db.serverReview.orderBy('seq').toArray()).map((r) => r.item);
+    const pending = rows.filter((r) => r.pending === 1).length;
+    this.publish({ status: 'ready', config, state, session, deviceId, sync: { ...saved, syncing: false, pending, review } });
   }
 
   /** Replaces everything on this device with a fresh demo shop, signed in as its owner. */
@@ -122,18 +186,25 @@ export class ShopStore {
   }
 
   private async doStartDemo(shopKey: SeedShopKey): Promise<void> {
-    const { config, events } = generateShop(shopKey, todayInDhaka(this.now()));
+    const today = todayInDhaka(this.now());
+    const { config, events } = generateShop(shopKey, today);
     const owner = config.staff.find((s) => s.roleId === 'owner')!;
     const session: Session = { shopKey, staffId: owner.id };
-    await this.db.transaction('rw', this.db.events, this.db.meta, this.db.photos, async () => {
+    // The server already has the other device's edit and holds this device's clashing edit for review.
+    const conflict = seedConflict(shopKey, config, events, today);
+    const server = pushEvents(createServer([...events, conflict.theirs]), [conflict.mine]).server;
+    const sync: SavedSync = { online: true, lastSyncAt: this.now().toISOString() };
+    await this.db.transaction('rw', [this.db.events, this.db.meta, this.db.photos, this.db.serverEvents, this.db.serverReview], async () => {
       await this.db.events.clear();
       await this.db.meta.clear();
       await this.db.photos.clear();
-      await this.db.events.bulkAdd(events.map((event) => ({ id: event.id, event })));
+      await this.server.reset(server);
+      await this.db.events.bulkAdd(server.log.map((event) => ({ id: event.id, event })));
       await this.db.meta.bulkPut([
         { key: 'config', value: config },
         { key: 'session', value: session },
         { key: 'deviceId', value: config.devices[0]!.id },
+        { key: 'sync', value: sync },
       ]);
     });
     await this.load();
@@ -145,10 +216,12 @@ export class ShopStore {
   }
 
   private async doClear(): Promise<void> {
-    await this.db.transaction('rw', this.db.events, this.db.meta, this.db.photos, async () => {
+    await this.db.transaction('rw', [this.db.events, this.db.meta, this.db.photos, this.db.serverEvents, this.db.serverReview], async () => {
       await this.db.events.clear();
       await this.db.meta.clear();
       await this.db.photos.clear();
+      await this.db.serverEvents.clear();
+      await this.db.serverReview.clear();
     });
     await this.load();
   }
@@ -158,15 +231,17 @@ export class ShopStore {
    * rejected ones are returned so the screen can explain what went wrong.
    */
   dispatch(body: EventBody): Promise<ApplyOutcome> {
-    return this.enqueue(() => this.save(body));
+    const saved = this.enqueue(() => this.save(body));
+    void saved.then((outcome) => outcome.kind === 'applied' && this.syncSoon(), () => undefined);
+    return saved;
   }
 
   private async save(body: EventBody): Promise<ApplyOutcome> {
     const event = this.stamp(body);
     const outcome = applyEvent(this.snapshot.state, event);
     if (outcome.kind === 'applied') {
-      await this.db.events.add({ id: event.id, event });
-      this.publish({ ...this.snapshot, state: outcome.state });
+      await this.db.events.add({ id: event.id, event, pending: 1 });
+      this.publish({ ...this.snapshot, state: outcome.state, sync: { ...this.snapshot.sync, pending: this.snapshot.sync.pending + 1 } });
     }
     return outcome;
   }
@@ -177,7 +252,9 @@ export class ShopStore {
    * applied, nothing is saved and the first failure is returned.
    */
   dispatchBatch(bodies: EventBody[]): Promise<BatchOutcome> {
-    return this.enqueue(() => this.saveBatch(bodies));
+    const saved = this.enqueue(() => this.saveBatch(bodies));
+    void saved.then((outcome) => outcome.ok && this.syncSoon(), () => undefined);
+    return saved;
   }
 
   private stamp(body: EventBody): DomainEvent {
@@ -198,8 +275,8 @@ export class ShopStore {
       events.push(event);
       outcomes.push(outcome);
     }
-    await this.db.events.bulkAdd(events.map((event) => ({ id: event.id, event })));
-    this.publish({ ...this.snapshot, state });
+    await this.db.events.bulkAdd(events.map((event) => ({ id: event.id, event, pending: 1 as const })));
+    this.publish({ ...this.snapshot, state, sync: { ...this.snapshot.sync, pending: this.snapshot.sync.pending + events.length } });
     return { ok: true, outcomes };
   }
 
@@ -235,6 +312,142 @@ export class ShopStore {
       this.publish({ ...this.snapshot, config: next });
       return { ok: true };
     });
+  }
+
+  /** Turns the demo's connection on or off. Turning it on sends waiting changes straight away. */
+  async setOnline(online: boolean): Promise<void> {
+    await this.enqueue(async () => {
+      if (this.snapshot.status !== 'ready') return;
+      const sync = { ...this.snapshot.sync, online };
+      await this.db.meta.put({ key: 'sync', value: { online, lastSyncAt: sync.lastSyncAt } satisfies SavedSync });
+      this.publish({ ...this.snapshot, sync });
+    });
+    if (online) await this.syncNow();
+  }
+
+  /**
+   * Sends this device's waiting changes and takes everything new from the server. Null while
+   * offline. The pause before it runs does not hold up other changes: any made meanwhile go too.
+   */
+  async syncNow(): Promise<PushOutcome[] | null> {
+    if (this.snapshot.status !== 'ready' || !this.snapshot.sync.online) return null;
+    this.setSyncing(true);
+    try {
+      await this.syncDelay();
+    } catch (error) {
+      this.setSyncing(false);
+      throw error;
+    }
+    return this.enqueue(() => this.doSync());
+  }
+
+  /** Syncs a moment after a change, when online. Failures wait for the next sync. */
+  private syncSoon(): void {
+    if (!this.snapshot.sync.online) return;
+    if (this.autoSync) clearTimeout(this.autoSync);
+    this.autoSync = setTimeout(() => {
+      this.autoSync = null;
+      this.syncNow().catch(() => undefined);
+    }, this.autoSyncAfterMs);
+  }
+
+  private setSyncing(syncing: boolean): void {
+    if (this.snapshot.sync.syncing !== syncing) this.publish({ ...this.snapshot, sync: { ...this.snapshot.sync, syncing } });
+  }
+
+  /** The sync itself, run in the queue. It reads, decides and saves without waiting on anything else. */
+  private async doSync(): Promise<PushOutcome[] | null> {
+    try {
+      if (this.snapshot.status !== 'ready' || !this.snapshot.sync.online) return null;
+      const rows = await this.db.events.orderBy('seq').toArray();
+      const before = await this.server.load();
+      const pushed = pushEvents(before, rows.filter((r) => r.pending === 1).map((r) => r.event));
+      await this.adopt(rows, before, pushed.server);
+      return pushed.results;
+    } finally {
+      this.setSyncing(false);
+    }
+  }
+
+  /**
+   * Saves the server's new copy and makes this device show exactly the server's log. When the
+   * device already holds that log in that order, only the pending marks are cleared; otherwise
+   * (another device's changes, or a change of ours held for review) the device log is rewritten.
+   */
+  private async adopt(rows: EventRow[], before: SyncServer, after: SyncServer): Promise<void> {
+    const same = sameIds(rows, after.log);
+    const lastSyncAt = this.now().toISOString();
+    const tables = [this.db.events, this.db.meta, this.db.serverEvents, this.db.serverReview];
+    await this.db.transaction('rw', tables, async () => {
+      await this.server.save(before, after);
+      if (same) {
+        await this.db.events.where('pending').equals(1).modify((row) => {
+          delete row.pending;
+        });
+      } else {
+        await this.db.events.clear();
+        await this.db.events.bulkAdd(after.log.map((event) => ({ id: event.id, event })));
+      }
+      await this.db.meta.put({ key: 'sync', value: { online: this.snapshot.sync.online, lastSyncAt } satisfies SavedSync });
+    });
+    this.publish({
+      ...this.snapshot,
+      state: same ? this.snapshot.state : after.state,
+      sync: { ...this.snapshot.sync, pending: 0, review: after.review, lastSyncAt },
+    });
+  }
+
+  /**
+   * Demo only: another device sends an edit straight to the server, based on the server's
+   * current copy of the record so it always applies there. This device sees it at its next sync,
+   * which happens straight away when online.
+   */
+  pushFromOtherDevice(body: EditBody): Promise<ServerOutcome> {
+    return this.enqueue(async (): Promise<ServerOutcome> => {
+      const { config, session } = this.snapshot;
+      if (!config || !session?.staffId) throw new Error('No one is signed in to a shop');
+      const staffId = config.staff.find((s) => s.roleId === 'owner' && s.active)?.id ?? session.staffId;
+      const before = await this.server.load();
+      const sent = { id: this.newId(), at: this.now().toISOString(), deviceId: OTHER_DEVICE_ID, staffId, ...body } as EditEvent;
+      const event = this.rebase(before.state, sent);
+      if (!event) return { ok: false, reason: 'not-on-server' };
+      const after = pushEvents(before, [event]).server;
+      await this.db.transaction('rw', [this.db.serverEvents, this.db.serverReview], () => this.server.save(before, after));
+      await this.doSync();
+      return { ok: true };
+    });
+  }
+
+  /**
+   * Settles a review item on the server, then syncs. 'keepCurrent' drops the waiting change,
+   * 'applyMine' re-sends it on top of the current version, and 'merge' drops it and sends a new
+   * edit by the signed-in person with only the parts they chose.
+   */
+  resolveReview(eventId: string, decision: ReviewDecision): Promise<ServerOutcome> {
+    return this.enqueue(async (): Promise<ServerOutcome> => {
+      if (!this.snapshot.sync.online) return { ok: false, reason: 'offline' };
+      const before = await this.server.load();
+      const item = before.review.find((r) => r.event.id === eventId);
+      if (!item) return { ok: false, reason: 'gone' };
+      const canReapply = item.outcome === 'conflict' && isEditEvent(item.event) && currentVersionOf(before.state, item.event) !== null;
+      if (decision.kind === 'applyMine' && !canReapply) return { ok: false, reason: 'gone' };
+      const meta = { id: this.newId(), at: this.now().toISOString() };
+      let after = resolveReview(before, eventId, decision.kind === 'applyMine' ? 'applyMine' : 'keepCurrent', meta).server;
+      if (decision.kind === 'merge') {
+        const event = this.rebase(after.state, this.stamp(decision.body) as EditEvent);
+        if (!event) return { ok: false, reason: 'gone' };
+        after = pushEvents(after, [event]).server;
+      }
+      await this.db.transaction('rw', [this.db.serverEvents, this.db.serverReview], () => this.server.save(before, after));
+      await this.doSync();
+      return { ok: true };
+    });
+  }
+
+  /** The edit based on the record's current version in `state`, or null when the record is not there. */
+  private rebase(state: ShopState, event: EditEvent): EditEvent | null {
+    const baseVersion = currentVersionOf(state, event);
+    return baseVersion === null ? null : { ...event, baseVersion };
   }
 
   /** Returns to the "who is using this device?" screen without touching shop data. */
