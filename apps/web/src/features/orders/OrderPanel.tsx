@@ -1,5 +1,5 @@
 import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
-import { Banknote, Ellipsis, EllipsisVertical, ExternalLink, Phone, Scissors, TriangleAlert, X } from 'lucide-react';
+import { Ellipsis, EllipsisVertical, ExternalLink, Phone, Scissors, TriangleAlert, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -154,7 +154,6 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
           )}
           {showTake && (
             <Button className="flex-[1.4]" onClick={() => money.open({ kind: 'take' })}>
-              <Banknote aria-hidden="true" size={18} />
               {t('payments.take')}
             </Button>
           )}

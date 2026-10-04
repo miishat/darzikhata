@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { MoreContent } from '../features/more/MoreContent';
-import { useCurrentStaff, useStore } from '../data/StoreContext';
+import { useCurrentStaff } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
@@ -9,7 +9,6 @@ import { Dialog } from '../ui/Dialog';
 export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void }) {
   const { t, label } = useI18n();
   const current = useCurrentStaff();
-  const store = useStore();
   const navigate = useNavigate();
   return (
     <Dialog
@@ -29,8 +28,8 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
             <Button
               variant="secondary"
               className="shrink-0"
-              onClick={async () => {
-                await store.signOut();
+              onClick={() => {
+                onClose();
                 navigate('/sign-in');
               }}
             >

@@ -1,8 +1,9 @@
 import { roleOf, type Staff } from '@darzikhata/domain';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useSnapshot, useStore } from '../../data/StoreContext';
+import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { BrandMark } from '../../ui/BrandMark';
 import { Button } from '../../ui/Button';
 import { PinPad } from '../../ui/PinPad';
 
@@ -11,6 +12,7 @@ export function SignInPage() {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const store = useStore();
+  const current = useCurrentStaff();
   const navigate = useNavigate();
   const [chosen, setChosen] = useState<Staff | null>(null);
   const [error, setError] = useState<string | undefined>();
@@ -26,6 +28,7 @@ export function SignInPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 py-10">
+      <BrandMark size={56} />
       <h1 className="text-2xl font-semibold">{chosen ? t('auth.enterPin', { name: chosen.name }) : t('auth.whoIsUsing')}</h1>
       {chosen ? (
         <>
@@ -58,6 +61,11 @@ export function SignInPage() {
             );
           })}
         </ul>
+      )}
+      {current && !chosen && (
+        <Button variant="secondary" onClick={() => navigate('/app')}>
+          {t('common.cancel')}
+        </Button>
       )}
       <p className="text-sm text-muted">{t('auth.demoPins')}</p>
     </main>

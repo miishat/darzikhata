@@ -149,7 +149,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
               tabIndex={active ? 0 : -1}
               onClick={() => setTab(x.key)}
               onKeyDown={onKeyDown}
-              className={`min-h-11 border-b-[3px] px-3.5 text-[15px] focus-visible:outline-2 focus-visible:outline-focus ${
+              className={`min-h-11 flex-1 border-b-[3px] px-3.5 text-[15px] focus-visible:outline-2 focus-visible:outline-focus ${
                 active ? 'border-brand font-bold text-brand-strong' : 'border-transparent text-muted'
               }`}
             >

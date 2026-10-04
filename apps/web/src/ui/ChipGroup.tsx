@@ -14,10 +14,12 @@ export interface ChipGroupProps {
   onChange(value: string): void;
   /** Extra content after the chips, scrolling with them (such as an add button). */
   trailing?: ReactNode;
+  /** Share the row's width equally between the chips; they still scroll when they do not fit. */
+  fill?: boolean;
 }
 
 /** A row of filter chips that scrolls sideways. Each chip is a toggle button. */
-export function ChipGroup({ label, options, value, onChange, trailing }: ChipGroupProps) {
+export function ChipGroup({ label, options, value, onChange, trailing, fill = false }: ChipGroupProps) {
   return (
     <div
       role="group"
@@ -32,7 +34,7 @@ export function ChipGroup({ label, options, value, onChange, trailing }: ChipGro
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
-            className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+            className={`inline-flex min-h-11 min-w-11 shrink-0 ${fill ? 'flex-1' : ''} items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               selected ? 'border-chip-selected bg-chip-selected text-on-chip-selected' : 'border-line bg-panel text-ink'
             }`}
           >

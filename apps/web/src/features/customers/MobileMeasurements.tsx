@@ -60,6 +60,7 @@ export function MobileMeasurements({ customerId }: { customerId: string }) {
         label={t('measure.garments')}
         value={selected.id}
         onChange={select}
+        fill
         options={templates.map((tpl) => ({ value: tpl.id, label: label(tpl.name) }))}
       />
       <section aria-label={`${garment} ${t('measure.section')}`} className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-3.5">

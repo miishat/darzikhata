@@ -35,19 +35,16 @@ describe('Order detail on a phone', () => {
     expect(screen.getByRole('link', { name: 'মেসেজ পাঠান' }).getAttribute('href')).toBe(`sms:${customer.phone}`);
     expect(screen.getByRole('link', { name: new RegExp(customer.name) })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'টাকার হিসাব' })).toBeTruthy();
-    expect(screen.getAllByRole('list', { name: 'ধাপ' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^এখন · ধাপ/).length).toBeGreaterThan(0);
   });
 
-  it('has at most one filled button: Take payment when money is owed, Hand over otherwise', async () => {
+  it('fills Take payment in the bar when money is owed', async () => {
     const owing = await openOrder('rahman', (o) => owes(o) && readyCount(o) > 0);
-    expect(screen.getByRole('button', { name: 'টাকা নিন' }).className).toContain('bg-brand');
-    expect(screen.getByRole('button', { name: 'হস্তান্তর' }).className).not.toContain('bg-brand');
-    const filled = screen.getAllByRole('button').filter((b) => /(^|\s)bg-brand(\s|$)/.test(b.className));
-    expect(filled).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /^টাকা নিন/ }).className).toContain('bg-brand');
     expect(owing.order.id).toBeTruthy();
   });
 
-  it('makes Hand over the filled button when nothing is owed, and hides Take payment', async () => {
+  it('hides Take payment once nothing is owed', async () => {
     const { store, order } = await openOrder('rahman', (o) => owes(o) && readyCount(o) > 0);
     await act(() =>
       store.dispatch({
@@ -56,9 +53,8 @@ describe('Order detail on a phone', () => {
         payment: { id: 'pay-rest', amount: moneySummary(order).balance, method: 'cash', reference: '', kind: 'payment', corrects: null, reason: '' },
       }),
     );
-    expect(await screen.findByRole('button', { name: 'হস্তান্তর' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'টাকা নিন' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'হস্তান্তর' }).className).toMatch(/(^|\s)bg-brand(\s|$)/);
+    await act(async () => undefined);
+    expect(screen.queryByRole('button', { name: /^টাকা নিন/ })).toBeNull();
   });
 
   it('hides Hand over when no garment is ready', async () => {
@@ -66,25 +62,15 @@ describe('Order detail on a phone', () => {
     expect(screen.queryByRole('button', { name: 'হস্তান্তর' })).toBeNull();
   });
 
-  it('asks which garment to hand over when several are ready, then confirms', async () => {
-    const { order, store } = await openOrder('rahman', (o) => readyCount(o) >= 2);
-    await userEvent.click(screen.getByRole('button', { name: 'হস্তান্তর' }));
-    const picker = await screen.findByRole('dialog', { name: 'কোনটি হস্তান্তর করবেন?' });
-    const choices = within(picker).getAllByRole('button').filter((b) => b.textContent !== 'বাতিল');
-    expect(choices).toHaveLength(readyCount(order));
-    await userEvent.click(choices[0]!);
-    const confirm = await screen.findByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
-    await userEvent.click(within(confirm).getByRole('button', { name: 'নিশ্চিত করুন' }));
-    await act(async () => undefined);
-    const after = store.getSnapshot().state.orders[order.id]!;
-    expect(after.items.filter((i) => i.stageKey === 'delivered').length).toBe(
-      order.items.filter((i) => i.stageKey === 'delivered').length + 1,
-    );
+  it('offers Hand over only on each ready garment, never in the bottom bar', async () => {
+    const { order } = await openOrder('rahman', (o) => readyCount(o) >= 2);
+    expect(screen.queryByRole('button', { name: 'হস্তান্তর' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'হস্তান্তর করুন' })).toHaveLength(readyCount(order));
   });
 
   it('never records money from one tap: Take payment opens the existing dialog', async () => {
     const { order, store } = await openOrder('rahman', (o) => owes(o));
-    await userEvent.click(screen.getByRole('button', { name: 'টাকা নিন' }));
+    await userEvent.click(screen.getByRole('button', { name: /^টাকা নিন/ }));
     expect(await screen.findByRole('dialog', { name: 'টাকা জমা' })).toBeTruthy();
     expect(store.getSnapshot().state.orders[order.id]!.payments).toEqual(order.payments);
   });
@@ -96,7 +82,7 @@ describe('Order detail on a phone', () => {
     expect(within(sheet).getByRole('table', { name: 'পেমেন্ট' })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: 'ছাড় বদলান' })).toBeTruthy();
     expect(within(sheet).getByRole('button', { name: 'দাম সমন্বয়' })).toBeTruthy();
-    expect(within(sheet).queryByRole('button', { name: 'টাকা নিন' })).toBeNull();
+    expect(within(sheet).queryByRole('button', { name: /^টাকা নিন/ })).toBeNull();
     await userEvent.click(within(sheet).getByRole('button', { name: 'ছাড় বদলান' }));
     expect(await screen.findByRole('dialog', { name: 'ছাড় বদলান' })).toBeTruthy();
     expect(screen.queryByRole('dialog', { name: 'টাকার হিসাব' })).toBeNull();
@@ -120,7 +106,7 @@ describe('Order detail on a phone', () => {
       pin: '3333',
     });
     expect(screen.queryByRole('region', { name: 'টাকার হিসাব' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'টাকা নিন' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^টাকা নিন/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'হিসাব' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'রসিদ প্রিন্ট' })).toBeNull();
   });
@@ -136,12 +122,12 @@ describe('Order detail on a phone', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('moves a garment on with one outlined button named from its stages', async () => {
+  it('moves a garment on with the filled card button named for the next stage', async () => {
     const { store, order } = await openOrder('rahman', (o) => o.items.some((i) => !i.cancelled && i.stageKey === 'cutting'));
     const item = order.items.find((i) => !i.cancelled && i.stageKey === 'cutting')!;
     const card = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(order.items.indexOf(item) + 1))}` });
-    const button = within(card).getByRole('button', { name: 'কাটিং শেষ, পরের ধাপ: সেলাই' });
-    expect(button.className).not.toMatch(/(^|\s)bg-brand(\s|$)/);
+    const button = within(card).getByRole('button', { name: 'সেলাই এ নিন' });
+    expect(button.className).toMatch(/(^|\s)bg-brand(\s|$)/);
     await userEvent.click(button);
     await act(async () => undefined);
     expect(store.getSnapshot().state.orders[order.id]!.items.find((i) => i.id === item.id)!.stageKey).toBe('stitching');
@@ -157,19 +143,14 @@ describe('Order detail on a phone', () => {
 });
 
 describe('Order detail bottom bar on a phone', () => {
-  it('shows a supervisor only the hand over button, and no empty bar once nothing is ready', async () => {
-    const { store, order } = await openOrder('uniform', (o) => o.branchId === 'workshop' && readyCount(o) > 0, {
+  it('shows a production supervisor no bar, and Hand over on the ready garments themselves', async () => {
+    const { order } = await openOrder('uniform', (o) => o.branchId === 'workshop' && readyCount(o) > 0, {
       staffId: 'uniform-supervisor',
       pin: '3333',
     });
-    expect(screen.getByRole('button', { name: 'হস্তান্তর' })).toBeTruthy();
-    expect(document.body.querySelector('.fixed.border-t.z-20')).not.toBeNull();
-    for (const item of order.items.filter((i) => nextMove(i)?.stage.group === 'delivered')) {
-      await act(() => store.dispatch({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: 'delivered', reason: '' }));
-    }
-    await act(async () => undefined);
     expect(screen.queryByRole('button', { name: 'হস্তান্তর' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'হস্তান্তর করুন' })).toHaveLength(readyCount(order));
     expect(document.body.querySelector('.fixed.border-t.z-20')).toBeNull();
-    expect(document.body.querySelector('.pb-28')).toBeNull();
+    expect(document.body.querySelector('.pb-40')).toBeNull();
   });
 });

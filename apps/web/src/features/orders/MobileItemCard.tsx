@@ -1,5 +1,6 @@
 import { formatMeasurement, itemSummaryGroup, labelIn, type Order, type OrderItem } from '@darzikhata/domain';
-import { ChevronRight, Ellipsis, Scissors, Shirt, TriangleAlert } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Ellipsis, Scissors, Shirt, UserPlus, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -7,9 +8,7 @@ import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { DueLabel } from '../../ui/DueLabel';
-import { StagePill } from '../../ui/StagePill';
-import { StageTracker, type TrackerStage } from '../../ui/StageTracker';
-import { stageTone } from '../../ui/stageTone';
+import { stageTone, TONE_BAND } from '../../ui/stageTone';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
 import { MeasurementTable } from '../customers/MeasurementTable';
@@ -19,17 +18,6 @@ import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, 
 import { nextMove } from './stageMoves';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
-
-/** Optional stages the garment passed over: before the current stage and never entered. Unknown without history. */
-export function trackerStages(item: OrderItem, label: (l: OrderItem['stages'][number]['label']) => string): TrackerStage[] {
-  const current = item.stages.findIndex((s) => s.key === item.stageKey);
-  const visited = new Set(item.stageHistory.flatMap((c) => [c.from, c.to]));
-  return item.stages.map((stage, index) => ({
-    key: stage.key,
-    label: label(stage.label),
-    skipped: item.stageHistory.length > 0 && stage.optional && index < current && !visited.has(stage.key),
-  }));
-}
 
 /** One-line summary of the first few measurements, e.g. "ঝুল ২৮¾ · বুক ৩৬¾". */
 function measureSummary(item: OrderItem, template: { fields: Array<{ key: string; label: Parameters<typeof labelIn>[0] }> } | undefined, language: 'bn' | 'en'): string {
@@ -41,7 +29,7 @@ function measureSummary(item: OrderItem, template: { fields: Array<{ key: string
     .join(' · ');
 }
 
-/** Phone garment card: where it is, what is next, and one outlined button for the usual move. */
+/** Phone garment card: a status band (stage, step, due), the garment's facts, and one filled button for the usual move. */
 export function MobileItemCard({ order, item }: { order: Order; item: OrderItem }) {
   const { t, language, label, date, number } = useI18n();
   const can = useCan();
@@ -68,32 +56,111 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
   const open = group === 'unfinished' || group === 'ready';
   const canSee = customer ? hasAccess(customer) : false;
   const summary = canSee ? measureSummary(item, template, language) : '';
+  const tone = stageTone(stage, group, Math.max(stageIndex, 0));
   const menu = canMove || can('orders.edit') || (can('orders.cancel') && !delivered);
 
   return (
     <>
-      <section aria-label={title} className="flex flex-col gap-3.5 rounded-2xl border border-line bg-panel p-3.5">
-        <div className="flex items-center gap-2.5">
-          <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong">
-            <Shirt size={22} />
-          </span>
-          <div className="min-w-0 flex-1">
+      <section aria-label={title} className="overflow-hidden rounded-2xl border border-line bg-panel">
+        <div className={`flex flex-col gap-2.5 px-4 pt-3 pb-3.5 ${TONE_BAND[tone]}`}>
+          <div className="flex items-center gap-3">
+            <Shirt aria-hidden="true" size={26} className="shrink-0" />
+            <div className="min-w-0 flex-1">
+              {!item.cancelled && (
+                <p className="text-xs font-semibold">{t('item.stepOf', { n: number(stageIndex + 1), total: number(item.stages.length) })}</p>
+              )}
+              <p className="font-display text-xl leading-tight font-bold">{stageName(item.stageKey)}</p>
+            </div>
+            {open && item.deliveryDate && <DueLabel date={item.deliveryDate} />}
+          </div>
+          {!item.cancelled && (
+            <div className="flex gap-1" role="img" aria-label={`${number(stageIndex + 1)}/${number(item.stages.length)}`}>
+              {item.stages.map((s, i) => (
+                <span key={s.key} className={`h-1.5 flex-1 rounded-full bg-current ${i <= stageIndex ? '' : 'opacity-20'}`} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h3 className="font-display text-lg font-semibold">{title}</h3>
             {item.wearer && <p className="truncate text-sm text-muted">{item.wearer}</p>}
-            {item.deliveryDate && (
-              <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">
-                {t('item.deliveryOn', { date: date(item.deliveryDate) })}
-                {open && <DueLabel date={item.deliveryDate} />}
-              </p>
+          </div>
+          {item.deliveryDate && (
+            <p className="shrink-0 text-end text-sm leading-tight">
+              <span className="block text-xs text-muted">{t('item.deliveryLabel')}</span>
+              <span className="font-semibold">{date(item.deliveryDate)}</span>
+            </p>
+          )}
+        </div>
+
+        {!item.cancelled && (
+          <div className="grid grid-cols-2 gap-2">
+            {item.trialDate && (
+              <Fact icon={Scissors} caption={t('item.trialLabel')} value={date(item.trialDate)} wide={!worker} />
+            )}
+            {worker ? (
+              <Fact icon={UserRound} caption={t('item.workerLabel')} value={worker.name} wide={!item.trialDate} />
+            ) : delivered ? null : can('work.assign') ? (
+              <button
+                type="button"
+                onClick={() => setDialog('assign')}
+                className="col-span-2 flex min-h-11 w-full items-center gap-2 rounded-xl border border-dashed border-line px-3 text-sm text-muted focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                <UserPlus aria-hidden="true" size={18} />
+                {t('work.assign')}
+                <ChevronRight aria-hidden="true" size={16} className="ms-auto rtl:rotate-180" />
+              </button>
+            ) : (
+              <span className="col-span-2 inline-flex min-h-11 items-center rounded-xl bg-surface px-3 text-sm text-muted">{t('item.noWorker')}</span>
             )}
           </div>
-          <StagePill
-            label={stage ? label(stage.label) : item.stageKey}
-            tone={stageTone(stage, group, Math.max(stageIndex, 0))}
-          />
-          {menu && !item.cancelled && (
-            <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title}>
-              {(done) => (
+        )}
+
+        {item.measurements &&
+          (canSee ? (
+            template && (
+              <button
+                type="button"
+                onClick={() => setDialog('measure')}
+                className="flex min-h-11 items-center gap-2.5 rounded-xl border border-dashed border-line px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-xs text-muted">{t('item.measureSummary')}</span>
+                  <span className="truncate text-sm">{summary}</span>
+                </span>
+                <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-muted rtl:rotate-180" />
+              </button>
+            )
+          ) : (
+            <p className="text-sm text-muted">{t('print.measurementsHidden')}</p>
+          ))}
+
+        {item.cancelled ? (
+          <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
+        ) : (
+          (canMove || menu) && (
+            <div className="flex items-center gap-2">
+              {canMove && next && (
+                next.stage.group === 'delivered' ? (
+                  <PrimaryButton data-tour="hand-over" onClick={() => setDialog('handOver')}>
+                    {t('item.handOver')}
+                  </PrimaryButton>
+                ) : (
+                  <MoveOn
+                    order={order}
+                    item={item}
+                    stageKey={next.stage.key}
+                    label={t('item.moveTo', { stage: label(next.stage.label) })}
+                    render={(props) => <PrimaryButton {...props} />}
+                  />
+                )
+              )}
+              {menu && (
+                <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title} triggerClassName="size-14! rounded-2xl! border border-line">
+                  {(done) => (
                 <>
                   {canMove && (
                     <ActionSheetItem
@@ -138,63 +205,18 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                   )}
                 </>
               )}
-            </ActionSheet>
-          )}
-        </div>
-
-        {!item.cancelled && (
-          <StageTracker stages={trackerStages(item, label)} currentKey={item.stageKey} />
+                </ActionSheet>
+              )}
+            </div>
+          )
         )}
-
-        {!item.cancelled && (
-          <div className="flex flex-wrap gap-2">
-            {item.trialDate && (
-              <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-surface px-2.5 text-sm">
-                <Scissors aria-hidden="true" size={16} />
-                {t('item.trialOn', { date: date(item.trialDate) })}
-              </span>
-            )}
-            {worker ? (
-              <span className="inline-flex min-h-8 items-center rounded-lg bg-surface px-2.5 text-sm">
-                {t('item.worker', { name: worker.name })}
-              </span>
-            ) : delivered ? null : can('work.assign') ? (
-              <button
-                type="button"
-                onClick={() => setDialog('assign')}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg ring-1 ring-inset ring-warn-line bg-warn-soft px-2.5 text-sm font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-focus"
-              >
-                <TriangleAlert aria-hidden="true" size={16} />
-                {t('work.assign')}
-              </button>
-            ) : (
-              <span className="inline-flex min-h-8 items-center rounded-lg bg-surface px-2.5 text-sm text-muted">{t('item.noWorker')}</span>
-            )}
-          </div>
-        )}
-
-        {item.measurements &&
-          (canSee ? (
-            template && (
-              <button
-                type="button"
-                onClick={() => setDialog('measure')}
-                className="flex min-h-11 items-center gap-2.5 rounded-xl border border-dashed border-line px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-focus"
-              >
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-xs text-muted">{t('item.measureSummary')}</span>
-                  <span className="truncate text-sm">{summary}</span>
-                </span>
-                <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-muted rtl:rotate-180" />
-              </button>
-            )
-          ) : (
-            <p className="text-sm text-muted">{t('print.measurementsHidden')}</p>
-          ))}
 
         {(item.designNotes || item.fabricNote || item.photoIds.length > 0 || item.adjustments.length > 0 || item.stageHistory.length > 0) && (
-          <details className="text-sm">
-            <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-muted">{t('item.details')}</summary>
+          <details className="group text-sm">
+            <summary className="flex min-h-11 cursor-pointer items-center justify-center gap-1 font-semibold text-muted">
+              {t('item.details')}
+              <ChevronDown aria-hidden="true" size={16} className="group-open:rotate-180" />
+            </summary>
             <div className="flex flex-col gap-2">
               {item.designNotes && <p>{item.designNotes}</p>}
               {item.fabricNote && <p>{item.fabricNote}</p>}
@@ -235,29 +257,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
             </div>
           </details>
         )}
-
-        {item.cancelled ? (
-          <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
-        ) : (
-          canMove &&
-          next && (
-            <div className="flex flex-col gap-2">
-              {next.stage.group === 'delivered' ? (
-                <OutlinedButton data-tour="hand-over" onClick={() => setDialog('handOver')}>
-                  {t('item.handOver')}
-                </OutlinedButton>
-              ) : (
-                <MoveOn
-                  order={order}
-                  item={item}
-                  stageKey={next.stage.key}
-                  label={t('item.nextFromTo', { from: stage ? label(stage.label) : item.stageKey, to: label(next.stage.label) })}
-                  render={(props) => <OutlinedButton {...props} />}
-                />
-              )}
-            </div>
-          )
-        )}
+        </div>
       </section>
 
       {dialog === 'handOver' && <HandOverDialog order={order} item={item} onClose={close} />}
@@ -286,15 +286,29 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
   );
 }
 
-/** The one outlined button of a garment card: it moves the garment on, so it must not look like the page's main action. */
-function OutlinedButton({ children, ...props }: { children: React.ReactNode; disabled?: boolean; onClick?(): void; 'data-tour'?: string }) {
+/** The garment card's one filled button: it moves the garment on (or hands it over). */
+function PrimaryButton({ children, ...props }: { children: React.ReactNode; disabled?: boolean; onClick?(): void; 'data-tour'?: string }) {
   return (
     <button
       type="button"
-      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-brand bg-panel px-4 font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
+      className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-brand px-4 text-base font-bold text-on-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
       {...props}
     >
       {children}
+      <ChevronRight aria-hidden="true" size={20} className="rtl:rotate-180" />
     </button>
+  );
+}
+
+/** A small labelled fact tile (trial date, worker). Two sit side by side; a lone one takes the full row. */
+function Fact({ icon: Icon, caption, value, wide }: { icon: LucideIcon; caption: string; value: string; wide: boolean }) {
+  return (
+    <div className={`flex min-h-11 min-w-0 items-center gap-2.5 rounded-xl bg-surface px-3 ${wide ? 'col-span-2' : ''}`}>
+      <Icon aria-hidden="true" size={18} className="shrink-0 text-muted" />
+      <div className="flex min-w-0 flex-col leading-tight">
+        <span className="text-xs text-muted">{caption}</span>
+        <span className="truncate text-sm font-semibold">{value}</span>
+      </div>
+    </div>
   );
 }
