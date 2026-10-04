@@ -159,6 +159,7 @@ function StaffDialog({ staff, onClose, onSaved }: { staff: Staff | null; onClose
         value={form.pin}
         onChange={(e) => patch({ pin: e.target.value })}
         error={errors.pin}
+        type="password"
         inputMode="numeric"
         autoComplete="off"
       />

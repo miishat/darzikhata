@@ -55,4 +55,31 @@ describe('Staff settings', () => {
     expect(await within(dialog).findByText('নিজের দায়িত্ব বদলানো বা নিজেকে নিষ্ক্রিয় করা যাবে না')).toBeTruthy();
     expect(store.getSnapshot().config).toBe(before);
   });
+
+  it('masks the PIN field for new and existing staff', async () => {
+    await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন স্টাফ' }));
+    const fresh = await screen.findByRole('dialog', { name: 'নতুন স্টাফ' });
+    const freshPin = within(fresh).getByLabelText('পিন') as HTMLInputElement;
+    expect(freshPin.type).toBe('password');
+    expect(freshPin.getAttribute('autocomplete')).toBe('off');
+    expect(freshPin.getAttribute('inputmode')).toBe('numeric');
+    await userEvent.click(within(fresh).getByRole('button', { name: 'বাতিল' }));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'সেলিম শেখ: বদলান' }));
+    const dialog = await screen.findByRole('dialog', { name: 'সেলিম শেখ' });
+    const pin = within(dialog).getByLabelText('পিন') as HTMLInputElement;
+    expect(pin.type).toBe('password');
+    expect(pin.value).not.toBe('');
+  });
+
+  it('never shows a PIN in the staff table', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    const table = await screen.findByRole('table', { name: 'স্টাফ' });
+    const text = table.textContent ?? '';
+    for (const person of store.getSnapshot().config!.staff) {
+      expect(text).not.toContain(person.pin);
+      expect(text).not.toContain(person.pin.replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)]!));
+    }
+  });
 });
