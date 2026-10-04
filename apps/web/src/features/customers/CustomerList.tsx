@@ -78,7 +78,7 @@ function CustomerLink({ customer, active }: { customer: Customer; active: boolea
     <Link
       to={`/app/customers/${customer.id}`}
       aria-current={active ? 'page' : undefined}
-      className={`flex flex-col rounded-lg border px-3 py-2 focus-visible:outline-2 focus-visible:outline-brand ${
+      className={`flex flex-col rounded-lg border px-3 py-2 focus-visible:outline-2 focus-visible:outline-focus ${
         active ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel hover:bg-surface'
       }`}
     >
@@ -95,7 +95,7 @@ function DesktopRow({ customer, active, owed, money }: { customer: Customer; act
     <Link
       to={`/app/customers/${customer.id}`}
       aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2 focus-visible:outline-2 focus-visible:outline-brand ${
+      className={`flex items-center gap-3 rounded-xl px-3 py-2 focus-visible:outline-2 focus-visible:outline-focus ${
         active ? 'bg-brand-soft text-brand-strong' : 'hover:bg-surface'
       }`}
     >
@@ -104,7 +104,7 @@ function DesktopRow({ customer, active, owed, money }: { customer: Customer; act
         <span className="font-semibold [overflow-wrap:anywhere]">{customer.name}</span>
         <span className="text-sm text-muted [overflow-wrap:anywhere]">{customer.phone ?? t('customer.noPhone')}</span>
         {owed > 0 && (
-          <span className="mt-1 inline-flex items-center gap-1 self-start rounded-md bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
+          <span className="mt-1 inline-flex items-center gap-1 self-start rounded-md ring-1 ring-inset ring-warn-line bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
             <TriangleAlert aria-hidden="true" size={14} />
             {t('customer.balance', { amount: money(owed) })}
           </span>

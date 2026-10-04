@@ -18,8 +18,8 @@ function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: 
   return (
     <Link
       to={to}
-      className={`flex min-h-11 flex-col gap-1.5 rounded-2xl p-3.5 focus-visible:outline-2 focus-visible:outline-brand ${
-        late ? 'bg-warn-soft text-warn-ink' : 'bg-navy-raised text-on-navy'
+      className={`flex min-h-11 flex-col gap-1.5 rounded-2xl p-3.5 focus-visible:outline-2 focus-visible:outline-focus ${
+        late ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-navy-raised text-on-navy'
       }`}
     >
       <span className={`flex items-center gap-2 text-sm ${late ? 'font-semibold' : 'text-on-navy-muted'}`}>
@@ -36,7 +36,7 @@ function MoneyCard({ label, value, warn }: { label: string; value: string; warn?
   return (
     <Link
       to="/app/payments"
-      className="flex min-h-11 flex-col gap-0.5 rounded-2xl border border-line bg-panel px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-brand"
+      className="flex min-h-11 flex-col gap-0.5 rounded-2xl border border-line bg-panel px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-focus"
     >
       <span className="text-sm text-muted">{label}</span>
       <span className={`font-display text-xl font-bold ${warn ? 'text-warn' : ''}`}>{value}</span>
@@ -60,7 +60,7 @@ export function DashboardPage() {
     return (
       <section className="flex flex-col gap-4">
         <h1 className="sr-only">{t('nav.dashboard')}</h1>
-        <section aria-label={t('dashboard.title')} className="flex flex-col gap-3.5 rounded-3xl bg-navy p-4 text-on-navy">
+        <section aria-label={t('dashboard.title')} className="flex flex-col gap-3.5 rounded-3xl ring-1 ring-inset ring-navy-line bg-navy p-4 text-on-navy">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="font-display text-xl font-semibold">{t('dashboard.title')}</h2>
             <span className="text-sm text-on-navy-muted">{date(today, { year: false })}</span>
@@ -95,7 +95,7 @@ export function DashboardPage() {
                   <li key={item.id}>
                     <Link
                       to={`/app/orders/${order.id}`}
-                      className="flex min-h-11 items-center gap-3 px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-brand"
+                      className="flex min-h-11 items-center gap-3 px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-focus"
                     >
                       <Avatar id={order.customerId} name={customerName(order)} />
                       <span className="flex min-w-0 flex-1 flex-col">
@@ -147,12 +147,12 @@ function TodoList({ title, count, seeAll, late, tour, empty, children }: ListPro
         <h2 className="font-display text-base font-semibold">{title}</h2>
         <span
           className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
-            late && count > 0 ? 'bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
+            late && count > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
           }`}
         >
           {number(count)}
         </span>
-        <Link to={seeAll} className="ms-auto text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-brand">
+        <Link to={seeAll} className="ms-auto text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
           {t('dashboard.seeAll')}
           <span className="sr-only"> {title}</span>
         </Link>
@@ -169,7 +169,7 @@ function TodoList({ title, count, seeAll, late, tour, empty, children }: ListPro
 function RowLink({ to, id, name, detail, children }: { to: string; id: string; name: string; detail: string; children?: ReactNode }) {
   return (
     <li>
-      <Link to={to} className="flex min-h-[52px] items-center gap-3 px-4 py-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand">
+      <Link to={to} className="flex min-h-[52px] items-center gap-3 px-4 py-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus">
         <Avatar id={id} name={name} size="sm" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-semibold">{name}</span>
@@ -238,7 +238,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
         </div>
         <Link
           to="/print/work?today=1"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3.5 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3.5 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           <Printer aria-hidden="true" size={16} />
           {t('dashboard.printWork')}
@@ -246,7 +246,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <section aria-label={t('dashboard.title')} className="flex min-w-72 flex-[2_1_520px] flex-col gap-3 rounded-3xl bg-navy p-3.5 text-on-navy">
+        <section aria-label={t('dashboard.title')} className="flex min-w-72 flex-[2_1_520px] flex-col gap-3 rounded-3xl ring-1 ring-inset ring-navy-line bg-navy p-3.5 text-on-navy">
           <h2 className="font-display text-lg font-semibold">{t('dashboard.title')}</h2>
           <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
             <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} sub={trialSub} />
@@ -258,12 +258,12 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
         {showMoney && (
           <section aria-label={t('dashboard.money')} className="flex min-w-72 flex-[1_1_320px] flex-col gap-2 rounded-3xl border border-line bg-panel p-3.5">
             <div className="grid grid-cols-2 gap-3">
-              <Link to="/app/payments" className="flex flex-col gap-0.5 focus-visible:outline-2 focus-visible:outline-brand">
+              <Link to="/app/payments" className="flex flex-col gap-0.5 focus-visible:outline-2 focus-visible:outline-focus">
                 <span className="text-sm text-muted">{t('dashboard.collectedToday')}</span>
                 <span className="font-display text-2xl font-bold">{money(model.collectedToday)}</span>
                 <span className="text-sm text-muted">{t('dashboard.paymentsCount', { n: number(model.collectedCount) })}</span>
               </Link>
-              <Link to="/app/payments" className="flex flex-col gap-0.5 border-s border-line ps-3 focus-visible:outline-2 focus-visible:outline-brand">
+              <Link to="/app/payments" className="flex flex-col gap-0.5 border-s border-line ps-3 focus-visible:outline-2 focus-visible:outline-focus">
                 <span className="text-sm text-muted">{t('payments.dueTotal')}</span>
                 <span className="font-display text-2xl font-bold text-warn">{money(model.dueTotal)}</span>
                 <span className="text-sm text-muted">{t('dashboard.dueOrders', { n: number(model.dueOrders) })}</span>

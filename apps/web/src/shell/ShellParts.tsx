@@ -11,7 +11,7 @@ export function LanguageToggle({ compact = false }: { compact?: boolean }) {
       onClick={() => setLanguage(next)}
       lang={next}
       aria-label={compact ? t(next === 'en' ? 'more.language.english' : 'more.language.bangla') : undefined}
-      className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+      className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
     >
       {compact ? (next === 'en' ? 'EN' : 'বাংলা') : next === 'en' ? 'English' : 'বাংলা'}
     </button>
@@ -41,7 +41,7 @@ export function SwitchUserButton({ compact = false }: { compact?: boolean }) {
         await store.signOut();
         navigate('/sign-in');
       }}
-      className="flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+      className="flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
     >
       <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft font-semibold text-brand-strong">
         {current.staff.name.slice(0, 1)}

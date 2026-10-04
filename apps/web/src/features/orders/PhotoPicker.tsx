@@ -69,7 +69,7 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
       />
       <label
         htmlFor={inputId}
-        className="min-h-11 cursor-pointer rounded text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-brand"
+        className="min-h-11 cursor-pointer rounded text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-focus"
       >
         {t('photos.add')}
       </label>

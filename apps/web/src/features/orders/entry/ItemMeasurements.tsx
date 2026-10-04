@@ -111,7 +111,7 @@ export function ItemMeasurements({ entry, item, errors, tiles = false, onDone, o
               type="button"
               aria-pressed={m.source === option.value}
               onClick={() => entry.updateItem(item.key, { measurements: { ...m, source: option.value } })}
-              className={`min-h-11 rounded-[9px] px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              className={`min-h-11 rounded-[9px] px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
                 m.source === option.value ? 'bg-panel font-semibold text-ink shadow-sm' : 'text-muted'
               }`}
             >

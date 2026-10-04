@@ -74,7 +74,7 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
                     </td>
                   )}
                   <td className="whitespace-nowrap px-3 py-2 font-semibold">
-                    <Link to={`/app/orders/${r.order.id}`} className="text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand">
+                    <Link to={`/app/orders/${r.order.id}`} className="text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus">
                       {r.order.number}
                     </Link>
                   </td>

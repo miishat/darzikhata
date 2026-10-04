@@ -39,7 +39,7 @@ export function ActionSheet({ label, icon, title, children }: ActionSheetProps) 
   );
 }
 
-const ITEM = 'flex min-h-11 w-full items-center rounded-lg px-2 py-2 text-start text-base hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand';
+const ITEM = 'flex min-h-11 w-full items-center rounded-lg px-2 py-2 text-start text-base hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
 
 /** One row of an ActionSheet: a link when it has `to`, otherwise a button. */
 export function ActionSheetItem({

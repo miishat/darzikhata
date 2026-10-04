@@ -119,7 +119,7 @@ export function MeasurementComparisonTable({ template, comparison, takerName }: 
                       <td key={column.kind} className={`px-3 py-2 ${column.kind === 'current' ? 'bg-brand-soft font-semibold' : ''}`}>
                         {show(row.values[column.kind])}
                         {column.kind === 'current' && row.delta !== null && (
-                          <span className="ml-2 inline-block rounded-md bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-ink">
+                          <span className="ml-2 inline-block rounded-md ring-1 ring-inset ring-warn-line bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-ink">
                             <span className="sr-only">{t('measure.changeFromPrev')} </span>
                             {deltaText(row.delta, language)}
                           </span>

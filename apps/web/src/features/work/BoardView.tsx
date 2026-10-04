@@ -40,7 +40,7 @@ interface ChipsProps {
 export function WorkerChips({ workers, counts, value, onChange }: ChipsProps) {
   const { t, number } = useI18n();
   const base =
-    'inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+    'inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
   const chip = (id: string, text: string, tone: 'plain' | 'warn', avatar?: WorkerChip) => {
     const on = value === id;
     const look =
@@ -99,7 +99,7 @@ function Card({ refItem, selected, onToggle, workerName }: CardProps) {
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{title}</p>
           <p className="flex min-w-0 items-baseline gap-1 text-sm text-muted">
-            <Link to={`/app/orders/${order.id}`} className="shrink-0 text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand">
+            <Link to={`/app/orders/${order.id}`} className="shrink-0 text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus">
               {order.number}
             </Link>
             {customer && <span className="truncate">· {customer}</span>}
@@ -158,7 +158,7 @@ function Column({ column, index, selected, onToggle, workerName }: ColumnProps) 
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
-          className="min-h-9 rounded-lg text-sm font-semibold text-brand-strong hover:bg-panel focus-visible:outline-2 focus-visible:outline-brand"
+          className="min-h-9 rounded-lg text-sm font-semibold text-brand-strong hover:bg-panel focus-visible:outline-2 focus-visible:outline-focus"
         >
           {expanded ? t('work.fewer') : t('work.more', { n: number(hidden) })}
         </button>
@@ -188,7 +188,7 @@ export function WorkBoard({ rows, selected, onToggle }: BoardProps) {
       role="region"
       aria-label={t('work.board')}
       tabIndex={0}
-      className="flex items-start gap-3 overflow-x-auto pb-2 focus-visible:outline-2 focus-visible:outline-brand"
+      className="flex items-start gap-3 overflow-x-auto pb-2 focus-visible:outline-2 focus-visible:outline-focus"
     >
       {columns.map((column, index) => (
         <Column key={column.key} column={column} index={index} selected={selected} onToggle={onToggle} workerName={workerName} />

@@ -16,7 +16,7 @@ import { SyncButton } from './SyncStatus';
 const SHOP_KEYS = new Set(['payments', 'settings']);
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex min-h-10 items-center gap-3 rounded-lg px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-brand ${
+  `flex min-h-10 items-center gap-3 rounded-lg px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-focus ${
     isActive ? 'bg-brand-soft font-semibold text-brand-strong' : 'font-medium text-ink hover:bg-surface'
   }`;
 
@@ -51,13 +51,13 @@ function BranchButton() {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`${frame} hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand`}
+        className={`${frame} hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus`}
       >
         {text}
         <ChevronsUpDown aria-hidden="true" size={16} className="shrink-0 text-muted" />
       </button>
       {open && (
-        <div role="group" aria-label={t('nav.branchMenu')} className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border border-line bg-panel p-3 shadow-lg">
+        <div role="group" aria-label={t('nav.branchMenu')} className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border border-line bg-panel-raised p-3 shadow-lg">
           <BranchSwitcher />
         </div>
       )}
@@ -84,7 +84,7 @@ function PersonButton() {
           await store.signOut();
           navigate('/sign-in');
         }}
-        className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-start hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+        className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-start hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Avatar id={current.staff.id} name={current.staff.name} />
         <span className="min-w-0">
@@ -97,7 +97,7 @@ function PersonButton() {
         aria-label={t('shell.account')}
         aria-haspopup="dialog"
         onClick={() => setAccountOpen(true)}
-        className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Ellipsis aria-hidden="true" size={20} />
       </button>
@@ -139,7 +139,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
         {badge && (
           <span
             id={badgeId}
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.late ? 'bg-warn-soft text-warn-ink' : 'bg-surface text-muted'}`}
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.late ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-surface text-muted'}`}
           >
             {badge.text}
           </span>

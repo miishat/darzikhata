@@ -88,7 +88,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="h-10 w-full rounded-lg border border-line bg-surface ps-3 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-brand"
+        className="h-10 w-full rounded-lg border border-line bg-surface ps-3 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus"
       />
       <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
         /
@@ -98,7 +98,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
           id={listId}
           role="listbox"
           aria-label={t('search.label')}
-          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-96 overflow-auto rounded-lg border border-line bg-panel py-1 shadow-lg"
+          className="absolute left-0 right-0 top-full z-20 mt-1 max-h-96 overflow-auto rounded-lg border border-line bg-panel-raised py-1 shadow-lg"
         >
           {hits.length === 0 ? (
             <li role="presentation" className="px-3 py-2 text-sm text-muted">

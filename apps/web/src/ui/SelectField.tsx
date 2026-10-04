@@ -25,7 +25,7 @@ export function SelectField({ label, value, options, onChange, error, id, classN
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? messageId : undefined}
-        className={`min-h-12 rounded-lg border bg-panel px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-brand ${error ? 'border-danger' : 'border-line'}`}
+        className={`min-h-12 rounded-lg border bg-panel px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-focus ${error ? 'border-danger' : 'border-line'}`}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

@@ -15,7 +15,7 @@ describe('PinPad focus', () => {
     const group = screen.getByRole('group', { name: 'পিন' });
     expect(group.getAttribute('tabindex')).toBe('0');
     expect(group.className).toContain('focus-visible:outline-2');
-    expect(group.className).toContain('focus-visible:outline-brand');
+    expect(group.className).toContain('focus-visible:outline-focus');
     expect(group.className).not.toContain('outline-none');
   });
 });

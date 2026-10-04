@@ -21,7 +21,7 @@ export function TextField({ label, error, hint, suffix, tone, id, className = ''
         {label}
       </label>
       <div
-        className={`flex min-h-12 items-center rounded-lg border bg-panel focus-within:outline-2 focus-within:outline-brand ${error ? 'border-danger' : tone === 'warn' ? 'border-warn ring-1 ring-warn' : 'border-line'}`}
+        className={`flex min-h-12 items-center rounded-lg border bg-panel focus-within:outline-2 focus-within:outline-focus ${error ? 'border-danger' : tone === 'warn' ? 'border-warn ring-1 ring-warn' : 'border-line'}`}
       >
         <input
           id={inputId}

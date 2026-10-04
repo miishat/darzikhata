@@ -162,7 +162,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
               <button
                 type="button"
                 onClick={() => setDialog('assign')}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-warn-soft px-2.5 text-sm font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-brand"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg ring-1 ring-inset ring-warn-line bg-warn-soft px-2.5 text-sm font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-focus"
               >
                 <TriangleAlert aria-hidden="true" size={16} />
                 {t('work.assign')}
@@ -179,7 +179,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
               <button
                 type="button"
                 onClick={() => setDialog('measure')}
-                className="flex min-h-11 items-center gap-2.5 rounded-xl border border-dashed border-line px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-brand"
+                className="flex min-h-11 items-center gap-2.5 rounded-xl border border-dashed border-line px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-focus"
               >
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-xs text-muted">{t('item.measureSummary')}</span>
@@ -291,7 +291,7 @@ function OutlinedButton({ children, ...props }: { children: React.ReactNode; dis
   return (
     <button
       type="button"
-      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-brand bg-panel px-4 font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] border-brand bg-panel px-4 font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
       {...props}
     >
       {children}

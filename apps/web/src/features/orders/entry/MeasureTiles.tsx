@@ -155,7 +155,7 @@ export function MeasureTiles({ template, values, previous, errors, onChange, onD
         <>
           <div
             ref={keypadRef}
-            className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-t-3xl border-t border-line bg-panel px-3 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg"
+            className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1 rounded-t-3xl border-t border-line bg-panel-raised px-3 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg"
           >
             <div className="flex justify-end">
               <IconButton label={t('common.close')} icon={X} onClick={close} className="-my-1" />

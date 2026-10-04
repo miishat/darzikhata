@@ -19,7 +19,7 @@ import { MobileItemCard } from './MobileItemCard';
 import { nextMove } from './stageMoves';
 import { wearerGroups } from './wearers';
 
-const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 const BAR_BUTTON = 'min-h-[54px]! rounded-2xl! text-base';
 
 /** The phone order screen: customer, money, garments, and a bottom bar for printing, handing over and taking payment. */
@@ -128,7 +128,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
           <Link
             to={`/print/receipt/${order.id}`}
             aria-label={t('order.printReceipt')}
-            className="flex size-[54px] shrink-0 items-center justify-center rounded-2xl border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="flex size-[54px] shrink-0 items-center justify-center rounded-2xl border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             <Printer aria-hidden="true" size={22} />
           </Link>

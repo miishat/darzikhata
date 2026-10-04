@@ -46,7 +46,7 @@ export function FilterButton({ label, children }: FilterButtonProps) {
         aria-expanded={open}
         aria-controls={open ? popId : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-dashed border-line px-3 text-sm font-semibold text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-dashed border-line px-3 text-sm font-semibold text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <Plus aria-hidden="true" size={16} />
         {label}
@@ -57,7 +57,7 @@ export function FilterButton({ label, children }: FilterButtonProps) {
           role="group"
           tabIndex={-1}
           aria-label={t('desk.filter.options', { label })}
-          className="absolute left-0 top-full z-30 mt-1 flex min-w-48 flex-col gap-1 rounded-xl border border-line bg-panel p-2 shadow-xl outline-none"
+          className="absolute left-0 top-full z-30 mt-1 flex min-w-48 flex-col gap-1 rounded-xl border border-line bg-panel-raised p-2 shadow-xl outline-none"
         >
           {children}
         </div>

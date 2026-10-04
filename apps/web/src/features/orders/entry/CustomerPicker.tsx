@@ -128,7 +128,7 @@ export function CustomerPicker({ entry, errors, card = false }: { entry: OrderEn
             <li key={match.id}>
               <button
                 type="button"
-                className="flex min-h-12 w-full flex-col rounded-lg border border-line bg-panel px-3 py-2 text-left hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+                className="flex min-h-12 w-full flex-col rounded-lg border border-line bg-panel px-3 py-2 text-left hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
                 onClick={() => entry.setCustomer({ kind: 'existing', customerId: match.id })}
               >
                 <span className="font-semibold">{match.name}</span>

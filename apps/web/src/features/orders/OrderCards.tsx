@@ -27,7 +27,7 @@ export function OrderCards({ rows }: { rows: OrderRow[] }) {
           <li key={row.order.id}>
             <Link
               to={{ pathname: `/app/orders/${row.order.id}`, search }}
-              className="flex min-h-11 flex-col gap-2.5 rounded-2xl border border-line bg-panel p-3.5 focus-visible:outline-2 focus-visible:outline-brand"
+              className="flex min-h-11 flex-col gap-2.5 rounded-2xl border border-line bg-panel p-3.5 focus-visible:outline-2 focus-visible:outline-focus"
             >
               <span className="flex items-center gap-3">
                 <Avatar id={row.order.customerId} name={name} />

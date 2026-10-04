@@ -70,7 +70,7 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
                 tabIndex={active ? 0 : -1}
                 onClick={() => select(tpl.id)}
                 onKeyDown={onKeyDown}
-                className={`min-h-10 rounded-lg border px-3 text-sm focus-visible:outline-2 focus-visible:outline-brand ${
+                className={`min-h-10 rounded-lg border px-3 text-sm focus-visible:outline-2 focus-visible:outline-focus ${
                   active ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel'
                 }`}
               >

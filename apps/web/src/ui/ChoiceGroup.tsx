@@ -19,7 +19,7 @@ export function ChoiceGroup<T extends string>({ legend, value, options, onChange
         {options.map((option) => (
           <label
             key={option.value}
-            className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand ${
+            className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-focus ${
               value === option.value ? 'border-brand bg-brand-soft text-brand-strong' : error ? 'border-danger bg-panel' : 'border-line bg-panel'
             }`}
           >
