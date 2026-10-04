@@ -53,6 +53,11 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const workerNames = useWorkerNames();
   const body = useRef<HTMLTableSectionElement>(null);
   const showMoney = can('money.view');
+  // With the side panel open the table is narrow: the workers column gives way (the panel shows them), then the balance and the date on smaller screens (the panel shows those too).
+  const panelOpen = activeId !== undefined;
+  const workersCol = panelOpen ? 'hidden' : '';
+  const deliveryCol = panelOpen ? 'hidden xl:table-cell' : '';
+  const balanceCol = panelOpen ? 'hidden min-[1440px]:table-cell' : '';
   const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   const target = (id: string) => ({ pathname: `/app/orders/${id}`, search });
   // One tab stop for the whole table: the open order, or the first row.
@@ -89,9 +94,9 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
           <tr className="border-b border-line">
             <th scope="col" className={head}>{t('orders.col.customer')}</th>
             <th scope="col" className={head}>{t('orders.col.garmentsStage')}</th>
-            <th scope="col" className={head}>{t('orders.col.delivery')}</th>
-            <th scope="col" className={head}>{t('orders.col.workers')}</th>
-            {showMoney && <th scope="col" className={`${head} text-end`}>{t('orders.col.balance')}</th>}
+            <th scope="col" className={`${head} ${deliveryCol}`}>{t('orders.col.delivery')}</th>
+            <th scope="col" className={`${head} ${workersCol}`}>{t('orders.col.workers')}</th>
+            {showMoney && <th scope="col" className={`${head} text-end ${balanceCol}`}>{t('orders.col.balance')}</th>}
           </tr>
         </thead>
         <tbody ref={body}>
@@ -143,7 +148,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     {live.length > MAX_PILLS && <li className="text-sm text-muted">{t('orders.moreGarments', { n: number(live.length - MAX_PILLS) })}</li>}
                   </ul>
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-sm">
+                <td className={`whitespace-nowrap px-3 py-2 text-sm ${deliveryCol}`}>
                   {row.nextDelivery ? (
                     <div className="flex flex-col items-start gap-0.5">
                       <span>{date(row.nextDelivery)}</span>
@@ -153,7 +158,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     <span className="text-muted">-</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-sm">
+                <td className={`px-3 py-2 text-sm ${workersCol}`}>
                   <div className="flex flex-col gap-0.5">
                     {row.workers.length > 0 && <span>{workerNames(row.workers)}</span>}
                     {hasUnassigned && (
@@ -165,7 +170,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                   </div>
                 </td>
                 {showMoney && (
-                  <td className="whitespace-nowrap px-3 py-2 text-end">
+                  <td className={`whitespace-nowrap px-3 py-2 text-end ${balanceCol}`}>
                     {row.balance > 0 ? (
                       <span className="font-semibold text-warn">{money(row.balance)}</span>
                     ) : (

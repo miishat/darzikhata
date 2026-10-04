@@ -158,7 +158,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
         <span className="rounded bg-accent/15 px-1.5 text-xs font-semibold text-accent">{t('app.demo')}</span>
       </div>
       <BranchButton />
-      <nav aria-label={t('nav.main')} className="flex flex-1 flex-col gap-1 overflow-y-auto">
+      <nav aria-label={t('nav.main')} className="-m-1 flex flex-1 flex-col gap-1 overflow-y-auto p-1">
         {main.map(link)}
         {shop.length > 0 && (
           <>

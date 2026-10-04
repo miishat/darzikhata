@@ -138,8 +138,8 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           </Button>
         </p>
       )}
-      <div className="grid grid-cols-[300px_minmax(0,1fr)_320px] items-start gap-4">
-        <Column title={t('entry.left')}>
+      <div className="grid grid-cols-[280px_minmax(0,1fr)] items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
+        <Column title={t('entry.left')} className="col-start-1 row-start-1">
           <CustomerPicker entry={entry} errors={errors} card />
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold text-muted">{t('entry.itemsHeading')}</h3>
@@ -191,7 +191,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           </div>
         </Column>
 
-        <Column title={t('entry.middle')}>
+        <Column title={t('entry.middle')} className="col-start-2 row-span-2 row-start-1 xl:row-span-1">
           {chosen ? (
             <>
               <div className="flex flex-wrap items-end gap-3">
@@ -223,7 +223,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           )}
         </Column>
 
-        <Column title={t('entry.summary')} className="sticky top-4">
+        <Column title={t('entry.summary')} className="sticky top-4 col-start-1 row-start-2 xl:col-start-3 xl:row-start-1">
           {items.length > 0 && (
             <ul className="flex flex-col gap-1 text-sm">
               {items.map((item) => (

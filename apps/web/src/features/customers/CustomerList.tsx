@@ -57,7 +57,7 @@ export function CustomerList({ query, onQueryChange, activeId, desktop = false }
       {shown.length === 0 ? (
         <p className="text-muted">{t('customers.none')}</p>
       ) : (
-        <ul aria-label={t('customers.list')} className="flex min-h-0 flex-col gap-1 overflow-auto">
+        <ul aria-label={t('customers.list')} className="-m-1 flex min-h-0 flex-col gap-1 overflow-auto p-1">
           {shown.map((customer) => (
             <li key={customer.id}>
               {desktop ? (
@@ -101,15 +101,15 @@ function DesktopRow({ customer, active, owed, money }: { customer: Customer; act
     >
       <Avatar id={customer.id} name={customer.name} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold">{customer.name}</span>
-        <span className="truncate text-sm text-muted">{customer.phone ?? t('customer.noPhone')}</span>
+        <span className="font-semibold [overflow-wrap:anywhere]">{customer.name}</span>
+        <span className="text-sm text-muted [overflow-wrap:anywhere]">{customer.phone ?? t('customer.noPhone')}</span>
+        {owed > 0 && (
+          <span className="mt-1 inline-flex items-center gap-1 self-start rounded-md bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
+            <TriangleAlert aria-hidden="true" size={14} />
+            {t('customer.balance', { amount: money(owed) })}
+          </span>
+        )}
       </span>
-      {owed > 0 && (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
-          <TriangleAlert aria-hidden="true" size={14} />
-          {t('customer.balance', { amount: money(owed) })}
-        </span>
-      )}
     </Link>
   );
 }

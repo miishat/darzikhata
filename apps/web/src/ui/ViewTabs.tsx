@@ -49,7 +49,7 @@ export function ViewTabs({ label, views, value, onChange, panelId }: ViewTabsPro
             aria-controls={panelId}
             tabIndex={selected || (!anySelected && view === views[0]) ? 0 : -1}
             onClick={() => onChange(view.value)}
-            className={`-mb-px inline-flex min-h-10 shrink-0 items-center gap-2 border-b-[3px] px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+            className={`-mb-px inline-flex min-h-10 shrink-0 items-center gap-2 border-b-[3px] px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${
               selected ? 'border-brand text-ink' : 'border-transparent text-muted hover:text-ink'
             }`}
           >

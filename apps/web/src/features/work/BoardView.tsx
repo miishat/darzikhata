@@ -55,7 +55,7 @@ export function WorkerChips({ workers, counts, value, onChange }: ChipsProps) {
       <button key={id} type="button" aria-pressed={on} onClick={() => onChange(id)} className={`${base} ${look}`}>
         {avatar && <Avatar id={avatar.id} name={avatar.name} size="sm" />}
         {text}{' '}
-        <span className="text-xs opacity-80">{number(counts[id] ?? 0)}</span>
+        <span className="text-xs">{number(counts[id] ?? 0)}</span>
       </button>
     );
   };
@@ -98,11 +98,11 @@ function Card({ refItem, selected, onToggle, workerName }: CardProps) {
         )}
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{title}</p>
-          <p className="truncate text-sm text-muted">
-            <Link to={`/app/orders/${order.id}`} className="text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand">
+          <p className="flex min-w-0 items-baseline gap-1 text-sm text-muted">
+            <Link to={`/app/orders/${order.id}`} className="shrink-0 text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand">
               {order.number}
             </Link>
-            {customer ? ` · ${customer}` : ''}
+            {customer && <span className="truncate">· {customer}</span>}
           </p>
         </div>
       </div>

@@ -15,7 +15,7 @@ const TONES: Record<Tone, { pill: string; dot: string }> = {
 export function StagePill({ label, tone }: { label: string; tone: Tone }) {
   const classes = TONES[tone];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold ${classes.pill}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-sm font-semibold ${classes.pill}`}>
       <span aria-hidden="true" className={`size-[7px] rounded-full ${classes.dot}`} />
       {label}
     </span>
