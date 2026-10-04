@@ -67,7 +67,7 @@ export function WorkListPrintPage() {
               <tbody>
                 {group.refs.map((r) => (
                   <tr key={r.item.id} className="print-block border-b border-line">
-                    <td className="px-2 py-2 font-semibold">{r.order.number}</td>
+                    <td className="whitespace-nowrap px-2 py-2 font-semibold">{r.order.number}</td>
                     <td className="px-2 py-2">{itemTitle(r.order, r.item, language)}</td>
                     <td className="px-2 py-2">{r.item.wearer}</td>
                     <td className="px-2 py-2">{query.by === 'worker' ? stageName(r) : staffName(r.item.assignedTo)}</td>

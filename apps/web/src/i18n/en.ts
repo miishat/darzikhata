@@ -753,7 +753,7 @@ export const en: Messages = {
   'presenter.offlineSync.resolve': 'Compare the two versions and settle one',
   'presenter.statusLink.title': 'Share and turn off a status link',
   'presenter.statusLink.open': 'Open an order that is still open',
-  'presenter.statusLink.create': 'Create a status link',
+  'presenter.statusLink.create': 'Create a status link (on a laptop: the order’s More menu, then ‘Share status link’, then ‘Create link’)',
   'presenter.statusLink.view': 'Press ‘Open’ to see what the customer sees: no prices or measurements',
   'presenter.statusLink.revoke': 'Turn the link off',
   'presenter.tailorView.title': "The tailor's view: no money",

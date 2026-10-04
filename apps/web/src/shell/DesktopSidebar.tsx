@@ -16,7 +16,7 @@ import { SyncButton } from './SyncStatus';
 const SHOP_KEYS = new Set(['payments', 'settings']);
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-brand ${
+  `flex min-h-10 items-center gap-3 rounded-lg px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-brand ${
     isActive ? 'bg-brand-soft font-semibold text-brand-strong' : 'font-medium text-ink hover:bg-surface'
   }`;
 
@@ -135,7 +135,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
         aria-describedby={badge ? badgeId : undefined}
       >
         <item.icon aria-hidden="true" size={20} className="shrink-0" />
-        <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
+        <span className="min-w-0 flex-1 leading-snug">{t(item.label)}</span>
         {badge && (
           <span
             id={badgeId}
@@ -149,7 +149,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
   };
 
   return (
-    <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 py-4">
+    <aside className="no-print sticky top-0 flex h-dvh w-60 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 py-4">
       <div className="flex items-center gap-2.5 px-1">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-navy text-on-navy">
           <Scissors aria-hidden="true" size={20} />

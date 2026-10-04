@@ -32,7 +32,7 @@ export function DesktopShell({ role }: { role: Role }) {
     <div className="flex min-h-dvh">
       <DesktopSidebar role={role} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
+        <header className="no-print flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
           <GlobalSearch role={role} inputRef={searchInput} />
           <div className="flex-1" />
           <LanguageToggle compact />

@@ -752,7 +752,7 @@ export const bn = {
   'presenter.offlineSync.resolve': 'দুই সংস্করণ দেখে একটি সমাধান বেছে নিন',
   'presenter.statusLink.title': 'স্ট্যাটাস লিংক শেয়ার ও বন্ধ',
   'presenter.statusLink.open': 'একটি চলমান অর্ডার খুলুন',
-  'presenter.statusLink.create': 'স্ট্যাটাস লিংক তৈরি করুন',
+  'presenter.statusLink.create': 'স্ট্যাটাস লিংক তৈরি করুন (ল্যাপটপে: অর্ডারের আরও মেনু, তারপর ‘স্ট্যাটাস লিংক শেয়ার করুন’, তারপর ‘লিংক তৈরি করুন’)',
   'presenter.statusLink.view': '‘খুলে দেখুন’ চেপে কাস্টমারের চোখে দেখুন: দাম বা মাপ নেই',
   'presenter.statusLink.revoke': 'লিংক বন্ধ করুন',
   'presenter.tailorView.title': 'দর্জির চোখে: টাকার হিসাব নেই',
