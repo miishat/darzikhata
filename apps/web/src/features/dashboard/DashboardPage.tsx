@@ -237,7 +237,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
           <p className="font-display text-2xl font-bold">{greeting}</p>
         </div>
         <Link
-          to="/print/work"
+          to="/print/work?today=1"
           className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3.5 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <Printer aria-hidden="true" size={16} />

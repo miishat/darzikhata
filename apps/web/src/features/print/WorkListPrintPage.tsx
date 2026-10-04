@@ -1,10 +1,13 @@
 import { labelIn, shopContact, type ItemRef } from '@darzikhata/domain';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { formatDate, translate } from '../../i18n/format';
 import { useI18n } from '../../i18n/I18nProvider';
 import { itemTitle } from '../common/orderText';
 import { useToday } from '../common/hooks';
+import { useScopedState } from '../branches/BranchScopeProvider';
+import { dashboardModel, todoRows } from '../dashboard/dashboard';
 import { useWorkList } from '../work/useWorkList';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
 
@@ -12,10 +15,22 @@ import { PrintLayout, usePrintLanguage } from './PrintLayout';
 export function WorkListPrintPage() {
   const app = useI18n();
   const { config } = useSnapshot();
-  const { query, groups } = useWorkList();
+  const { query, groups: allGroups } = useWorkList();
+  const state = useScopedState();
   const [params] = useSearchParams();
   const today = useToday();
   const [language, setLanguage] = usePrintLanguage();
+  const onlyToday = params.get('today') === '1';
+  /*
+   * "Today" is the Home page's own meaning (todoRows over dashboardModel): garments with a trial
+   * today, a delivery today, or already late, each once. It narrows the work list, so the
+   * stage and worker filters and the viewer's own-garments scope still apply.
+   */
+  const groups = useMemo(() => {
+    if (!onlyToday) return allGroups;
+    const ids = new Set(todoRows(dashboardModel(Object.values(state.orders), today), Infinity).map((r) => r.ref.item.id));
+    return allGroups.map((g) => ({ ...g, refs: g.refs.filter((r) => ids.has(r.item.id)) })).filter((g) => g.refs.length > 0);
+  }, [allGroups, onlyToday, state.orders, today]);
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
   if (!config) return null;
 
@@ -26,22 +41,24 @@ export function WorkListPrintPage() {
     return stage ? labelIn(stage.label, language) : r.item.stageKey;
   };
   const filterStage = query.stage === 'all' ? null : groups.flatMap((g) => g.refs).find((r) => r.item.stageKey === query.stage);
+  const heading = onlyToday ? t('print.workToday') : t('nav.work');
   const head = 'px-2 py-1 text-start text-sm font-semibold';
 
   return (
     <PrintLayout
       back={{ to: `/app/work${search ? `?${search}` : ''}`, label: app.t('print.backToWork') }}
-      title={t('nav.work')}
+      title={heading}
       language={language}
       onLanguage={setLanguage}
     >
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold">{t('nav.work')}</h1>
+        <h1 className="text-2xl font-semibold">{heading}</h1>
         <p className="font-semibold">{shopContact(config, language).name}</p>
         <p>{t('print.printedOn', { date: formatDate(today, language) })}</p>
         {query.worker !== 'all' && <p>{t('item.worker', { name: query.worker === 'none' ? t('work.unassigned') : staffName(query.worker) })}</p>}
         {query.stage !== 'all' && <p>{t('item.stage', { stage: filterStage ? stageName(filterStage) : query.stage })}</p>}
       </header>
+      {onlyToday && groups.length === 0 && <p>{t('print.noWorkToday')}</p>}
       {groups.map((group) => {
         const title =
           query.by === 'worker'

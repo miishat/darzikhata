@@ -1,8 +1,9 @@
-import { itemsForWorker } from '@darzikhata/domain';
+import { itemsForWorker, todayInDhaka } from '@darzikhata/domain';
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
+import { dashboardModel, todoRows } from '../dashboard/dashboard';
 import { workItems } from '../work/workList';
 
 const printedRows = () =>
@@ -36,6 +37,32 @@ describe('Work-list print', () => {
     await screen.findByRole('heading', { name: 'কাজের তালিকা' });
     expect(printedRows()).toBe(ownerWork(store).filter((r) => r.item.stageKey === 'trial').length);
     expect(screen.getByText('ধাপ: ট্রায়াল')).toBeTruthy();
+  });
+
+  const todayIds = (store: ShopStore) =>
+    new Set(todoRows(dashboardModel(Object.values(store.getSnapshot().state.orders), todayInDhaka(new Date())), Infinity).map((r) => r.ref.item.id));
+
+  it('prints only today’s work with ?today=1, and says so', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&by=stage' });
+    await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
+    const expected = ownerWork(store).filter((r) => todayIds(store).has(r.item.id));
+    expect(expected.length).toBeGreaterThan(0);
+    expect(expected.length).toBeLessThan(ownerWork(store).length);
+    expect(printedRows()).toBe(expected.length);
+  });
+
+  it('keeps the stage filter with ?today=1', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&stage=trial' });
+    await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
+    expect(printedRows()).toBe(ownerWork(store).filter((r) => r.item.stageKey === 'trial' && todayIds(store).has(r.item.id)).length);
+    expect(screen.getByText('ধাপ: ট্রায়াল')).toBeTruthy();
+  });
+
+  it('says so when nothing is due today', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&stage=no-such-stage' });
+    await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
+    expect(screen.getByText('আজকের জন্য কোনো কাজ নেই।')).toBeTruthy();
+    expect(screen.queryAllByRole('table')).toHaveLength(0);
   });
 
   it('is linked from the work page with the same filters', async () => {

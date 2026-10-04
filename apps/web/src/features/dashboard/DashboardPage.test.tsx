@@ -37,7 +37,7 @@ describe('Dashboard', () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await screen.findByRole('heading', { name: 'হোম' });
     expect(screen.getByText(/^শুভ (সকাল|দুপুর|সন্ধ্যা), /)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work');
+    expect(screen.getByRole('link', { name: 'আজকের কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work?today=1');
   });
 
   it('lists the orders with the most ready garments first', async () => {
