@@ -66,7 +66,7 @@ export function DesktopShell({ role }: { role: Role }) {
           <LanguageToggle />
           {can(role, 'orders.create') && (
             <Link to="/app/orders/new" data-tour="new-order" className={buttonClasses('primary')}>
-              + {t('nav.newOrder')}
+              <span aria-hidden="true">+ </span>{t('nav.newOrder')}
             </Link>
           )}
           <SwitchUserButton />

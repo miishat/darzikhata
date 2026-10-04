@@ -5,7 +5,7 @@ import { openShop, takeFirstOrder } from './helpers';
 // up front; the receipt shows a ৳1,400 balance.
 test('a new customer’s first order ends on a receipt with the balance', async ({ page }) => {
   await openShop(page, 'রহমান টেইলার্স');
-  await page.getByRole('link', { name: '+ নতুন অর্ডার' }).click();
+  await page.getByRole('link', { name: 'নতুন অর্ডার' }).click();
 
   await takeFirstOrder(page);
 

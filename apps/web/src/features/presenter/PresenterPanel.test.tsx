@@ -37,7 +37,7 @@ describe('Presenter mode', () => {
     expect(await current()).toBe('নতুন অর্ডার খুলুন');
     expect(highlight()).toContain('[data-tour="new-order"]');
 
-    await userEvent.click(screen.getByRole('link', { name: '+ নতুন অর্ডার' }));
+    await userEvent.click(screen.getByRole('link', { name: 'নতুন অর্ডার' }));
     expect(await within(await panel()).findByText('ধাপ ২/৬')).toBeTruthy();
     expect(await current()).toBe('নতুন কাস্টমার যোগ করুন: নাম আর ফোন');
     expect(highlight()).toContain('[data-tour="new-customer"]');

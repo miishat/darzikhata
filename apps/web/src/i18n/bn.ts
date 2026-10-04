@@ -90,6 +90,7 @@ export const bn = {
   'sync.otherCustomerNote': 'অন্য ডিভাইস থেকে লেখা নোট',
   'sync.otherItemNote': 'অন্য ডিভাইস থেকে লেখা ডিজাইনের নোট',
   'shell.switchUser': 'ইউজার বদলান',
+  'shell.account': 'অ্যাকাউন্ট ও আরও',
   'shell.signedInAs': '{name} ({role})',
 
   'access.denied': 'এই অংশ দেখার অনুমতি আপনার নেই।',

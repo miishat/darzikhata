@@ -16,7 +16,7 @@ test('changes made offline sync later, and the waiting change is settled', async
   await expect(syncButton).toHaveAccessibleName('অফলাইন');
 
   // The order and its advance stay on this device, even across a reload.
-  await page.getByRole('link', { name: '+ নতুন অর্ডার' }).click();
+  await page.getByRole('link', { name: 'নতুন অর্ডার' }).click();
   await takeFirstOrder(page);
   await expect(page.getByRole('heading', { name: 'রসিদ' })).toBeVisible();
   await page.goto('/app/orders');

@@ -14,11 +14,17 @@ const STATUS_KEY: Record<string, MessageKey> = {
   syncing: 'sync.syncing',
   'needs-attention': 'sync.needsAttention',
 };
+const TONE: Record<string, string> = {
+  online: 'bg-ok-soft text-ok',
+  offline: 'bg-warn-soft text-warn-ink',
+  syncing: 'bg-surface text-muted',
+  'needs-attention': 'bg-warn-soft text-warn-ink',
+};
 const DOT: Record<string, string> = {
-  online: 'bg-brand',
-  offline: 'bg-accent',
+  online: 'bg-ok',
+  offline: 'bg-warn',
   syncing: 'bg-muted',
-  'needs-attention': 'bg-accent',
+  'needs-attention': 'bg-warn',
 };
 
 /** The header's sync status. It opens the sync dialog: online switch, waiting changes, review and the demo's other device. */
@@ -34,7 +40,7 @@ export function SyncButton() {
         type="button"
         data-tour="sync-status"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line px-2.5 text-xs font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+        className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`}
       >
         <span aria-hidden="true" className={`h-2 w-2 rounded-full ${DOT[status]}`} />
         {label}

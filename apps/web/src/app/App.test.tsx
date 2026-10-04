@@ -19,16 +19,20 @@ describe('App', () => {
     for (const name of ['হোম', 'অর্ডার', 'কাস্টমার ও মাপ', 'কাজের তালিকা', 'পেমেন্ট', 'সেটিংস', 'আরও']) {
       expect(nav.getByRole('link', { name })).toBeTruthy();
     }
-    expect(screen.getByRole('link', { name: '+ নতুন অর্ডার' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'নতুন অর্ডার' })).toBeTruthy();
   });
 
-  it('uses bottom tabs on mobile, with Payments under More', async () => {
+  it('uses bottom tabs on mobile with a centre New Order button, and Payments in the account menu', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app' });
     const nav = within(await screen.findByRole('navigation', { name: 'প্রধান মেনু' }));
-    expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['হোম', 'অর্ডার', 'কাস্টমার', 'কাজ', 'আরও']);
+    expect(nav.getAllByRole('link').map((l) => l.textContent)).toEqual(['হোম', 'অর্ডার', 'নতুন অর্ডার', 'কাস্টমার', 'কাজ']);
+    expect(nav.queryByRole('link', { name: 'আরও' })).toBeNull();
 
-    await userEvent.click(nav.getByRole('link', { name: 'আরও' }));
-    expect(await screen.findByRole('link', { name: 'পেমেন্ট' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'অ্যাকাউন্ট ও আরও' }));
+    const menu = await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' });
+    expect(within(menu).getByRole('link', { name: 'পেমেন্ট' })).toBeTruthy();
+    expect(within(menu).getByRole('link', { name: 'সেটিংস' })).toBeTruthy();
+    expect(within(menu).getByRole('button', { name: 'ইউজার বদলান' })).toBeTruthy();
   });
 
   it('switches to a tailor by PIN and hides money from them', async () => {
@@ -44,7 +48,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'কাজের তালিকা' })).toBeTruthy();
     const links = within(mainNav()).getAllByRole('link').map((l) => l.textContent);
     expect(links).toEqual(['কাজের তালিকা', 'আরও']);
-    expect(screen.queryByRole('link', { name: '+ নতুন অর্ডার' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'নতুন অর্ডার' })).toBeNull();
   });
 
   it('shows a message instead of a page the role cannot use', async () => {

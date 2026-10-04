@@ -91,6 +91,7 @@ export const en: Messages = {
   'sync.otherCustomerNote': 'Note written on another device',
   'sync.otherItemNote': 'Design note written on another device',
   'shell.switchUser': 'Switch user',
+  'shell.account': 'Account and more',
   'shell.signedInAs': '{name} ({role})',
 
   'access.denied': 'You do not have permission to see this.',
