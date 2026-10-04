@@ -1,11 +1,11 @@
 @import 'tailwindcss';
-@import '@fontsource/hind-siliguri/bengali-400.css';
-@import '@fontsource/hind-siliguri/bengali-600.css';
+@import '@fontsource/noto-sans-bengali/bengali-400.css';
+@import '@fontsource/noto-sans-bengali/bengali-600.css';
 @import '@fontsource/hind-siliguri/latin-400.css';
 @import '@fontsource/hind-siliguri/latin-600.css';
 
 @theme inline {
-  --font-sans: 'Hind Siliguri', system-ui, sans-serif;
+  --font-sans: 'Hind Siliguri', 'Noto Sans Bengali', system-ui, sans-serif;
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
