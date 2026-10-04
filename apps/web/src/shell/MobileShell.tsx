@@ -58,7 +58,7 @@ export function MobileShell({ role }: { role: Role }) {
             onClick={() => setAccountOpen(true)}
             className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
-            <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-navy font-display font-semibold text-on-brand">
+            <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-navy font-display font-semibold text-on-navy">
               {initialsOf(current.staff.name.trim().split(/\s+/)[0] ?? '')}
             </span>
           </button>

@@ -19,11 +19,11 @@ const ROUND =
   'flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
 const BAR_BUTTON = 'min-h-[54px]! rounded-2xl! text-base';
 
-function Stat({ label, value, tone = '', divided = false }: { label: string; value: string; tone?: string; divided?: boolean }) {
+function Stat({ label, value, tone = '', divided = false, small = false }: { label: string; value: string; tone?: string; divided?: boolean; small?: boolean }) {
   return (
     <div className={`flex flex-col-reverse items-center ${divided ? 'border-x border-line' : ''}`}>
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className={`m-0 font-display text-xl font-bold ${tone}`}>{value}</dd>
+      <dd className={`m-0 font-display font-bold ${small ? 'text-base leading-7' : 'text-xl'} ${tone}`}>{value}</dd>
     </div>
   );
 }
@@ -132,7 +132,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
       <dl className="m-0 grid grid-flow-col auto-cols-fr rounded-2xl border border-line bg-panel py-3">
         <Stat label={t('customer.stat.orders')} value={number(orders.length)} />
         {showMoney && <Stat label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'text-accent' : ''} divided />}
-        <Stat label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: false }) : t('customer.stat.none')} divided={!showMoney} />
+        <Stat label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: false }) : t('customer.stat.none')} divided={!showMoney} small={!latest} />
       </dl>
 
       <div role="tablist" aria-label={t('customer.tabs')} className="flex gap-1 border-b border-line">

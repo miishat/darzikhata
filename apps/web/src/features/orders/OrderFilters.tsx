@@ -114,8 +114,9 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
     const selected = query.dueOnly && money ? 'owed' : query.status;
     // One chip cannot show closed orders, or money due together with a status; list those so they are not hidden.
     const hidden: string[] = [];
-    if (query.status === 'closed' || (query.dueOnly && money && query.status !== 'all')) {
-      if (query.status !== 'all') hidden.push(t('orders.filterStatus', { status: t(`orders.status.${query.status}`) }));
+    const status: OrderStatusFilter = query.status;
+    if (status === 'closed' || (query.dueOnly && money && status !== 'all')) {
+      hidden.push(t('orders.filterStatus', { status: t(`orders.status.${status}`) }));
       if (query.dueOnly && money) hidden.push(t('orders.dueOnly'));
     }
     return (

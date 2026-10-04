@@ -21,7 +21,7 @@ export function firstCluster(word: string, useSegmenter = typeof Intl !== 'undef
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   const picked = words.length > 1 ? [words[0]!, words[1]!] : words.slice(0, 1);
-  return picked.map(firstCluster).join('').toLocaleUpperCase();
+  return picked.map((w) => firstCluster(w)).join('').toLocaleUpperCase();
 }
 
 /** Decorative initials; the name is always shown next to it. */

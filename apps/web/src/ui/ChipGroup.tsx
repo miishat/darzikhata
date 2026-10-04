@@ -33,7 +33,7 @@ export function ChipGroup({ label, options, value, onChange, trailing }: ChipGro
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
             className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-              selected ? 'border-navy bg-navy text-on-brand' : 'border-line bg-panel text-ink'
+              selected ? 'border-navy bg-navy text-on-navy' : 'border-line bg-panel text-ink'
             }`}
           >
             {option.label}
