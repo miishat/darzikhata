@@ -20,7 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'customers', path: '/app/customers', label: 'nav.customers', shortLabel: 'nav.customersShort', requires: ['customers.view'], mobileTab: true },
   { key: 'work', path: '/app/work', label: 'nav.work', shortLabel: 'nav.workShort', requires: ['work.view.all', 'work.view.assigned'], mobileTab: true },
   { key: 'payments', path: '/app/payments', label: 'nav.payments', shortLabel: 'nav.payments', requires: ['money.view'], mobileTab: false },
-  { key: 'settings', path: '/app/settings', label: 'nav.settings', shortLabel: 'nav.settings', requires: ['settings.edit'], mobileTab: false },
+  { key: 'settings', path: '/app/settings', label: 'nav.settings', shortLabel: 'nav.settings', requires: ['settings.edit', 'staff.manage'], mobileTab: false },
 ];
 
 export function canUse(role: Role, requires: Capability[]): boolean {

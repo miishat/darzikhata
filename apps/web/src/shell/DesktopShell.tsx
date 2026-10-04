@@ -2,6 +2,7 @@ import { can, type Role } from '@darzikhata/domain';
 import { Suspense, useRef } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import { Loading } from '../app/guards';
+import { BranchSwitcher } from '../features/branches/BranchScopeProvider';
 import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { GlobalSearch } from './GlobalSearch';
@@ -17,7 +18,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 /** Sidebar and top bar for laptops and large screens. */
 export function DesktopShell({ role }: { role: Role }) {
   const { t } = useI18n();
-  const { shopName, branchName } = useShopHeader();
+  const { shopName } = useShopHeader();
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
 
@@ -56,8 +57,8 @@ export function DesktopShell({ role }: { role: Role }) {
         <header className="flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
           <div className="min-w-0">
             <p className="truncate font-semibold">{shopName}</p>
-            {branchName && <p className="truncate text-xs text-muted">{branchName}</p>}
           </div>
+          <BranchSwitcher />
           <div className="flex-1" />
           <GlobalSearch role={role} inputRef={searchInput} />
           <ConnectionBadge />

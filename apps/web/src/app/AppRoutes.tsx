@@ -2,11 +2,10 @@ import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
 import { SignInPage } from '../features/auth/SignInPage';
-import { PlaceholderPage } from '../features/PlaceholderPage';
 import { WelcomePage } from '../features/welcome/WelcomePage';
 import { DesktopShell } from '../shell/DesktopShell';
 import { MobileShell } from '../shell/MobileShell';
-import { navItem, type NavKey } from '../shell/nav';
+import { navItem } from '../shell/nav';
 import { useShell } from '../shell/ShellPreference';
 import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, Loading, RequireCapability, RequireShop, RequireStaff } from './guards';
@@ -16,26 +15,28 @@ const CustomerForm = lazyPage(() => import('../features/customers/CustomerForm')
 const MeasurementForm = lazyPage(() => import('../features/customers/MeasurementForm'), 'MeasurementForm');
 const OrdersPage = lazyPage(() => import('../features/orders/OrdersPage'), 'OrdersPage');
 const NewOrderPage = lazyPage(() => import('../features/orders/NewOrderPage'), 'NewOrderPage');
+const DashboardPage = lazyPage(() => import('../features/dashboard/DashboardPage'), 'DashboardPage');
 const PaymentsPage = lazyPage(() => import('../features/payments/PaymentsPage'), 'PaymentsPage');
 const MorePage = lazyPage(() => import('../features/more/MorePage'), 'MorePage');
 const ReceiptPage = lazyPage(() => import('../features/print/ReceiptPage'), 'ReceiptPage');
 const JobSlipPage = lazyPage(() => import('../features/print/JobSlipPage'), 'JobSlipPage');
+const WorkPage = lazyPage(() => import('../features/work/WorkPage'), 'WorkPage');
 const FabricTagsPage = lazyPage(() => import('../features/print/FabricTagsPage'), 'FabricTagsPage');
+const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrintPage'), 'WorkListPrintPage');
+const SettingsPage = lazyPage(() => import('../features/settings/SettingsPage'), 'SettingsPage');
+const SettingsHome = lazyPage(() => import('../features/settings/SettingsHome'), 'SettingsHome');
+const ShopSettings = lazyPage(() => import('../features/settings/ShopSettings'), 'ShopSettings');
+const StaffSettings = lazyPage(() => import('../features/settings/StaffSettings'), 'StaffSettings');
+const BranchSettings = lazyPage(() => import('../features/settings/BranchSettings'), 'BranchSettings');
+const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
+const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
+const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
 function AppShell() {
   const { kind } = useShell();
   const current = useCurrentStaff();
   if (!current) return null;
   return kind === 'desktop' ? <DesktopShell role={current.role} /> : <MobileShell role={current.role} />;
-}
-
-function Section({ nav }: { nav: NavKey }) {
-  const item = navItem(nav);
-  return (
-    <RequireCapability anyOf={item.requires}>
-      <PlaceholderPage title={item.label} />
-    </RequireCapability>
-  );
 }
 
 export function AppRoutes() {
@@ -60,7 +61,14 @@ export function AppRoutes() {
         }
       >
         <Route index element={<HomeRedirect />} />
-        <Route path="dashboard" element={<Section nav="dashboard" />} />
+        <Route
+          path="dashboard"
+          element={
+            <RequireCapability anyOf={navItem('dashboard').requires}>
+              <DashboardPage />
+            </RequireCapability>
+          }
+        />
         <Route
           path="orders/new"
           element={
@@ -109,7 +117,14 @@ export function AppRoutes() {
             </RequireCapability>
           }
         />
-        <Route path="work" element={<Section nav="work" />} />
+        <Route
+          path="work"
+          element={
+            <RequireCapability anyOf={navItem('work').requires}>
+              <WorkPage />
+            </RequireCapability>
+          }
+        />
         <Route
           path="payments"
           element={
@@ -118,7 +133,57 @@ export function AppRoutes() {
             </RequireCapability>
           }
         />
-        <Route path="settings" element={<Section nav="settings" />} />
+        <Route path="settings" element={<SettingsPage />}>
+          <Route index element={<SettingsHome />} />
+          <Route
+            path="shop"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <ShopSettings />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="templates"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplatesSettings />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="templates/new"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplateEditor />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="templates/:templateId"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <TemplateEditor />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="staff"
+            element={
+              <RequireCapability anyOf={['staff.manage']}>
+                <StaffSettings />
+              </RequireCapability>
+            }
+          />
+          <Route
+            path="branches"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <BranchSettings />
+              </RequireCapability>
+            }
+          />
+        </Route>
         <Route path="more" element={<MorePage />} />
       </Route>
       <Route
@@ -155,6 +220,26 @@ export function AppRoutes() {
               </Suspense>
             </RequireCapability>
           </RequireStaff>
+        }
+      />
+      <Route
+        path="/print/work"
+        element={
+          <RequireStaff>
+            <RequireCapability anyOf={navItem('work').requires}>
+              <Suspense fallback={<Loading />}>
+                <WorkListPrintPage />
+              </Suspense>
+            </RequireCapability>
+          </RequireStaff>
+        }
+      />
+      <Route
+        path="/s/:token"
+        element={
+          <Suspense fallback={<Loading />}>
+            <StatusPage />
+          </Suspense>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

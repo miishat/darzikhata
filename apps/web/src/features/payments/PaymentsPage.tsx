@@ -1,9 +1,9 @@
 import { balanceDue, outstandingBalances, type Order } from '@darzikhata/domain';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { TextField } from '../../ui/TextField';
+import { useScopedState } from '../branches/BranchScopeProvider';
 import { useToday } from '../common/hooks';
 import { matchesText, orderRow } from '../orders/orderList';
 
@@ -13,7 +13,7 @@ const cell = 'whitespace-nowrap px-3 py-2';
 /** Who still owes the shop and whom the shop owes. Records nothing itself. */
 export function PaymentsPage() {
   const { t, money } = useI18n();
-  const { state } = useSnapshot();
+  const state = useScopedState();
   const today = useToday();
   const [text, setText] = useState('');
 

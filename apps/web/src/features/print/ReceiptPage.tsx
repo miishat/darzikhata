@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { formatDate, formatMoney, translate } from '../../i18n/format';
+import { shareOrCopy } from '../../lib/share';
 import { useI18n } from '../../i18n/I18nProvider';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
 import { receiptModel, receiptShareText, type ReceiptModel } from './receipt';
@@ -68,25 +69,12 @@ export function ReceiptPage() {
 
   const share = async () => {
     const text = receiptShareText(model, language);
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: t('receipt.title'), text });
-      } catch {
-        // Closing the share sheet is not a problem.
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    } catch {
-      // Copying can be blocked by the browser; nothing more to do.
-    }
+    if ((await shareOrCopy(t('receipt.title'), text)) === 'copied') setCopied(true);
   };
 
   return (
     <PrintLayout
-      orderId={order.id}
+      back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }}
       title={t('receipt.title')}
       language={language}
       onLanguage={(next) => {

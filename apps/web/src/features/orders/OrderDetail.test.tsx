@@ -147,7 +147,7 @@ describe('Order detail', () => {
   it('offers only the actions a production supervisor may take', async () => {
     const { order } = await openOrder(
       'uniform',
-      (o) => o.items.some((i) => itemSummaryGroup(i) === 'unfinished'),
+      (o) => o.branchId === 'workshop' && o.items.some((i) => itemSummaryGroup(i) === 'unfinished'),
       { staffId: 'uniform-supervisor', pin: '3333' },
     );
     const item = order.items.find((i) => itemSummaryGroup(i) === 'unfinished')!;
