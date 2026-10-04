@@ -7,7 +7,8 @@ import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { GlobalSearch } from './GlobalSearch';
 import { visibleNav } from './nav';
-import { ConnectionBadge, LanguageToggle, SwitchUserButton, useShopHeader } from './ShellParts';
+import { LanguageToggle, SwitchUserButton, useShopHeader } from './ShellParts';
+import { SyncButton } from './SyncStatus';
 import { useShortcuts } from './useShortcuts';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -61,7 +62,7 @@ export function DesktopShell({ role }: { role: Role }) {
           <BranchSwitcher />
           <div className="flex-1" />
           <GlobalSearch role={role} inputRef={searchInput} />
-          <ConnectionBadge />
+          <SyncButton />
           <LanguageToggle />
           {can(role, 'orders.create') && (
             <Link to="/app/orders/new" className={buttonClasses('primary')}>

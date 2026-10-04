@@ -4,7 +4,8 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { visibleNav } from './nav';
-import { ConnectionBadge, SwitchUserButton, useShopHeader } from './ShellParts';
+import { SwitchUserButton, useShopHeader } from './ShellParts';
+import { SyncButton } from './SyncStatus';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-14 flex-col items-center justify-center px-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-brand ${
@@ -21,7 +22,7 @@ export function MobileShell({ role }: { role: Role }) {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
         <p className="min-w-0 flex-1 truncate font-semibold">{shopName}</p>
-        <ConnectionBadge />
+        <SyncButton />
         <SwitchUserButton compact />
       </header>
       <main className="flex-1 px-4 pt-4 pb-36">
