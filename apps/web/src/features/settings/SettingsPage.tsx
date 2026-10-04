@@ -19,7 +19,7 @@ export function SettingsPage() {
               key={s.path}
               to={s.path}
               className={({ isActive }) =>
-                `flex min-h-10 items-center rounded-lg border px-4 text-base ${isActive ? 'border-brand bg-brand text-white' : 'border-line bg-panel'}`
+                `flex min-h-10 items-center rounded-lg border px-4 text-base ${isActive ? 'border-brand bg-brand text-on-brand' : 'border-line bg-panel'}`
               }
             >
               {t(s.label)}

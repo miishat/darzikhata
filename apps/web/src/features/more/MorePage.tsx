@@ -8,6 +8,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { usePresenterSetting } from '../presenter/PresenterSetting';
 import { visibleNav } from '../../shell/nav';
 import { useShell, type ShellPreference } from '../../shell/ShellPreference';
+import { useTheme, type ThemePreference } from '../../shell/theme';
 import { Button, buttonClasses } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
@@ -26,6 +27,7 @@ export function MorePage() {
   const current = useCurrentStaff();
   const store = useStore();
   const presenter = usePresenterSetting();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState<'reset' | 'change' | null>(null);
 
@@ -76,6 +78,16 @@ export function MorePage() {
           options={[
             { value: 'bn', label: 'বাংলা' },
             { value: 'en', label: 'English' },
+          ]}
+        />
+        <ChoiceGroup<ThemePreference>
+          legend={t('more.theme')}
+          value={theme}
+          onChange={setTheme}
+          options={[
+            { value: 'auto', label: t('more.theme.auto') },
+            { value: 'light', label: t('more.theme.light') },
+            { value: 'dark', label: t('more.theme.dark') },
           ]}
         />
         <ChoiceGroup<ShellPreference>

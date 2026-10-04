@@ -4,7 +4,10 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { App } from './app/App';
 import { DarziDb } from './data/db';
 import { ShopStore } from './data/store';
+import { applyTheme, readTheme } from './shell/theme';
 import './index.css';
+
+applyTheme(readTheme());
 
 // A short pause makes "Syncing…" visible, and auto-sync waits for a burst of changes to finish.
 const store = new ShopStore({

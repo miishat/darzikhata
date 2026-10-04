@@ -95,6 +95,10 @@ export const bn = {
   'access.denied': 'এই অংশ দেখার অনুমতি আপনার নেই।',
 
   'more.language': 'ভাষা',
+  'more.theme': 'রঙের থিম',
+  'more.theme.auto': 'ডিভাইস অনুযায়ী',
+  'more.theme.light': 'হালকা',
+  'more.theme.dark': 'গাঢ়',
   'more.layout': 'স্ক্রিন লেআউট',
   'more.layout.auto': 'স্ক্রিন অনুযায়ী',
   'more.layout.mobile': 'মোবাইল',
