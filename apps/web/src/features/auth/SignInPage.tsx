@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { BrandMark } from '../../ui/BrandMark';
 import { Button } from '../../ui/Button';
 import { PinPad } from '../../ui/PinPad';
 
@@ -27,6 +28,7 @@ export function SignInPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 py-10">
+      <BrandMark size={56} />
       <h1 className="text-2xl font-semibold">{chosen ? t('auth.enterPin', { name: chosen.name }) : t('auth.whoIsUsing')}</h1>
       {chosen ? (
         <>

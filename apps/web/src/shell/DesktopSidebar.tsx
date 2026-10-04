@@ -1,5 +1,5 @@
 import type { Role } from '@darzikhata/domain';
-import { ChevronsUpDown, Ellipsis, Scissors } from 'lucide-react';
+import { ChevronsUpDown, Ellipsis } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
@@ -7,6 +7,7 @@ import { BranchSwitcher, useBranchScope, useScopedState } from '../features/bran
 import { useToday } from '../features/common/hooks';
 import { useI18n } from '../i18n/I18nProvider';
 import { Avatar } from '../ui/Avatar';
+import { BrandMark } from '../ui/BrandMark';
 import { AccountMenu } from './AccountMenu';
 import { visibleNav, type NavItem } from './nav';
 import { navCounts } from './navCounts';
@@ -147,9 +148,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
   return (
     <aside className="no-print sticky top-0 flex h-dvh w-60 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 py-4">
       <div className="flex items-center gap-2.5 px-1">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-navy text-on-navy">
-          <Scissors aria-hidden="true" size={20} />
-        </span>
+        <BrandMark size={36} className="shrink-0" />
         <span className="font-display text-lg font-bold">{t('app.name')}</span>
         <span className="rounded bg-accent/15 px-1.5 text-xs font-semibold text-accent">{t('app.demo')}</span>
       </div>

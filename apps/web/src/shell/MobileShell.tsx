@@ -5,6 +5,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { Loading } from '../app/guards';
 import { useCurrentStaff } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
+import { BrandMark } from '../ui/BrandMark';
 import { AccountMenu } from './AccountMenu';
 import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
@@ -47,6 +48,7 @@ export function MobileShell({ role }: { role: Role }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
+        <BrandMark size={28} className="shrink-0" />
         <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
         <SyncButton />
         {current && (
