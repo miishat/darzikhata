@@ -8,6 +8,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { usePresenterSetting } from '../presenter/PresenterSetting';
 import { visibleNav } from '../../shell/nav';
 import { useShell, type ShellPreference } from '../../shell/ShellPreference';
+import { useKeypadOn } from '../../shell/keypad';
 import { useTheme, type ThemePreference } from '../../shell/theme';
 import { Button, buttonClasses } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
@@ -28,6 +29,7 @@ export function MoreContent({ onNavigate }: { onNavigate?(): void }) {
   const store = useStore();
   const presenter = usePresenterSetting();
   const { theme, setTheme } = useTheme();
+  const { keypadOn, setKeypadOn } = useKeypadOn();
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState<'reset' | 'change' | null>(null);
 
@@ -95,6 +97,12 @@ export function MoreContent({ onNavigate }: { onNavigate?(): void }) {
           onChange={setPreference}
           options={layouts.map((l) => ({ value: l.value, label: t(l.label) }))}
         />
+        {kind === 'mobile' && (
+          <div className="flex flex-col gap-1">
+            <Checkbox label={t('more.keypad')} checked={keypadOn} onChange={setKeypadOn} />
+            <p className="text-sm text-muted">{t('more.keypadHint')}</p>
+          </div>
+        )}
       </Section>
       <Section>
         <h2 className="font-semibold">{t('more.demo')}</h2>

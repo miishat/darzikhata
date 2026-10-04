@@ -22,3 +22,15 @@ describe('Colour theme on More', () => {
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 });
+
+describe('Measurement keypad setting on More', () => {
+  it('is on by default on a phone and can be turned off for this device', async () => {
+    window.localStorage.removeItem('dk.keypad');
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/more' });
+    const box = (await screen.findByRole('checkbox', { name: 'মাপের কিপ্যাড' })) as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    await userEvent.click(box);
+    expect(box.checked).toBe(false);
+    expect(window.localStorage.getItem('dk.keypad')).toBe('off');
+  });
+});
