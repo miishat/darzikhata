@@ -3,14 +3,14 @@
 @import '@fontsource/noto-sans-bengali/bengali-600.css';
 @import '@fontsource/hind-siliguri/latin-400.css';
 @import '@fontsource/hind-siliguri/latin-600.css';
-@import '@fontsource/anek-bangla/bengali-600.css';
-@import '@fontsource/anek-bangla/bengali-700.css';
-@import '@fontsource/anek-bangla/latin-600.css';
-@import '@fontsource/anek-bangla/latin-700.css';
+@import '@fontsource/noto-serif-bengali/bengali-600.css';
+@import '@fontsource/noto-serif-bengali/bengali-700.css';
+@import '@fontsource/noto-serif-bengali/latin-600.css';
+@import '@fontsource/noto-serif-bengali/latin-700.css';
 
 @theme inline {
   --font-sans: 'Noto Sans Bengali', 'Hind Siliguri', system-ui, sans-serif;
-  --font-display: 'Anek Bangla', 'Noto Sans Bengali', system-ui, sans-serif;
+  --font-display: 'Noto Serif Bengali', 'Noto Sans Bengali', system-ui, sans-serif;
   --color-navy: var(--navy);
   --color-navy-raised: var(--navy-raised);
   --color-on-navy: var(--on-navy);
