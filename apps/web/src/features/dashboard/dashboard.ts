@@ -68,3 +68,29 @@ export function dashboardModel(orders: Order[], today: string): DashboardModel {
     ready: readyForPickup(orders),
   };
 }
+
+export const TODO_LIMIT = 6;
+export type TodoKind = 'trial' | 'delivery' | 'late';
+export interface TodoRow {
+  kind: TodoKind;
+  ref: ItemRef;
+}
+
+/** The phone's one list: today's trials, today's deliveries, then the oldest late garments. Each garment once. */
+export function todoRows(model: DashboardModel, limit = TODO_LIMIT): TodoRow[] {
+  const seen = new Set<string>();
+  const rows: TodoRow[] = [];
+  const groups: Array<[TodoKind, ItemRef[]]> = [
+    ['trial', model.trialsToday],
+    ['delivery', model.deliveriesToday],
+    ['late', model.overdue],
+  ];
+  for (const [kind, refs] of groups) {
+    for (const ref of refs) {
+      if (seen.has(ref.item.id)) continue;
+      seen.add(ref.item.id);
+      rows.push({ kind, ref });
+    }
+  }
+  return rows.slice(0, limit);
+}

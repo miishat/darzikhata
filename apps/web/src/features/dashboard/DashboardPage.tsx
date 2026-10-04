@@ -1,11 +1,17 @@
-import { balanceDue, itemSummaryGroup, type ItemRef, type Order } from '@darzikhata/domain';
+import { balanceDue, itemSummaryGroup, labelIn, stageByKey, type ItemRef, type Order } from '@darzikhata/domain';
+import { CheckCheck, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useToday } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
-import { dashboardModel } from './dashboard';
+import { useShell } from '../../shell/ShellPreference';
+import { Avatar } from '../../ui/Avatar';
+import { DueLabel } from '../../ui/DueLabel';
+import { StagePill } from '../../ui/StagePill';
+import { stageTone } from '../../ui/stageTone';
+import { dashboardModel, todoRows } from './dashboard';
 
 function OrderLink({ order }: { order: Order }) {
   return (
@@ -37,6 +43,35 @@ function Block({ title, empty, children, tour }: { title: string; empty: string;
   );
 }
 
+function Tile({ to, label, count, icon: Icon, late }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean }) {
+  return (
+    <Link
+      to={to}
+      className={`flex min-h-11 flex-col gap-1.5 rounded-2xl p-3.5 focus-visible:outline-2 focus-visible:outline-brand ${
+        late ? 'bg-warn-soft text-warn-ink' : 'bg-navy-raised text-white'
+      }`}
+    >
+      <span className={`flex items-center gap-2 text-sm ${late ? 'font-semibold' : 'text-on-navy-muted'}`}>
+        <Icon aria-hidden="true" size={18} />
+        {label}
+      </span>
+      <span className="font-display text-3xl font-bold leading-none">{count}</span>
+    </Link>
+  );
+}
+
+function MoneyCard({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <Link
+      to="/app/payments"
+      className="flex min-h-11 flex-col gap-0.5 rounded-2xl border border-line bg-panel px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      <span className="text-sm text-muted">{label}</span>
+      <span className={`font-display text-xl font-bold ${warn ? 'text-warn' : ''}`}>{value}</span>
+    </Link>
+  );
+}
+
 /** What is due today, what is late, what waits to be collected, and (with money access) the day's money. */
 export function DashboardPage() {
   const { t, language, money, number, date } = useI18n();
@@ -57,6 +92,75 @@ export function DashboardPage() {
       )}
     </li>
   );
+
+  const { kind } = useShell();
+  if (kind === 'mobile') {
+    const rows = todoRows(model);
+    return (
+      <section className="flex flex-col gap-4">
+        <h1 className="sr-only">{t('nav.dashboard')}</h1>
+        <section aria-label={t('dashboard.title')} className="flex flex-col gap-3.5 rounded-3xl bg-navy p-4 text-white">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="font-display text-xl font-semibold">{t('dashboard.title')}</h2>
+            <span className="text-sm text-on-navy-muted">{date(today, { year: false })}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} />
+            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} />
+            <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} />
+            <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late />
+          </div>
+        </section>
+        {showMoney && (
+          <section aria-label={t('dashboard.money')} className="grid grid-cols-2 gap-2.5">
+            <MoneyCard label={t('dashboard.collectedToday')} value={money(model.collectedToday)} />
+            <MoneyCard label={t('payments.dueTotal')} value={money(model.dueTotal)} warn />
+          </section>
+        )}
+        <section aria-label={t('dashboard.todo')} className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2 px-1">
+            <h2 className="font-display text-lg font-semibold">{t('dashboard.todo')}</h2>
+            <Link to="/app/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-strong">
+              {t('dashboard.seeAll')}
+            </Link>
+          </div>
+          {rows.length === 0 ? (
+            <p className="text-muted">{t('dashboard.none')}</p>
+          ) : (
+            <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-panel">
+              {rows.map(({ kind: rowKind, ref: { order, item } }) => {
+                const stage = stageByKey(item.stages, item.stageKey);
+                return (
+                  <li key={item.id}>
+                    <Link
+                      to={`/app/orders/${order.id}`}
+                      className="flex min-h-11 items-center gap-3 px-3.5 py-3 focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      <Avatar id={order.customerId} name={customerName(order)} />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-semibold">{customerName(order)}</span>
+                        <span className="truncate text-sm text-muted">
+                          {itemTitle(order, item, language)} · {order.number}
+                        </span>
+                      </span>
+                      {rowKind === 'late' && item.deliveryDate ? (
+                        <DueLabel date={item.deliveryDate} />
+                      ) : (
+                        <StagePill
+                          label={labelIn(stage.label, language)}
+                          tone={stageTone(stage, itemSummaryGroup(item), item.stages.indexOf(stage))}
+                        />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">

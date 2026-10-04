@@ -5,8 +5,14 @@ import { isPhone, openShop } from './helpers';
 // order A-0032 always has three garments ready to collect.
 test('handing over one garment leaves the order open', async ({ page }) => {
   await openShop(page, 'রহমান টেইলার্স');
-  const ready = page.getByRole('region', { name: 'নেওয়ার জন্য রেডি' });
-  await ready.getByRole('link', { name: 'A-0032' }).click();
+  if (isPhone(page)) {
+    // On a phone, Home has a ready tile; it opens Orders filtered to ready garments.
+    await page.getByRole('region', { name: 'আজকের কাজ' }).getByRole('link', { name: /রেডি/ }).click();
+    await page.getByRole('list', { name: 'অর্ডার তালিকা' }).getByRole('link', { name: /A-0032/ }).click();
+  } else {
+    const ready = page.getByRole('region', { name: 'নেওয়ার জন্য রেডি' });
+    await ready.getByRole('link', { name: 'A-0032' }).click();
+  }
 
   // On a phone the order fills the page; on a laptop it opens in a panel beside the list.
   await expect(page.getByRole('heading', { name: 'A-0032' })).toBeVisible();

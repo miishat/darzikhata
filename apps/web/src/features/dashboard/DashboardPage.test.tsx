@@ -66,3 +66,41 @@ describe('Dashboard', () => {
     expect(ready.getByRole('link', { name: 'A-0027' })).toBeTruthy();
   });
 });
+
+describe('Dashboard on a phone', () => {
+  const tile = (name: RegExp) => within(screen.getByRole('region', { name: 'আজকের কাজ' })).getByRole('link', { name });
+
+  it('shows four tiles that match the counts and open the matching Orders filter', async () => {
+    const { store, router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
+    await screen.findByRole('region', { name: 'আজকের কাজ' });
+    const m = model(store);
+    expect(tile(/ট্রায়াল/).textContent).toContain(bn(m.trialsToday.length));
+    expect(tile(/ডেলিভারি/).textContent).toContain(bn(m.deliveriesToday.length));
+    expect(tile(/রেডি/).textContent).toContain(bn(m.readyGarments));
+    expect(tile(/দেরি হয়েছে/).textContent).toContain(bn(m.overdueGarments));
+    expect(tile(/দেরি হয়েছে/).className).toContain('bg-warn-soft');
+    await userEvent.click(tile(/রেডি/));
+    expect(router.state.location.pathname).toBe('/app/orders');
+    expect(router.state.location.search).toBe('?status=ready');
+  });
+
+  it('lists at most six rows, each the whole link to its order, with money cards linking to Payments', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
+    const list = within(await screen.findByRole('region', { name: 'এখন যা করতে হবে' }));
+    const rows = list.getAllByRole('listitem');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThanOrEqual(6);
+    for (const row of rows) expect(within(row).getByRole('link').getAttribute('href')).toMatch(/^\/app\/orders\/.+/);
+    expect(list.getByRole('link', { name: 'সব দেখুন' }).getAttribute('href')).toBe('/app/orders');
+    const money = within(screen.getByRole('region', { name: 'টাকা' }));
+    expect(money.getByRole('link', { name: /আজ জমা/ }).getAttribute('href')).toBe('/app/payments');
+    expect(money.getByRole('link', { name: /মোট বাকি/ }).getAttribute('href')).toBe('/app/payments');
+  });
+
+  it('hides the money cards without money access', async () => {
+    await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/dashboard', as: { staffId: 'uniform-supervisor', pin: '3333' } });
+    await screen.findByRole('region', { name: 'আজকের কাজ' });
+    expect(screen.queryByRole('region', { name: 'টাকা' })).toBeNull();
+    expect(screen.queryByText('আজ জমা')).toBeNull();
+  });
+});

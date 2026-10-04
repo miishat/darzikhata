@@ -1,6 +1,6 @@
 import { makeItem, makeOrder, makePayment } from '@darzikhata/domain/testing';
 import { describe, expect, it } from 'vitest';
-import { dashboardModel } from './dashboard';
+import { dashboardModel, todoRows } from './dashboard';
 
 const TODAY = '2026-10-03';
 /** 00:30 on 3 October in Dhaka, and 23:59 on 2 October. */
@@ -71,5 +71,37 @@ describe('dashboardModel', () => {
       overdue: [],
       ready: [],
     });
+  });
+});
+
+describe('todoRows', () => {
+  const mk = (n: number, fields: Parameters<typeof makeItem>[0]) =>
+    makeOrder({ id: `x${n}`, number: `B-000${n}`, items: [makeItem({ id: `i${n}`, ...fields })] });
+
+  it('lists trials, then deliveries, then the oldest late garments', () => {
+    const list = [
+      mk(1, { stageKey: 'cutting', deliveryDate: '2026-09-30' }),
+      mk(2, { stageKey: 'cutting', deliveryDate: '2026-09-28' }),
+      mk(3, { stageKey: 'stitching', trialDate: TODAY, deliveryDate: '2026-10-09' }),
+      mk(4, { stageKey: 'stitching', deliveryDate: TODAY }),
+    ];
+    const rows = todoRows(dashboardModel(list, TODAY));
+    expect(rows.map((r) => [r.kind, r.ref.item.id])).toEqual([
+      ['trial', 'i3'],
+      ['delivery', 'i4'],
+      ['late', 'i2'],
+      ['late', 'i1'],
+    ]);
+  });
+
+  it('shows a garment once, even when it is both a trial and late', () => {
+    const rows = todoRows(dashboardModel([mk(1, { stageKey: 'cutting', trialDate: TODAY, deliveryDate: '2026-09-30' })], TODAY));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.kind).toBe('trial');
+  });
+
+  it('stops at six rows', () => {
+    const list = Array.from({ length: 9 }, (_, i) => mk(i + 1, { stageKey: 'cutting', deliveryDate: '2026-09-01' }));
+    expect(todoRows(dashboardModel(list, TODAY))).toHaveLength(6);
   });
 });
