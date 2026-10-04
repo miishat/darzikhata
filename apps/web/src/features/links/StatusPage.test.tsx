@@ -1,4 +1,4 @@
-import { isOrderClosed, orderClosedAt, todayInDhaka, type Order } from '@darzikhata/domain';
+import { isOrderClosed, orderClosedAt, toBanglaDigits, todayInDhaka, type Order } from '@darzikhata/domain';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -30,7 +30,7 @@ describe('Public status page', () => {
   it('shows the order’s progress and nothing private', async () => {
     const { store, order } = await openAsCustomer('uniform', (o) => o.id === 'uniform-o27');
     expect(await screen.findByRole('heading', { name: 'ইউনিফর্ম হাউস' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: `অর্ডার ${order.number}` })).toBeTruthy();
+    expect(screen.getByText(`আপনার অর্ডার ${order.number}`)).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'প্রধান মেনু' })).toBeNull();
 
     const garments = screen.getByRole('list', { name: 'পোশাকের অবস্থা' });
@@ -46,6 +46,29 @@ describe('Public status page', () => {
     expect(text).not.toContain(customer.phone!);
     expect(text).not.toContain(order.notes);
     for (const staff of config!.staff) expect(text).not.toContain(staff.name);
+  });
+
+  it('leads with how many garments are ready, with a bar, and pins a call button', async () => {
+    const { order, store } = await openAsCustomer('rahman', (o) => !isOrderClosed(o));
+    const live = order.items.filter((i) => i.cancelled === null);
+    const ready = live.filter((i) => i.stageKey === 'ready' || i.stageKey === 'delivered').length;
+    const headline = `${toBanglaDigits(String(live.length))}টির মধ্যে ${toBanglaDigits(String(ready))}টি রেডি`;
+    expect(await screen.findByRole('heading', { name: headline })).toBeTruthy();
+    expect(screen.getByRole('img', { name: headline })).toBeTruthy();
+    expect(screen.getByText('দাম বা মাপ এখানে দেখানো হয় না।', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/সর্বশেষ আপডেট/)).toBeTruthy();
+
+    const phone = store.getSnapshot().config!.profile.phone;
+    expect(screen.getByRole('link', { name: 'দোকানে কল করুন' }).getAttribute('href')).toBe(`tel:${phone}`);
+    expect(screen.getByText('দাম বা মাপ এখানে দেখানো হয় না।', { exact: false }).closest('main')!.textContent).not.toMatch(/ইঞ্চি|৳/);
+  });
+
+  it('leaves out the call button when the shop has no phone', async () => {
+    await openAsCustomer('rahman', (o) => !isOrderClosed(o), (store) =>
+      store.updateConfig((c) => ({ ...c, profile: { ...c.profile, phone: '' } })),
+    );
+    expect(await screen.findByRole('list', { name: 'পোশাকের অবস্থা' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'দোকানে কল করুন' })).toBeNull();
   });
 
   it('says a turned-off link no longer works', async () => {
@@ -77,7 +100,7 @@ describe('Public status page', () => {
   it('switches to English', async () => {
     const { order } = await openAsCustomer('rahman', (o) => !isOrderClosed(o));
     await userEvent.click(await screen.findByRole('button', { name: 'English' }));
-    expect(await screen.findByRole('heading', { name: `Order ${order.number}` })).toBeTruthy();
+    expect(await screen.findByText(`Your order ${order.number}`)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Rahman Tailors' })).toBeTruthy();
   });
 });
