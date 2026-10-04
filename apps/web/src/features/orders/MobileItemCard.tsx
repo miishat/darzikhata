@@ -1,6 +1,6 @@
-import { formatMeasurement, itemSummaryGroup, labelIn, type Order, type OrderItem } from '@darzikhata/domain';
+import { formatMeasurement, itemDeliveredAt, itemSummaryGroup, labelIn, type Order, type OrderItem } from '@darzikhata/domain';
 import type { LucideIcon } from 'lucide-react';
-import { ChevronDown, ChevronRight, Ellipsis, Scissors, Shirt, UserPlus, UserRound } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, Ellipsis, Scissors, Shirt, UserPlus, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -58,6 +58,60 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
   const summary = canSee ? measureSummary(item, template, language) : '';
   const tone = stageTone(stage, group, Math.max(stageIndex, 0));
   const menu = canMove || can('orders.edit') || (can('orders.cancel') && !delivered);
+
+  const menuItems = (done: () => void) => (
+                <>
+                  {canMove && (
+                    <ActionSheetItem
+                      onClick={() => {
+                        done();
+                        setDialog('stage');
+                      }}
+                    >
+                      {t('item.otherStage')}
+                    </ActionSheetItem>
+                  )}
+                  {can('orders.edit') && (
+                    <>
+                      <ActionSheetItem
+                        onClick={() => {
+                          done();
+                          setDialog('adjust');
+                        }}
+                      >
+                        {t('item.addAdjustment')}
+                      </ActionSheetItem>
+                      <ActionSheetItem
+                        onClick={() => {
+                          done();
+                          setDialog('edit');
+                        }}
+                      >
+                        {t('item.edit')}
+                      </ActionSheetItem>
+                    </>
+                  )}
+                  {can('orders.cancel') && !delivered && (
+                    <ActionSheetItem
+                      danger
+                      onClick={() => {
+                        done();
+                        setDialog('cancel');
+                      }}
+                    >
+                      {t('item.cancel')}
+                    </ActionSheetItem>
+                  )}
+                </>
+  );
+
+  const alone = !(canMove && next) && menu && !item.cancelled;
+  const deliveredAt = itemDeliveredAt(item);
+  const moreActions = (className: string) => (
+    <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title} triggerClassName={className}>
+      {menuItems}
+    </ActionSheet>
+  );
 
   return (
     <>
@@ -141,7 +195,15 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
         {item.cancelled ? (
           <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
         ) : (
-          (canMove || menu) && (
+          alone ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-ok">
+                <Check aria-hidden="true" size={18} />
+                {deliveredAt ? t('item.deliveredOn', { date: date(deliveredAt.slice(0, 10)) }) : t('stageGroup.delivered')}
+              </p>
+              {moreActions('size-11! rounded-xl! border border-line')}
+            </div>
+          ) : (canMove || menu) && (
             <div className="flex items-center gap-2">
               {canMove && next && (
                 next.stage.group === 'delivered' ? (
@@ -158,55 +220,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                   />
                 )
               )}
-              {menu && (
-                <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title} triggerClassName="size-14! rounded-2xl! border border-line">
-                  {(done) => (
-                <>
-                  {canMove && (
-                    <ActionSheetItem
-                      onClick={() => {
-                        done();
-                        setDialog('stage');
-                      }}
-                    >
-                      {t('item.otherStage')}
-                    </ActionSheetItem>
-                  )}
-                  {can('orders.edit') && (
-                    <>
-                      <ActionSheetItem
-                        onClick={() => {
-                          done();
-                          setDialog('adjust');
-                        }}
-                      >
-                        {t('item.addAdjustment')}
-                      </ActionSheetItem>
-                      <ActionSheetItem
-                        onClick={() => {
-                          done();
-                          setDialog('edit');
-                        }}
-                      >
-                        {t('item.edit')}
-                      </ActionSheetItem>
-                    </>
-                  )}
-                  {can('orders.cancel') && !delivered && (
-                    <ActionSheetItem
-                      danger
-                      onClick={() => {
-                        done();
-                        setDialog('cancel');
-                      }}
-                    >
-                      {t('item.cancel')}
-                    </ActionSheetItem>
-                  )}
-                </>
-              )}
-                </ActionSheet>
-              )}
+              {menu && moreActions('size-14! rounded-2xl! border border-line')}
             </div>
           )
         )}

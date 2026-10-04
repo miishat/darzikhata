@@ -488,6 +488,7 @@ export const en: Messages = {
   'item.trialLabel': 'Trial',
   'order.handOverBar': 'Hand over',
   'order.handOverPick': 'Which garment are you handing over?',
+  'item.deliveredOn': 'Delivered {date}',
   'item.details': 'Notes and history',
   'item.measureSummary': 'Measurements',
   'item.measureTitle': 'Measurements: {item}',

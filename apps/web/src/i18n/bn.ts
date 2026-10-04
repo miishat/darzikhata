@@ -487,6 +487,7 @@ export const bn = {
   'item.trialLabel': 'ট্রায়াল',
   'order.handOverBar': 'হস্তান্তর',
   'order.handOverPick': 'কোনটি হস্তান্তর করবেন?',
+  'item.deliveredOn': 'ডেলিভারি হয়েছে {date}',
   'item.details': 'নোট ও ইতিহাস',
   'item.measureSummary': 'মাপ',
   'item.measureTitle': '{item} এর মাপ',
