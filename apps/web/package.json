@@ -30,6 +30,7 @@
   "dependencies": {
     "@darzikhata/domain": "0.0.0",
     "@fontsource/hind-siliguri": "^5.3.0",
+    "@fontsource/noto-sans-bengali": "^5.3.0",
     "dexie": "^4.4.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
