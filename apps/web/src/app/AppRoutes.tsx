@@ -29,6 +29,7 @@ const WorkListPrintPage = lazyPage(() => import('../features/print/WorkListPrint
 const SettingsPage = lazyPage(() => import('../features/settings/SettingsPage'), 'SettingsPage');
 const SettingsHome = lazyPage(() => import('../features/settings/SettingsHome'), 'SettingsHome');
 const ShopSettings = lazyPage(() => import('../features/settings/ShopSettings'), 'ShopSettings');
+const StaffSettings = lazyPage(() => import('../features/settings/StaffSettings'), 'StaffSettings');
 const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
 const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
@@ -178,7 +179,14 @@ export function AppRoutes() {
               </RequireCapability>
             }
           />
-          <Route path="staff" element={<SectionHeading label="settings.staff" anyOf={['staff.manage']} />} />
+          <Route
+            path="staff"
+            element={
+              <RequireCapability anyOf={['staff.manage']}>
+                <StaffSettings />
+              </RequireCapability>
+            }
+          />
           <Route path="branches" element={<SectionHeading label="settings.branches" anyOf={['settings.edit']} />} />
         </Route>
         <Route path="more" element={<MorePage />} />
