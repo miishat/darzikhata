@@ -74,7 +74,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
               to={fullPageTo(order.id, search)}
               aria-label={t('orders.openFull')}
               title={t('orders.openFull')}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
             >
               <ExternalLink aria-hidden="true" size={18} />
             </Link>
@@ -106,7 +106,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
               type="button"
               aria-label={t('common.close')}
               onClick={onClose}
-              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
             >
               <X aria-hidden="true" size={20} />
             </button>
@@ -122,7 +122,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
         {customer && (
           <section aria-label={t('order.customer')} className="flex items-center gap-3 rounded-xl border border-line bg-panel p-3">
             <Avatar id={customer.id} name={customer.name} />
-            <Link to={`/app/customers/${customer.id}`} className="flex min-w-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-brand">
+            <Link to={`/app/customers/${customer.id}`} className="flex min-w-0 flex-1 flex-col focus-visible:outline-2 focus-visible:outline-focus">
               <span className="truncate font-semibold">{customer.name}</span>
               {customer.phone && <span className="truncate text-sm text-muted">{customer.phone}</span>}
             </Link>
@@ -130,7 +130,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
               <a
                 href={`tel:${customer.phone}`}
                 aria-label={t('order.call')}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok focus-visible:outline-2 focus-visible:outline-brand"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok focus-visible:outline-2 focus-visible:outline-focus"
               >
                 <Phone aria-hidden="true" size={18} />
               </a>
@@ -305,7 +305,7 @@ function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
               <button
                 type="button"
                 onClick={() => setDialog('assign')}
-                className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-warn-soft px-2 font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-brand"
+                className="inline-flex min-h-8 items-center gap-1 rounded-lg ring-1 ring-inset ring-warn-line bg-warn-soft px-2 font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-focus"
               >
                 <TriangleAlert aria-hidden="true" size={14} />
                 {t('work.assign')}

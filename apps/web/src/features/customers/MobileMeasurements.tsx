@@ -88,7 +88,7 @@ export function MobileMeasurements({ customerId }: { customerId: string }) {
                         <dt className="text-sm text-muted">{label(field.label)}</dt>
                         <dd className="m-0 flex items-baseline gap-1.5">
                           {delta !== undefined && (
-                            <span className="rounded-md bg-warn-soft px-1.5 text-xs font-semibold text-warn-ink">
+                            <span className="rounded-md ring-1 ring-inset ring-warn-line bg-warn-soft px-1.5 text-xs font-semibold text-warn-ink">
                               <span className="sr-only">{`${t('measure.changeFromPrev')} `}</span>
                               {deltaText(delta, language)}
                             </span>

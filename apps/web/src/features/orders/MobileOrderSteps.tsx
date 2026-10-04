@@ -222,7 +222,7 @@ function GarmentsStep({
               type="button"
               aria-label={t('entry.addAnother')}
               onClick={() => adder.current?.querySelector('select')?.focus()}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-line text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-line text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               <Plus aria-hidden="true" size={18} />
             </button>

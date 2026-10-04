@@ -16,7 +16,7 @@ export function SourceSwitch({ value, onChange }: { value: MeasurementSource; on
           type="button"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
-          className={`min-h-9 rounded-md px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          className={`min-h-9 rounded-md px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
             value === option.value ? 'bg-panel font-semibold text-ink shadow-sm' : 'text-muted'
           }`}
         >

@@ -37,7 +37,7 @@ export function TemplatesSettings() {
                 <td className="px-3 py-2 font-semibold">
                   <Link
                     to={`/app/settings/templates/${template.id}`}
-                    className="text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand"
+                    className="text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus"
                   >
                     {template.name[language]}
                   </Link>

@@ -16,9 +16,9 @@ const STATUS_KEY: Record<string, MessageKey> = {
 };
 const TONE: Record<string, string> = {
   online: 'bg-ok-soft text-ok',
-  offline: 'bg-warn-soft text-warn-ink',
+  offline: 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink',
   syncing: 'bg-surface text-muted',
-  'needs-attention': 'bg-warn-soft text-warn-ink',
+  'needs-attention': 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink',
 };
 const DOT: Record<string, string> = {
   online: 'bg-ok',
@@ -43,8 +43,8 @@ export function SyncButton({ block = false }: { block?: boolean }) {
         aria-label={block ? label : undefined}
         className={
           block
-            ? `flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`
-            : `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`
+            ? `flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
+            : `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
         }
       >
         <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[status]}`} />

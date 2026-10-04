@@ -28,7 +28,7 @@ import {
 const LIST = '/app/settings/templates';
 const cell = 'px-2 py-2 align-top';
 const control =
-  'min-h-10 w-full min-w-28 rounded-lg border border-line bg-panel px-2 py-1 text-base focus-visible:outline-2 focus-visible:outline-brand';
+  'min-h-10 w-full min-w-28 rounded-lg border border-line bg-panel px-2 py-1 text-base focus-visible:outline-2 focus-visible:outline-focus';
 
 /** Loads the template named in the address, or starts a new one, and shows the editor. */
 export function TemplateEditor() {

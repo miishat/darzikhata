@@ -180,7 +180,7 @@ export function MoneyCard({ order, open }: { order: Order; open: Open }) {
         <button
           type="button"
           onClick={() => open({ kind: 'history' })}
-          className="min-h-11 min-w-11 shrink-0 px-2 text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-brand"
+          className="min-h-11 min-w-11 shrink-0 px-2 text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
         >
           {t('order.accounts')}
         </button>

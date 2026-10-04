@@ -13,7 +13,7 @@ export function IconButton({ label, icon: Icon, className = '', type = 'button',
     <button
       type={type}
       aria-label={label}
-      className={`inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50 ${className}`}
+      className={`inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50 ${className}`}
       {...props}
     >
       <Icon aria-hidden="true" size={22} />

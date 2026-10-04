@@ -49,7 +49,7 @@ export function SignInPage() {
                 <button
                   type="button"
                   onClick={() => setChosen(person)}
-                  className="flex min-h-14 w-full items-center justify-between rounded-xl border border-line bg-panel px-4 text-left hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand"
+                  className="flex min-h-14 w-full items-center justify-between rounded-xl border border-line bg-panel px-4 text-left hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus"
                 >
                   <span className="font-semibold">{person.name}</span>
                   <span className="text-sm text-muted">{role ? label(role.name) : ''}</span>

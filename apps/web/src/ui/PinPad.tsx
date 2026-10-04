@@ -39,7 +39,7 @@ export function PinPad({ label, error, onComplete, length = 4 }: PinPadProps) {
   };
 
   return (
-    <div role="group" aria-label={label} tabIndex={0} onKeyDown={onKeyDown} className="mx-auto flex w-full max-w-xs flex-col items-center gap-4 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+    <div role="group" aria-label={label} tabIndex={0} onKeyDown={onKeyDown} className="mx-auto flex w-full max-w-xs flex-col items-center gap-4 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
       <div className="flex gap-3" aria-hidden="true">
         {Array.from({ length }, (_, i) => (
           <span key={i} className={`h-4 w-4 rounded-full border-2 border-brand ${i < digits.length ? 'bg-brand' : ''}`} />
@@ -53,11 +53,11 @@ export function PinPad({ label, error, onComplete, length = 4 }: PinPadProps) {
           key === '' ? (
             <span key={i} />
           ) : key === 'delete' ? (
-            <button key={i} type="button" aria-label={t('pin.delete')} onClick={remove} className="min-h-14 rounded-xl text-xl hover:bg-panel focus-visible:outline-2 focus-visible:outline-brand">
+            <button key={i} type="button" aria-label={t('pin.delete')} onClick={remove} className="min-h-14 rounded-xl text-xl hover:bg-panel focus-visible:outline-2 focus-visible:outline-focus">
               ⌫
             </button>
           ) : (
-            <button key={i} type="button" onClick={() => press(key)} className="min-h-14 rounded-xl border border-line bg-panel text-2xl font-semibold hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand">
+            <button key={i} type="button" onClick={() => press(key)} className="min-h-14 rounded-xl border border-line bg-panel text-2xl font-semibold hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus">
               {number(Number(key))}
             </button>
           ),

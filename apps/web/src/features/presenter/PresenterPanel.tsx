@@ -51,7 +51,7 @@ export function PresenterPanel() {
   return (
     <aside
       aria-label={t('presenter.title')}
-      className={`fixed z-20 flex max-h-[60vh] w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-3 overflow-y-auto rounded-xl border border-line bg-panel p-4 shadow-lg print:hidden ${place}`}
+      className={`fixed z-20 flex max-h-[60vh] w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-3 overflow-y-auto rounded-xl border border-line bg-panel-raised p-4 shadow-lg print:hidden ${place}`}
     >
       {step?.target && (
         <style data-presenter-highlight>{`[data-tour="${step.target}"]{outline:3px solid var(--color-accent);outline-offset:3px}`}</style>

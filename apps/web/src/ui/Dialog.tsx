@@ -65,7 +65,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
   // Portalled to the body so a header's or panel's stacking context cannot put the page's fixed bars over it.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-4 sm:items-center"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -76,7 +76,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl bg-panel p-5 shadow-xl outline-none"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl ring-1 ring-inset ring-line bg-panel-raised p-5 shadow-xl outline-none"
       >
         <h2 id={titleId} className="text-lg font-semibold">
           {title}

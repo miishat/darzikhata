@@ -32,12 +32,12 @@ export function ChipGroup({ label, options, value, onChange, trailing }: ChipGro
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
-            className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-              selected ? 'border-navy bg-navy text-on-navy' : 'border-line bg-panel text-ink'
+            className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+              selected ? 'border-chip-selected bg-chip-selected text-on-chip-selected' : 'border-line bg-panel text-ink'
             }`}
           >
             {option.label}
-            {option.count !== undefined && <span className={selected ? 'text-on-navy-muted' : 'text-muted'}>{option.count}</span>}
+            {option.count !== undefined && <span className={selected ? 'text-on-chip-selected-muted' : 'text-muted'}>{option.count}</span>}
           </button>
         );
       })}

@@ -65,7 +65,7 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
                 render={({ children, ...props }) => (
                   <button
                     type="button"
-                    className="flex min-h-[50px] w-full items-center justify-center rounded-[14px] bg-brand px-4 text-base font-semibold text-on-brand hover:bg-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+                    className="flex min-h-[50px] w-full items-center justify-center rounded-[14px] bg-brand px-4 text-base font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
                     {...props}
                   >
                     {children}
@@ -118,7 +118,7 @@ export function MobileWorkPage() {
         <Link
           to={`/print/work${search ? `?${search}` : ''}`}
           aria-label={t('work.print')}
-          className="flex size-11 items-center justify-center rounded-full border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-brand"
+          className="flex size-11 items-center justify-center rounded-full border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-focus"
         >
           <Printer aria-hidden="true" size={22} />
         </Link>
@@ -138,7 +138,7 @@ export function MobileWorkPage() {
               tabIndex={active ? 0 : -1}
               onClick={() => setChosen(p)}
               onKeyDown={onKeyDown}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-1 text-[15px] focus-visible:outline-2 focus-visible:outline-brand ${
+              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-1 text-[15px] focus-visible:outline-2 focus-visible:outline-focus ${
                 active ? 'bg-panel font-bold text-brand-strong shadow-sm' : 'text-muted'
               }`}
             >

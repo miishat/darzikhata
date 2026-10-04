@@ -42,7 +42,7 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
         type="button"
         aria-label={t('orders.sortCurrent', { sort: current })}
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <ArrowDownUp aria-hidden="true" size={18} />
         {current}
@@ -67,7 +67,7 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
                   onChange(value);
                   setOpen(false);
                 }}
-                className={`flex min-h-11 w-full items-center rounded-xl px-3 text-start font-semibold focus-visible:outline-2 focus-visible:outline-brand ${
+                className={`flex min-h-11 w-full items-center rounded-xl px-3 text-start font-semibold focus-visible:outline-2 focus-visible:outline-focus ${
                   value === sort ? 'bg-brand-soft text-brand-strong' : 'text-ink'
                 }`}
               >
@@ -152,7 +152,7 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
   return <DesktopFilters query={query} onChange={onChange} onClear={onClear} />;
 }
 
-const DATE_INPUT = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-brand';
+const DATE_INPUT = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus';
 
 /** The laptop filter row: table search, worker and date filters, a chip for each active filter, and the sort on the right. */
 function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
@@ -184,7 +184,7 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex min-h-10 w-72 max-w-full items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-brand">
+        <label className="flex min-h-10 w-72 max-w-full items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-focus">
           <Search aria-hidden="true" size={18} />
           <input
             type="search"
@@ -245,7 +245,7 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
           <select
             value={query.sort}
             onChange={(e) => onChange({ sort: e.target.value as OrderSort })}
-            className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand"
+            className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-focus"
           >
             {sorts.map((value) => (
               <option key={value} value={value}>

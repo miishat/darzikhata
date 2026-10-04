@@ -16,7 +16,7 @@ import { MobileMeasurements, pickTemplate, useMeasurementTemplates } from './Mob
 type TabKey = 'measurements' | 'orders' | 'money';
 
 const ROUND =
-  'flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+  'flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 const BAR_BUTTON = 'min-h-[54px]! rounded-2xl! text-base';
 
 function Stat({ label, value, tone = '', divided = false, small = false }: { label: string; value: string; tone?: string; divided?: boolean; small?: boolean }) {
@@ -43,7 +43,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
   if (!customer) {
     return (
       <div className="flex flex-col gap-3">
-        <Link to="/app/customers" className="inline-flex min-h-11 items-center gap-2 self-start text-brand-strong focus-visible:outline-2 focus-visible:outline-brand">
+        <Link to="/app/customers" className="inline-flex min-h-11 items-center gap-2 self-start text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
           <ArrowLeft aria-hidden="true" size={20} />
           {t('customers.back')}
         </Link>
@@ -80,7 +80,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
         <Link
           to="/app/customers"
           aria-label={t('customers.back')}
-          className="flex size-11 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+          className="flex size-11 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
         >
           <ArrowLeft aria-hidden="true" size={24} />
         </Link>
@@ -88,7 +88,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
           <Link
             to={`/app/customers/${customer.id}/edit`}
             aria-label={t('customer.edit')}
-            className="flex min-h-11 items-center rounded-full px-3.5 text-[15px] font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-brand"
+            className="flex min-h-11 items-center rounded-full px-3.5 text-[15px] font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
           >
             {t('customer.editShort')}
           </Link>
@@ -149,7 +149,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
               tabIndex={active ? 0 : -1}
               onClick={() => setTab(x.key)}
               onKeyDown={onKeyDown}
-              className={`min-h-11 border-b-[3px] px-3.5 text-[15px] focus-visible:outline-2 focus-visible:outline-brand ${
+              className={`min-h-11 border-b-[3px] px-3.5 text-[15px] focus-visible:outline-2 focus-visible:outline-focus ${
                 active ? 'border-brand font-bold text-brand-strong' : 'border-transparent text-muted'
               }`}
             >
@@ -172,7 +172,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
                   <li key={order.id}>
                     <Link
                       to={`/app/orders/${order.id}`}
-                      className="flex min-h-11 flex-col rounded-2xl border border-line bg-panel p-3 focus-visible:outline-2 focus-visible:outline-brand"
+                      className="flex min-h-11 flex-col rounded-2xl border border-line bg-panel p-3 focus-visible:outline-2 focus-visible:outline-focus"
                     >
                       <span className="font-semibold">{order.number}</span>
                       <span className="text-sm text-muted">{date(order.createdAt)}</span>
@@ -196,7 +196,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
                 <li key={order.id}>
                   <Link
                     to={`/app/orders/${order.id}`}
-                    className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-line bg-panel p-3 focus-visible:outline-2 focus-visible:outline-brand"
+                    className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-line bg-panel p-3 focus-visible:outline-2 focus-visible:outline-focus"
                   >
                     <span className="flex flex-col">
                       <span className="font-semibold">{order.number}</span>

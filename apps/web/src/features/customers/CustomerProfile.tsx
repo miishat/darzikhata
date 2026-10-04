@@ -115,7 +115,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
         <dl className="m-0 flex flex-wrap gap-3">
           <Tile label={t('customer.stat.orders')} value={number(orders.length)} />
           {showMoney && <Tile label={t('customer.stat.orderValue')} value={money(orderValue)} />}
-          {showMoney && <Tile label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'bg-warn-soft text-warn-ink' : ''} />}
+          {showMoney && <Tile label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : ''} />}
           <Tile label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: Number(latest.createdAt.slice(0, 4)) !== new Date().getFullYear() }) : t('customer.stat.none')} />
         </dl>
       </header>
@@ -155,7 +155,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
                       <li key={order.id}>
                         <Link
                           to={`/app/orders/${order.id}`}
-                          className="flex flex-col gap-1 rounded-lg border border-line p-3 hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
+                          className="flex flex-col gap-1 rounded-lg border border-line p-3 hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
                         >
                           <span className="flex flex-wrap items-center justify-between gap-2">
                             <span className="font-semibold">{order.number}</span>
@@ -166,7 +166,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
                           </span>
                           {showMoney &&
                             (due > 0 ? (
-                              <span className="inline-flex items-center gap-1 self-start rounded-md bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
+                              <span className="inline-flex items-center gap-1 self-start rounded-md ring-1 ring-inset ring-warn-line bg-warn-soft px-2 py-0.5 text-sm font-semibold text-warn-ink">
                                 <TriangleAlert aria-hidden="true" size={14} />
                                 {t('customer.balance', { amount: money(due) })}
                               </span>
@@ -180,7 +180,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
                 </ul>
                 <Link
                   to={`/app/orders?q=${encodeURIComponent(customer.phone ?? customer.name)}`}
-                  className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-brand"
+                  className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus"
                 >
                   {t('customer.allOrders', { n: number(orders.length) })}
                 </Link>

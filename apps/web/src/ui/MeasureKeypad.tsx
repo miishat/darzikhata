@@ -29,7 +29,7 @@ export interface MeasureKeypadProps {
 
 type KeyDef = { id: string; text: string; name: MessageKey | null; kind: 'digit' | 'fraction' | 'back' | 'next' };
 
-const KEY_BASE = 'flex h-[50px] min-h-11 min-w-11 items-center justify-center rounded-xl text-[22px] font-semibold font-display focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+const KEY_BASE = 'flex h-[50px] min-h-11 min-w-11 items-center justify-center rounded-xl text-[22px] font-semibold font-display focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 const KEY_STYLE: Record<KeyDef['kind'], string> = {
   digit: 'bg-surface text-ink',
   fraction: 'bg-brand-soft text-brand-strong',

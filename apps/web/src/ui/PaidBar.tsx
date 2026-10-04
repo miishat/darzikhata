@@ -12,7 +12,7 @@ export function PaidBar({ paid, total }: { paid: Poisha; total: Poisha }) {
     <div
       role="img"
       aria-label={t('ui.paidBar', { paid: money(paid), total: money(total) })}
-      className="h-1.5 w-full overflow-hidden rounded-full bg-warn-soft"
+      className="h-1.5 w-full overflow-hidden rounded-full bg-paid-track"
     >
       <div className="h-full rounded-full bg-ok" style={{ width: `${percent}%` }} />
     </div>

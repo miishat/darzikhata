@@ -120,7 +120,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
       <header className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <Link
           to="/app/orders"
-          className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-brand"
+          className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
         >
           <ArrowLeft aria-hidden="true" size={16} />
           {t('entry.backToOrders')}
@@ -155,7 +155,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                         aria-pressed={selected}
                         aria-label={title(item)}
                         aria-describedby={`${statusId}-${item.key}`}
-                        className={`flex min-h-14 w-full items-center gap-3 rounded-lg border px-3 py-2 text-left hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                        className={`flex min-h-14 w-full items-center gap-3 rounded-lg border px-3 py-2 text-left hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
                           selected ? 'border-2 border-brand bg-surface' : 'border-line'
                         }`}
                         onClick={() => setChosenKey(item.key)}
@@ -180,7 +180,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 <button
                   key={tpl.id}
                   type="button"
-                  className="min-h-9 rounded-lg border border-dashed border-line px-3 text-sm text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  className="min-h-9 rounded-lg border border-dashed border-line px-3 text-sm text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                   onClick={() => entry.addItem(tpl.id)}
                 >
                   {t('entry.quickAdd', { item: label(tpl.name) })}

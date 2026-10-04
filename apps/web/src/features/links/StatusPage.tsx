@@ -55,7 +55,7 @@ export function StatusPage() {
       <div className="flex justify-end p-3">
         <LanguageToggle />
       </div>
-      <header className="rounded-b-[28px] bg-navy px-6 pt-6 pb-6 text-on-navy">
+      <header className="rounded-b-[28px] ring-1 ring-inset ring-navy-line bg-navy px-6 pt-6 pb-6 text-on-navy">
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"

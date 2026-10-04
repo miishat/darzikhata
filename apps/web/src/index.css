@@ -64,6 +64,7 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
   --color-on-brand: var(--on-brand);
+  --color-on-danger: var(--on-danger);
   --color-brand-hover: var(--brand-hover);
   --color-focus: var(--focus);
   --color-panel-raised: var(--panel-raised);
@@ -92,6 +93,7 @@
   --muted: #5a6478;
   --line: #e3e7f0;
   --danger: #b91c1c;
+  --on-danger: #ffffff;
   --on-brand: #ffffff;
   --warn: #b4380b;
   --warn-soft: #ffedd5;
@@ -174,6 +176,7 @@
     --ok: #4fd1b5;
     --ok-soft: #10302b;
     --danger: #f68a8a;
+    --on-danger: #2a0a0a;
     --accent: #f5c04a;
     --scrim: rgb(0 0 0 / 0.6);
     --tone-booked-bg: #222b3f;
@@ -242,6 +245,7 @@
   --ok: #4fd1b5;
   --ok-soft: #10302b;
   --danger: #f68a8a;
+  --on-danger: #2a0a0a;
   --accent: #f5c04a;
   --scrim: rgb(0 0 0 / 0.6);
   --tone-booked-bg: #222b3f;

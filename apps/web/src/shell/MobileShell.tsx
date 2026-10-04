@@ -12,7 +12,7 @@ import { useShopHeader } from './ShellParts';
 import { SyncButton } from './SyncStatus';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
-  `flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 px-1 text-xs focus-visible:outline-2 focus-visible:outline-brand ${
+  `flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 px-1 text-xs focus-visible:outline-2 focus-visible:outline-focus ${
     isActive ? 'font-bold text-brand-strong' : 'font-medium text-muted'
   }`;
 
@@ -57,7 +57,7 @@ export function MobileShell({ role }: { role: Role }) {
             aria-label={t('shell.account')}
             aria-haspopup="dialog"
             onClick={() => setAccountOpen(true)}
-            className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-navy font-display font-semibold text-on-navy">
               {initialsOf(current.staff.name.trim().split(/\s+/)[0] ?? '')}
@@ -80,7 +80,7 @@ export function MobileShell({ role }: { role: Role }) {
           <Link
             to="/app/orders/new"
             data-tour="new-order"
-            className="-mt-[22px] flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-brand"
+            className="-mt-[22px] flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
           >
             <span className="flex size-[58px] items-center justify-center rounded-[20px] border-4 border-panel bg-brand text-on-brand shadow-lg">
               <Plus aria-hidden="true" size={26} strokeWidth={2.4} />

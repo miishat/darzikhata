@@ -21,7 +21,7 @@ export function TextAreaField({ label, error, hint, id, className = '', rows = 3
         rows={rows}
         aria-invalid={error ? true : undefined}
         aria-describedby={message ? messageId : undefined}
-        className={`min-h-12 rounded-lg border bg-panel px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-brand ${error ? 'border-danger' : 'border-line'}`}
+        className={`min-h-12 rounded-lg border bg-panel px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-focus ${error ? 'border-danger' : 'border-line'}`}
         {...textarea}
       />
       {message && (

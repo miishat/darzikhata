@@ -16,7 +16,7 @@ export function FilterChip({ label, onRemove }: FilterChipProps) {
         type="button"
         aria-label={t('desk.chip.remove', { label })}
         onClick={onRemove}
-        className="inline-flex size-6 items-center justify-center rounded-full hover:bg-panel focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
+        className="inline-flex size-6 items-center justify-center rounded-full hover:bg-panel focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus"
       >
         <X aria-hidden="true" size={14} />
       </button>
