@@ -2,7 +2,7 @@ import {
   deliveriesOn,
   isOrderClosed,
   itemSummaryGroup,
-  netPaid,
+  effectSign,
   balanceDue,
   outstandingBalances,
   overdueItems,
@@ -46,7 +46,8 @@ export interface DashboardModel {
   oldestLateDays: number | null;
 }
 
-const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
+/** The payment methods, in the order the Home money card lists them. */
+export const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
 
 function dayNumber(ymd: string): number {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -71,19 +72,23 @@ export function dayPart(now: Date): DayPart {
 }
 
 /**
- * Today's money for one order. A correction's direction depends on the record it corrects,
- * which may be from an earlier day, so this is everything held minus everything held
- * from other days, not a sum over today's records alone.
+ * Today's money for one order, split by method. A correction's direction depends on the record
+ * it corrects (which may be from an earlier day, or another method), so every sign is taken
+ * from the order's full payment list. The methods therefore always add up to the total.
  */
-function collectedOn(order: Order, today: string): Poisha {
-  const others = order.payments.filter((p) => todayInDhaka(new Date(p.at)) !== today);
-  return netPaid(order.payments) - netPaid(others);
+function collectedOn(order: Order, today: string): Record<PaymentMethod, Poisha> {
+  const split = { cash: 0, bkash: 0, nagad: 0, bank: 0 };
+  for (const p of order.payments) {
+    if (todayInDhaka(new Date(p.at)) === today) split[p.method] += effectSign(p, order.payments) * p.amount;
+  }
+  return split;
 }
 
 function collectedByMethod(orders: Order[], today: string): Record<PaymentMethod, Poisha> {
   const split = { cash: 0, bkash: 0, nagad: 0, bank: 0 };
-  for (const method of METHODS) {
-    split[method] = orders.reduce((sum, o) => sum + collectedOn({ ...o, payments: o.payments.filter((p) => p.method === method) }, today), 0);
+  for (const o of orders) {
+    const one = collectedOn(o, today);
+    for (const method of METHODS) split[method] += one[method];
   }
   return split;
 }
@@ -104,6 +109,7 @@ export function dashboardModel(orders: Order[], today: string): DashboardModel {
   const deliveriesToday = deliveriesOn(orders, today);
   const ready = readyForPickup(orders);
   const deliveryOrders = new Map(deliveriesToday.map((r) => [r.order.id, r.order]));
+  const byMethod = collectedByMethod(orders, today);
   return {
     openOrders: orders.filter((o) => !isOrderClosed(o)).length,
     inProgress,
@@ -111,7 +117,7 @@ export function dashboardModel(orders: Order[], today: string): DashboardModel {
     overdueGarments: overdue.length,
     dueTotal: due.reduce((sum, r) => sum + r.balance, 0),
     dueOrders: due.length,
-    collectedToday: orders.reduce((sum, o) => sum + collectedOn(o, today), 0),
+    collectedToday: METHODS.reduce((sum, m) => sum + byMethod[m], 0),
     trialsToday,
     deliveriesToday,
     overdue,
@@ -120,7 +126,7 @@ export function dashboardModel(orders: Order[], today: string): DashboardModel {
       (n, o) => n + o.payments.filter((p) => (p.kind === 'advance' || p.kind === 'payment') && todayInDhaka(new Date(p.at)) === today).length,
       0,
     ),
-    collectedByMethod: collectedByMethod(orders, today),
+    collectedByMethod: byMethod,
     firstTrialTime: firstTrialTime(trialsToday),
     deliveriesOwing: [...deliveryOrders.values()].filter((o) => balanceDue(o) > 0).length,
     readyOwed: ready.reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0),

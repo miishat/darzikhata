@@ -2,7 +2,8 @@ import type { Order, Payment } from './model';
 import type { Poisha } from './money';
 import { orderTotal } from './orders';
 
-function effectSign(payment: Payment, all: Payment[]): number {
+/** +1 when the payment adds to money held, -1 when it takes away; a correction follows the record it corrects. */
+export function effectSign(payment: Payment, all: Payment[]): number {
   if (payment.kind === 'refund') return -1;
   if (payment.kind === 'correction') {
     const target = all.find((p) => p.id === payment.corrects);

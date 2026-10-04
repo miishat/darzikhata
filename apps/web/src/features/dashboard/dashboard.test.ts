@@ -192,6 +192,43 @@ describe('today money split', () => {
     expect(model.collectedByMethod).toEqual({ cash: 30000, bkash: 20000, nagad: 0, bank: 0 });
   });
 
+  it('keeps the split summing to the total when a correction has a different method than its target', () => {
+    const list = [
+      makeOrder({
+        id: 'm2',
+        number: 'M-0002',
+        items: [makeItem({ id: 'a' })],
+        payments: [
+          makePayment({ id: 'b1', amount: 50000, method: 'cash', at: LATE_YESTERDAY }),
+          makePayment({ id: 'b2', kind: 'refund', amount: 10000, method: 'cash', reason: 'x', at: LATE_YESTERDAY }),
+          makePayment({ id: 'b3', kind: 'correction', amount: -5000, method: 'bkash', corrects: 'b2', reason: 'typo', at: JUST_AFTER_MIDNIGHT }),
+        ],
+      }),
+    ];
+    const model = dashboardModel(list, TODAY);
+    expect(model.collectedToday).toBe(5000);
+    expect(model.collectedByMethod).toEqual({ cash: 0, bkash: 5000, nagad: 0, bank: 0 });
+    expect(Object.values(model.collectedByMethod).reduce((a, b) => a + b, 0)).toBe(model.collectedToday);
+  });
+
+  it('subtracts a refund from its own method and still sums to the total', () => {
+    const list = [
+      makeOrder({
+        id: 'm3',
+        number: 'M-0003',
+        items: [makeItem({ id: 'a' })],
+        payments: [
+          makePayment({ id: 'c1', amount: 40000, method: 'cash', at: JUST_AFTER_MIDNIGHT }),
+          makePayment({ id: 'c2', amount: 20000, method: 'nagad', at: JUST_AFTER_MIDNIGHT }),
+          makePayment({ id: 'c3', kind: 'refund', amount: 15000, method: 'cash', reason: 'x', at: JUST_AFTER_MIDNIGHT }),
+        ],
+      }),
+    ];
+    const model = dashboardModel(list, TODAY);
+    expect(model.collectedByMethod).toEqual({ cash: 25000, bkash: 0, nagad: 20000, bank: 0 });
+    expect(Object.values(model.collectedByMethod).reduce((a, b) => a + b, 0)).toBe(model.collectedToday);
+  });
+
   it('is empty on a quiet day', () => {
     const model = dashboardModel([], TODAY);
     expect(model.collectedCount).toBe(0);

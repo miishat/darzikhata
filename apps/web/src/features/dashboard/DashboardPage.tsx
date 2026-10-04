@@ -1,4 +1,4 @@
-import { balanceDue, itemSummaryGroup, labelIn, stageByKey, toScript, type ItemRef, type Order, type PaymentMethod } from '@darzikhata/domain';
+import { balanceDue, itemSummaryGroup, labelIn, stageByKey, toScript, type ItemRef, type Order } from '@darzikhata/domain';
 import { CheckCheck, Printer, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -12,7 +12,7 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
-import { dashboardModel, dayPart, todoRows, firstTrialTime } from './dashboard';
+import { dashboardModel, dayPart, todoRows, firstTrialTime, METHODS } from './dashboard';
 
 function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null }) {
   return (
@@ -127,7 +127,6 @@ export function DashboardPage() {
 }
 
 const ROW_LIMIT = 5;
-const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
 
 interface ListProps {
   title: string;
@@ -193,13 +192,14 @@ interface DesktopHomeProps {
 function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps) {
   const { t, language, money, number, date } = useI18n();
   const current = useCurrentStaff();
-  const greeting = t(`dashboard.greeting.${dayPart(new Date())}`, { name: current?.staff.name ?? '' });
+  const name = current?.staff.name;
+  const greeting = `${t(`dashboard.greeting.${dayPart(new Date())}`)}${name ? `, ${name}` : ''}`;
 
   const trialSub = model.firstTrialTime ? t('dashboard.sub.trialAt', { time: toScript(model.firstTrialTime, language) }) : null;
   const deliverySub =
     showMoney && model.deliveriesOwing > 0 ? t('dashboard.sub.deliveryOwing', { n: number(model.deliveriesOwing) }) : null;
   const readySub = showMoney && model.readyOwed > 0 ? t('dashboard.sub.readyOwed', { amount: money(model.readyOwed) }) : null;
-  const lateSub = model.oldestLateDays === null ? null : t('dashboard.sub.lateAge', { n: number(model.oldestLateDays) });
+  const lateSub = model.oldestLateDays === null ? null : t(model.oldestLateDays === 1 ? 'dashboard.sub.lateAgeOne' : 'dashboard.sub.lateAge', { n: number(model.oldestLateDays) });
 
   // The biggest pick-ups first, so a customer waiting on several garments is never hidden below the five rows.
   const readyFirst = model.ready
@@ -241,7 +241,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
           className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3.5 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           <Printer aria-hidden="true" size={16} />
-          {t('dashboard.printToday')}
+          {t('dashboard.printWork')}
         </Link>
       </div>
 

@@ -36,7 +36,7 @@ describe('Dashboard', () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await screen.findByRole('heading', { name: 'হোম' });
     expect(screen.getByText(/^শুভ (সকাল|দুপুর|সন্ধ্যা|রাত্রি), /)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'আজকের কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work');
+    expect(screen.getByRole('link', { name: 'কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work');
   });
 
   it('opens an order from a list', async () => {
@@ -73,6 +73,8 @@ describe('Dashboard', () => {
     expect(screen.queryByRole('region', { name: 'টাকা' })).toBeNull();
     expect(screen.queryByText('আজ জমা')).toBeNull();
     expect(screen.queryByText('মোট বাকি')).toBeNull();
+    // The delivery and ready tile sub-lines state owed money, so they are hidden too.
+    expect(within(screen.getByRole('region', { name: 'আজকের কাজ' })).queryByText(/বাকি/)).toBeNull();
     const ready = within(screen.getByRole('region', { name: 'নেওয়ার জন্য রেডি' }));
     expect(ready.getAllByRole('listitem')).toHaveLength(1);
     expect(ready.getByRole('link', { name: /A-0027/ })).toBeTruthy();
