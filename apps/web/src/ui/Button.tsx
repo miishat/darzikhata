@@ -3,10 +3,10 @@ import type { ButtonHTMLAttributes, Ref } from 'react';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-strong dark:text-surface',
+  primary: 'bg-brand text-on-brand hover:bg-brand-strong',
   secondary: 'border border-line bg-panel text-ink hover:bg-surface',
   ghost: 'text-ink hover:bg-surface',
-  danger: 'bg-danger text-white hover:opacity-90 dark:text-surface',
+  danger: 'bg-danger text-on-brand hover:opacity-90',
 };
 
 /** Shared focus ring and sizing, also used by links styled as buttons. */

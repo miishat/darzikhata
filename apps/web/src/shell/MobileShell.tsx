@@ -34,7 +34,7 @@ export function MobileShell({ role }: { role: Role }) {
         <Link
           to="/app/orders/new"
           data-tour="new-order"
-          className="fixed bottom-20 left-1/2 z-10 flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-white shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:text-surface"
+          className="fixed bottom-20 left-1/2 z-10 flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-on-brand shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           + {t('nav.newOrder')}
         </Link>

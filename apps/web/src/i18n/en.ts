@@ -96,6 +96,10 @@ export const en: Messages = {
   'access.denied': 'You do not have permission to see this.',
 
   'more.language': 'Language',
+  'more.theme': 'Colour theme',
+  'more.theme.auto': 'Match device',
+  'more.theme.light': 'Light',
+  'more.theme.dark': 'Dark',
   'more.layout': 'Screen layout',
   'more.layout.auto': 'Match screen',
   'more.layout.mobile': 'Mobile',
