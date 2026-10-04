@@ -8,10 +8,10 @@ afterEach(() => {
 });
 
 describe('theme', () => {
-  it('follows the device until a choice is saved', () => {
-    expect(readTheme()).toBe('auto');
+  it('opens in light mode until a choice is saved', () => {
+    expect(readTheme()).toBe('light');
     applyTheme(readTheme());
-    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('saves a choice on this device and applies it', () => {
@@ -23,10 +23,12 @@ describe('theme', () => {
     act(() => result.current.setTheme('auto'));
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
     expect(readTheme()).toBe('auto');
+    act(() => result.current.setTheme('light'));
+    expect(readTheme()).toBe('light');
   });
 
   it('ignores a saved value it does not know', () => {
     localStorage.setItem('dk.theme', 'purple');
-    expect(readTheme()).toBe('auto');
+    expect(readTheme()).toBe('light');
   });
 });

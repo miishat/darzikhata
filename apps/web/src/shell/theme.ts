@@ -5,9 +5,10 @@ export type ThemePreference = 'auto' | 'light' | 'dark';
 
 const KEY = 'dk.theme';
 
+/** Light until the person chooses otherwise; `auto` is an explicit choice to follow the device. */
 export function readTheme(): ThemePreference {
   const saved = readSetting(KEY);
-  return saved === 'light' || saved === 'dark' ? saved : 'auto';
+  return saved === 'auto' || saved === 'dark' ? saved : 'light';
 }
 
 /** `auto` removes the override so the device's own light or dark setting applies. */
