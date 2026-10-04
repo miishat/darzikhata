@@ -4,7 +4,7 @@
 
 **Goal:** Bring dark mode up to the same standard as the light redesign. The dark values added during the redesign were a first pass. They pass text contrast, but the layout loses structure in dark: large primary buttons glare, the navy panel and selected chips vanish into the background, orange warnings turn muddy brown, the paid bar's track disappears, and floating bars and dialogs rely on shadows that do not show on dark surfaces.
 
-**Mockups:** [DarziKhata Redesign canvas](https://claude.ai/artifact/KQskM4rB8rtAWA3p2Aor1p), page **ডার্ক মোড**: the colour table, then real screenshots of the app in dark mode today beside the same screens with the proposed values applied.
+**Mockups:** [DarziKhata Redesign canvas](https://claude.ai/artifact/KQskM4rB8rtAWA3p2Aor1p), page **ডার্ক মোড**: the colour table, real screenshots of the app in dark mode today beside the same screens with the proposed values, and a second comparison of the navy ground against the neutral slate ground this plan uses. The colour table and the first comparison show the earlier navy ground; where they differ, the values in this plan win.
 
 **Architecture:** Mostly token values in `apps/web/src/index.css`, plus a few new tokens where one token was doing two jobs that only clash in dark (`--brand` as both a fill and a text colour, `--navy` as both a panel and a selected state). Light mode looks the same after this plan: every new token's light value equals what the light theme uses today.
 
@@ -15,6 +15,7 @@
 - **Desaturate, do not invert.** Material's dark theme guidance: saturated colours vibrate on dark surfaces; use lighter, less saturated tones (around the 200 tone) for colour that sits on dark, and keep text and key colours at 4.5:1 or better. ([Material Design: dark theme](https://m2.material.io/design/color/dark-theme.html))
 - **Elevation is lightness, not shadow.** Shadows are close to invisible on dark surfaces, so higher layers (dialogs, sheets, menus, floating bars) get a lighter surface and a hairline border. (Same source; also [LogRocket: dark mode best practices](https://blog.logrocket.com/ux-design/dark-mode-ui-design-best-practices-and-examples/))
 - **Status colours use a muted fill plus a stronger border.** GitHub's Primer dark theme pairs each status colour's subtle background with a muted border so attention and severe states still read as orange, not brown. ([Primer color usage](https://primer.style/product/getting-started/foundations/color-usage/))
+- **A near-neutral ground lets colour carry meaning.** The first-pass dark ground was a saturated navy (about 45 to 50% saturation), so the page, cards, the navy panel, selected rows, the selected nav item, the blue stage pill and the buttons were all blue and blended together. The ground is now a slate with only a hint of blue (hue about 220, saturation about 25%), the way GitHub's and Material's dark themes keep a quiet base so the brand colour and status colours stand out. This was compared side by side on the canvas ("Background: navy vs neutral slate") and chosen.
 - **Dark mode is not better for everyone.** Light text on dark can blur ("halation"), especially for people with astigmatism, and dark screens glare in bright light such as a shop front in daytime. So the app keeps following the device setting by default and keeps the manual Light / Dark / Device switch. ([Stéphanie Walter: dark mode and accessibility](https://stephaniewalter.design/blog/dark-mode-accessibility-myth-debunked/), [BOIA](https://www.boia.org/blog/dark-mode-can-improve-text-readability-but-not-for-everyone))
 
 ## What is wrong today (measured)
@@ -66,10 +67,10 @@ The earlier plans' constraints apply. New in this plan:
 - [ ] Replace the dark values, in both the `prefers-color-scheme: dark` block and the `[data-theme='dark']` block:
 
 ```css
-  --surface: #0b1220;
-  --panel: #141d31;
-  --panel-raised: #1b2640;
-  --line: #2a3654;
+  --surface: #0f131a;
+  --panel: #181e29;
+  --panel-raised: #202734;
+  --line: #2d3442;
   --ink: #e6ebf4;
   --muted: #9aa6ba;
   --brand: #3563e0;
@@ -154,13 +155,13 @@ The earlier plans' constraints apply. New in this plan:
 
 ```html
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6fb" />
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f131a" />
 ```
 
 - [ ] When a person picks Light or Dark by hand, `applyTheme` also sets both metas' `content` to that theme's surface colour; Device restores the two original values.
 - [ ] In the PWA manifest, set `theme_color: '#13235b'` (navy) and `background_color: '#f4f6fb'`. The manifest cannot follow the device theme; the metas above take over once the app is open.
 
-Tests: `applyTheme('dark')` sets both metas to `#0b1220`; `applyTheme('auto')` restores the media-specific values.
+Tests: `applyTheme('dark')` sets both metas to `#0f131a`; `applyTheme('auto')` restores the media-specific values.
 
 **Done when:** on an Android phone in dark mode the status bar matches the app, and switching the theme in More updates it.
 
@@ -190,7 +191,7 @@ Tests: `applyTheme('dark')` sets both metas to `#0b1220`; `applyTheme('auto')` r
 
 - [ ] If the two dark blocks are still separate, assert they are identical.
 
-The proposed values were measured while writing this plan: white on `brand` 5.2:1, `brand-strong` on `panel` 8.5:1, `focus` on `surface` 8.8:1, `muted` on `panel` 6.8:1, the stage pills 8.5:1 to 9.6:1, `ok` against `paid-track` 3.6:1.
+The proposed values were measured while writing this plan: white on `brand` 5.2:1, `ink` on `panel` 14:1, `brand-strong` on `panel` 8.5:1, `focus` on `surface` 8.7:1, `muted` on `panel` 6.8:1, `brand` against `panel` 3.2:1, the stage pills 8.5:1 to 9.6:1, `ok` against `paid-track` 3.6:1.
 
 **Done when:** the test passes, and fails if any value above is changed to break its pair.
 
@@ -202,4 +203,4 @@ The proposed values were measured while writing this plan: white on `brand` 5.2:
 - [ ] Look at dark mode on a real phone in a dim room and near a window. Large blue areas should not glare; orange should read as orange.
 - [ ] Check printing from dark mode: print pages still force light colours.
 
-**Done when:** the dark screens match the "প্রস্তাব" screenshots on the canvas, and light screens are unchanged.
+**Done when:** the dark screens match the "নিউট্রাল" screenshots on the canvas (the navy vs neutral slate comparison), and light screens are unchanged.
