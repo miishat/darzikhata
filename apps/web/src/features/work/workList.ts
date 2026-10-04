@@ -8,6 +8,7 @@ import {
   type ItemRef,
   type Language,
   type Order,
+  type OrderItem,
   type ShopConfig,
   type Stage,
   type Staff,
@@ -240,4 +241,29 @@ export async function runBatch(
     }
   }
   return results;
+}
+
+export type WorkPhase = 'start' | 'making' | 'finish';
+
+export const WORK_PHASES: readonly WorkPhase[] = ['start', 'making', 'finish'];
+
+/**
+ * Which of three steps on the phone a garment is in, from its own configured stages: the first
+ * unfinished stage is "start", the trailing optional stages (trial, quality check) or else the last
+ * unfinished stage are "finish", and everything between is "making".
+ */
+export function workPhase(item: OrderItem): WorkPhase {
+  const open = item.stages.filter((s) => s.group === 'unfinished');
+  const index = open.findIndex((s) => s.key === item.stageKey);
+  if (index <= 0) return index === 0 ? 'start' : 'making';
+  let finishFrom = open.length;
+  while (finishFrom > 1 && open[finishFrom - 1]!.optional) finishFrom -= 1;
+  if (finishFrom === open.length) finishFrom = open.length - 1;
+  return index >= finishFrom ? 'finish' : 'making';
+}
+
+export function phaseCounts(refs: ItemRef[]): Record<WorkPhase, number> {
+  const counts: Record<WorkPhase, number> = { start: 0, making: 0, finish: 0 };
+  for (const { item } of refs) counts[workPhase(item)] += 1;
+  return counts;
 }

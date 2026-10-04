@@ -7,7 +7,9 @@ import { Button, buttonClasses } from '../../ui/Button';
 import { SelectField } from '../../ui/SelectField';
 import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
+import { useShell } from '../../shell/ShellPreference';
 import { BatchAssignDialog, BatchStageDialog } from './batchDialogs';
+import { MobileWorkPage } from './MobileWorkPage';
 import { useWorkList } from './useWorkList';
 import { WorkGroupTable } from './WorkGroupTable';
 import { assignees, stageOptions } from './workList';
@@ -15,7 +17,7 @@ import { assignees, stageOptions } from './workList';
 type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
 
 /** Everyone's unfinished garments for supervisors, or just your own; with batch assign and stage moves. */
-export function WorkPage() {
+function DesktopWorkPage() {
   const { t, number, label } = useI18n();
   const can = useCan();
   const { config } = useSnapshot();
@@ -127,4 +129,10 @@ export function WorkPage() {
       {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}
     </div>
   );
+}
+
+/** Phones get one card per garment; desktops keep the table with batch assign and stage moves. */
+export function WorkPage() {
+  const { kind } = useShell();
+  return kind === 'mobile' ? <MobileWorkPage /> : <DesktopWorkPage />;
 }

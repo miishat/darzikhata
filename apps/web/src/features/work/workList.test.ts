@@ -15,6 +15,8 @@ import {
   stageMoveBody,
   stageOptions,
   workItems,
+  workPhase,
+  phaseCounts,
   writeWorkQuery,
 } from './workList';
 
@@ -195,5 +197,27 @@ describe('runBatch', () => {
       ['b', 'Could not save. Please try again.'],
       ['d', null],
     ]);
+  });
+});
+
+describe('workPhase', () => {
+  const at = (stageKey: string, stages = orders[0]!.items[0]!.stages) => makeItem({ stageKey, stages });
+
+  it('splits a garment’s own unfinished stages into start, making and finishing', () => {
+    // Standard stages: booked, cutting, stitching, trial (optional), then ready and delivered.
+    expect(workPhase(at('booked'))).toBe('start');
+    expect(workPhase(at('cutting'))).toBe('making');
+    expect(workPhase(at('stitching'))).toBe('making');
+    expect(workPhase(at('trial'))).toBe('finish');
+  });
+
+  it('puts the last required stage in finishing when nothing optional follows it', () => {
+    expect(workPhase(makeItem({ stages: ALTERATION_STAGES, stageKey: 'booked' }))).toBe('start');
+    expect(workPhase(makeItem({ stages: ALTERATION_STAGES, stageKey: 'working' }))).toBe('finish');
+  });
+
+  it('counts garments in each phase', () => {
+    const refs = workItems(orders, { staffId: 'x', seesAll: true });
+    expect(phaseCounts(refs)).toEqual({ start: 1, making: 2, finish: 1 });
   });
 });
