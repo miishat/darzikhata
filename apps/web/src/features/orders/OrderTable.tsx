@@ -23,8 +23,17 @@ export function useWorkerNames(): (ids: string[]) => string {
   return (ids) => ids.map((id) => config?.staff.find((s) => s.id === id)?.name ?? id).join(', ');
 }
 
-/** Garments shown as pills in a row; the rest are counted. */
-const MAX_PILLS = 3;
+/** Live garments grouped by current stage, in the order the stages first appear. */
+function groupByStage(order: Order, live: Order['items'], language: 'bn' | 'en') {
+  const groups: { item: Order['items'][number]; titles: string[] }[] = [];
+  for (const item of live) {
+    const title = itemTitle(order, item, language);
+    const group = groups.find((g) => g.item.stageKey === item.stageKey);
+    if (group) group.titles.push(title);
+    else groups.push({ item, titles: [title] });
+  }
+  return groups;
+}
 
 interface Props {
   rows: OrderRow[];
@@ -134,18 +143,17 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
-                    {live.slice(0, MAX_PILLS).map((item) => {
+                  <ul className="m-0 flex list-none flex-col items-start gap-1 p-0">
+                    {groupByStage(order, live, language).map(({ item, titles }) => {
                       const index = item.stages.findIndex((s) => s.key === item.stageKey);
                       const stage = item.stages[index];
                       return (
-                        <li key={item.id} className="flex items-center gap-1.5 text-sm">
-                          <span className="text-muted">{itemTitle(order, item, language)}</span>
+                        <li key={item.stageKey} className="flex items-baseline gap-2 text-sm">
                           <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, itemSummaryGroup(item), Math.max(index, 0))} />
+                          <span className="text-muted">{titles.join(', ')}</span>
                         </li>
                       );
                     })}
-                    {live.length > MAX_PILLS && <li className="text-sm text-muted">{t('orders.moreGarments', { n: number(live.length - MAX_PILLS) })}</li>}
                   </ul>
                 </td>
                 <td className={`whitespace-nowrap px-3 py-2 text-sm ${deliveryCol}`}>
