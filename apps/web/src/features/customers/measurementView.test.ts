@@ -1,6 +1,6 @@
-import { STARTER_TEMPLATES } from '@darzikhata/domain';
+import { STARTER_TEMPLATES, type MeasurementField } from '@darzikhata/domain';
 import { describe, expect, it } from 'vitest';
-import { compareValues, fieldGroups } from './measurementView';
+import { changedFromPrevious, compareValues, fieldGroups, nextFieldKey } from './measurementView';
 
 const shirt = STARTER_TEMPLATES.find((t) => t.id === 'shirt')!;
 
@@ -26,5 +26,22 @@ describe('compareValues', () => {
     ]);
     expect(compareValues(fields, current, current).every((c) => !c.changed)).toBe(true);
     expect(compareValues(fields, null, null).map((c) => c.current)).toEqual([null, null, null]);
+  });
+});
+
+describe('tile helpers', () => {
+  it('flags a value that differs from the previous one', () => {
+    expect(changedFromPrevious(38.25, 38)).toBe(true);
+    expect(changedFromPrevious(38, 38)).toBe(false);
+    expect(changedFromPrevious(null, 38)).toBe(false);
+    expect(changedFromPrevious(38, undefined)).toBe(false);
+  });
+
+  it('finds the next field in the order the tiles show, and none after the last', () => {
+    const f = (key: string, group: string) => ({ key, group }) as MeasurementField;
+    const fields = [f('a', 'x'), f('b', 'y'), f('c', 'x')];
+    expect(nextFieldKey(fields, 'a')).toBe('c');
+    expect(nextFieldKey(fields, 'c')).toBe('b');
+    expect(nextFieldKey(fields, 'b')).toBeNull();
   });
 });

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export interface ChipOption {
   value: string;
   label: string;
@@ -10,10 +12,12 @@ export interface ChipGroupProps {
   options: ChipOption[];
   value: string;
   onChange(value: string): void;
+  /** Extra content after the chips, scrolling with them (such as an add button). */
+  trailing?: ReactNode;
 }
 
 /** A row of filter chips that scrolls sideways. Each chip is a toggle button. */
-export function ChipGroup({ label, options, value, onChange }: ChipGroupProps) {
+export function ChipGroup({ label, options, value, onChange, trailing }: ChipGroupProps) {
   return (
     <div
       role="group"
@@ -37,6 +41,7 @@ export function ChipGroup({ label, options, value, onChange }: ChipGroupProps) {
           </button>
         );
       })}
+      {trailing}
     </div>
   );
 }

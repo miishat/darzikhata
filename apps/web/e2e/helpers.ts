@@ -32,10 +32,14 @@ export async function takeFirstOrder(page: Page) {
     await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
     await page.getByLabel('পোশাক', { exact: true }).selectOption({ label: 'পাঞ্জাবি' });
     await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
+    await page.getByRole('button', { name: 'শার্ট ১', exact: true }).click();
     const shirt = page.getByRole('region', { name: 'শার্ট ১' });
     await shirt.getByLabel('সংখ্যা').fill('২');
     await fill(shirt, SHIRT);
+    await page.getByRole('button', { name: 'পাঞ্জাবি ২', exact: true }).click();
     await fill(page.getByRole('region', { name: 'পাঞ্জাবি ২' }), { ...SHIRT, 'ঝুল': '42' });
+    // The keypad stays open under the last field; Escape puts it away before the page's own buttons.
+    await page.keyboard.press('Escape');
     await next();
     await next();
 

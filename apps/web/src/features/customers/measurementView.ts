@@ -50,3 +50,15 @@ export function compareValues(
     };
   });
 }
+
+/** True when a typed value differs from the customer's previous one; nothing typed or nothing before is not a change. */
+export function changedFromPrevious(current: number | null, previous: number | undefined): boolean {
+  return current !== null && previous !== undefined && current !== previous;
+}
+
+/** The field after this one in the order the tiles are shown (grouped), or null after the last. */
+export function nextFieldKey(fields: MeasurementField[], key: string): string | null {
+  const ordered = fieldGroups(fields).flatMap((g) => g.fields);
+  const at = ordered.findIndex((field) => field.key === key);
+  return ordered[at + 1]?.key ?? null;
+}

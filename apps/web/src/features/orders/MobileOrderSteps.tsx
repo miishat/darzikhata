@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { Plus } from 'lucide-react';
 import { Button } from '../../ui/Button';
+import { ChipGroup } from '../../ui/ChipGroup';
 import { SelectField } from '../../ui/SelectField';
 import { DRAFT_STEPS, errorsForStep, type DraftErrors, type DraftStep } from './draft';
 import { CustomerPicker } from './entry/CustomerPicker';
@@ -41,6 +43,7 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
   const index = DRAFT_STEPS.indexOf(step);
   const errors = showErrors ? errorsForStep(entry.errors, step) : {};
   const hasErrors = Object.keys(errors).length > 0;
+  const stepText = t('entry.stepOf', { n: number(index + 1), total: number(DRAFT_STEPS.length) });
 
   useEffect(() => {
     if (focusTick === 0) return;
@@ -93,7 +96,20 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
   return (
     <div className="flex flex-col gap-4" ref={body}>
       <h1 className="text-xl font-semibold">{t('nav.newOrder')}</h1>
-      <p className="text-sm text-muted">{t('entry.stepOf', { n: number(index + 1), total: number(DRAFT_STEPS.length) })}</p>
+      <div
+        role="progressbar"
+        aria-label={stepText}
+        aria-valuemin={1}
+        aria-valuemax={DRAFT_STEPS.length}
+        aria-valuenow={index + 1}
+        aria-valuetext={stepText}
+        className="grid grid-cols-5 gap-1"
+      >
+        {DRAFT_STEPS.map((s, i) => (
+          <span key={s} aria-hidden="true" className={`h-1 rounded-sm ${i <= index ? 'bg-brand' : 'bg-line'}`} />
+        ))}
+      </div>
+      <p className="text-sm text-muted">{stepText}</p>
       <h2 ref={heading} tabIndex={-1} className="text-lg font-semibold outline-none">
         {t(STEP_TITLES[step])}
       </h2>
@@ -104,7 +120,7 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
       )}
 
       {step === 'customer' && <CustomerPicker entry={entry} errors={errors} />}
-      {step === 'garments' && <GarmentsStep entry={entry} errors={errors} />}
+      {step === 'garments' && <GarmentsStep entry={entry} errors={errors} onDone={next} />}
       {step === 'details' && <DetailsStep entry={entry} />}
       {step === 'money' && <MoneyStep entry={entry} errors={errors} />}
       {step === 'review' && <ReviewStep entry={entry} />}
@@ -143,32 +159,67 @@ function ItemRegion({ title, children }: { title: string; children: ReactNode })
   );
 }
 
-function GarmentsStep({ entry, errors }: { entry: OrderEntry; errors: DraftErrors }) {
+function GarmentsStep({ entry, errors, onDone }: { entry: OrderEntry; errors: DraftErrors; onDone(): void }) {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const title = useItemTitle(entry);
   const errorText = useErrorText(errors);
   const templates = (config?.templates ?? []).filter((tpl) => tpl.active);
   const [chosen, setChosen] = useState(templates[0]?.id ?? '');
+  const [picked, setPicked] = useState<string | null>(null);
+  const adder = useRef<HTMLDivElement>(null);
+  const items = entry.draft.items;
+  const count = useRef(items.length);
+
+  // A newly added garment becomes the one being measured.
+  useEffect(() => {
+    if (items.length > count.current) setPicked(items[items.length - 1]!.key);
+    count.current = items.length;
+  }, [items]);
+
+  // Errors on a garment that is not showing bring it forward so the first problem can be reached.
+  const hasErrors = (key: string) => Object.keys(errors).some((path) => path.startsWith(`items.${key}.`));
+  const current = items.find((i) => i.key === picked) ?? items[0];
+  const shown = current && !hasErrors(current.key) ? (items.find((i) => hasErrors(i.key)) ?? current) : current;
 
   return (
     <div className="flex flex-col gap-4">
-      {entry.draft.items.map((item) => (
-        <ItemRegion key={item.key} title={title(item)}>
-          <ItemHeader entry={entry} item={item} errors={errors} />
-          <ItemMeasurements entry={entry} item={item} errors={errors} />
+      {items.length > 0 && (
+        <ChipGroup
+          label={t('entry.garmentTabs')}
+          options={items.map((item) => ({ value: item.key, label: title(item) }))}
+          value={shown?.key ?? ''}
+          onChange={setPicked}
+          trailing={
+            <button
+              type="button"
+              aria-label={t('entry.addAnother')}
+              onClick={() => adder.current?.querySelector('select')?.focus()}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-dashed border-line text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
+              <Plus aria-hidden="true" size={18} />
+            </button>
+          }
+        />
+      )}
+      {shown && (
+        <ItemRegion key={shown.key} title={title(shown)}>
+          <ItemHeader entry={entry} item={shown} errors={errors} />
+          <ItemMeasurements entry={entry} item={shown} errors={errors} tiles onDone={onDone} />
         </ItemRegion>
-      ))}
-      <SelectField
-        label={t('entry.garment')}
-        value={chosen}
-        options={templates.map((tpl) => ({ value: tpl.id, label: label(tpl.name) }))}
-        onChange={setChosen}
-        error={errorText('items')}
-      />
-      <Button variant="secondary" data-tour="add-garment" disabled={!chosen} onClick={() => entry.addItem(chosen)}>
-        {t('entry.addGarment')}
-      </Button>
+      )}
+      <div ref={adder} className="flex flex-col gap-4">
+        <SelectField
+          label={t('entry.garment')}
+          value={chosen}
+          options={templates.map((tpl) => ({ value: tpl.id, label: label(tpl.name) }))}
+          onChange={setChosen}
+          error={errorText('items')}
+        />
+        <Button variant="secondary" data-tour="add-garment" disabled={!chosen} onClick={() => entry.addItem(chosen)}>
+          {t('entry.addGarment')}
+        </Button>
+      </div>
     </div>
   );
 }

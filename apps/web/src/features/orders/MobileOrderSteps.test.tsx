@@ -34,10 +34,12 @@ describe('Order entry on mobile', () => {
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'পাঞ্জাবি');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.click(screen.getByRole('button', { name: 'শার্ট ১' }));
     const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
     await userEvent.clear(within(shirt).getByLabelText('সংখ্যা'));
     await userEvent.type(within(shirt).getByLabelText('সংখ্যা'), '২');
     await fill(shirt, SHIRT);
+    await userEvent.click(screen.getByRole('button', { name: 'পাঞ্জাবি ২' }));
     await fill(screen.getByRole('region', { name: 'পাঞ্জাবি ২' }), { ...SHIRT, 'ঝুল': '42' });
     await next();
 
@@ -167,4 +169,28 @@ describe('Order entry on mobile', () => {
     await userEvent.click(within(screen.getByRole('navigation', { name: 'প্রধান মেনু' })).getByRole('link', { name: 'হোম' }));
     expect(await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' })).toBeTruthy();
   });
+});
+
+describe('Measuring a shirt with the keypad on a phone', () => {
+  it('goes field to field without the system keyboard and on to the next step after the last', async () => {
+    window.localStorage.removeItem('dk.keypad');
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
+    await next();
+    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
+    expect(within(screen.getByRole('progressbar')).queryAllByRole('button')).toHaveLength(0);
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('2');
+
+    await userEvent.click(within(shirt).getByLabelText('ঝুল'));
+    for (let i = 0; i < 8; i++) {
+      await userEvent.click(screen.getByRole('button', { name: '২' }));
+      await userEvent.click(screen.getByRole('button', { name: '৯' }));
+      await userEvent.click(screen.getByRole('button', { name: 'অর্ধেক' }));
+      await userEvent.click(screen.getByRole('button', { name: 'পরের মাপ' }));
+    }
+    expect(await screen.findByRole('heading', { name: 'ডিজাইন ও ছবি' })).toBeTruthy();
+  }, 20_000);
 });

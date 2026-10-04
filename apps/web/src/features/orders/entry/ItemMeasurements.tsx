@@ -4,14 +4,25 @@ import { useI18n } from '../../../i18n/I18nProvider';
 import { Button } from '../../../ui/Button';
 import { Checkbox } from '../../../ui/Checkbox';
 import { ChoiceGroup } from '../../../ui/ChoiceGroup';
+import { MeasureTiles } from './MeasureTiles';
 import { MeasurementInputs } from '../../customers/MeasurementForm';
 import { MeasurementTable } from '../../customers/MeasurementTable';
-import type { DraftErrors, DraftItem } from '../draft';
+import { latestVersion, type DraftErrors, type DraftItem } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
 import { useErrorText } from './shared';
 
 /** One line's measurements: the saved ones to confirm, new values to type, or a note that they are hidden. */
-export function ItemMeasurements({ entry, item, errors }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors }) {
+export interface ItemMeasurementsProps {
+  entry: OrderEntry;
+  item: DraftItem;
+  errors: DraftErrors;
+  /** The phone's tile grid with a keypad, instead of plain fields. */
+  tiles?: boolean;
+  /** With tiles: called when "next" is pressed on the last field. */
+  onDone?(): void;
+}
+
+export function ItemMeasurements({ entry, item, errors, tiles = false, onDone }: ItemMeasurementsProps) {
   const { t, label, date } = useI18n();
   const { config, state } = useSnapshot();
   const errorText = useErrorText(errors);
@@ -80,6 +91,42 @@ export function ItemMeasurements({ entry, item, errors }: { entry: OrderEntry; i
   for (const field of template.fields) {
     const text = errorText(`${at}.measure.${field.key}`);
     if (text) fieldErrors[field.key] = text;
+  }
+  if (tiles) {
+    const previous: Record<string, number> = {};
+    const version = customerId ? latestVersion(state, customerId, template.id) : null;
+    for (const [key, v] of Object.entries(version?.values ?? {})) previous[key] = v.value;
+    const sources = [
+      { value: 'body', label: t('source.body') },
+      { value: 'sample', label: t('source.sample') },
+    ] as const;
+    return (
+      <div className="flex flex-col gap-3">
+        <div role="group" aria-label={t('measure.source')} className="flex self-start rounded-xl bg-surface p-[3px]">
+          {sources.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={m.source === option.value}
+              onClick={() => entry.updateItem(item.key, { measurements: { ...m, source: option.value } })}
+              className={`min-h-11 rounded-[9px] px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+                m.source === option.value ? 'bg-panel font-semibold text-ink shadow-sm' : 'text-muted'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <MeasureTiles
+          template={template}
+          values={m.values}
+          previous={previous}
+          errors={fieldErrors}
+          onChange={(values) => entry.updateItem(item.key, { measurements: { ...m, values } })}
+          onDone={() => onDone?.()}
+        />
+      </div>
+    );
   }
   return (
     <div className="flex flex-col gap-3">
