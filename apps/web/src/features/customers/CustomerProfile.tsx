@@ -6,7 +6,9 @@ import { buttonClasses } from '../../ui/Button';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
+import { useShell } from '../../shell/ShellPreference';
 import { MeasurementSection } from './MeasurementSection';
+import { MobileCustomerProfile } from './MobileCustomerProfile';
 
 function Region({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -20,7 +22,7 @@ function Region({ id, title, children }: { id: string; title: string; children: 
 }
 
 /** Who the customer is, their household and their orders. */
-export function CustomerProfile({ customerId }: { customerId: string }) {
+function DesktopCustomerProfile({ customerId }: { customerId: string }) {
   const { t, language, money, date } = useI18n();
   const can = useCan();
   const { state } = useSnapshot();
@@ -117,4 +119,10 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
       </Region>
     </div>
   );
+}
+
+/** Who the customer is, their household and their orders; laid out for the phone or the desktop. */
+export function CustomerProfile({ customerId }: { customerId: string }) {
+  const { kind } = useShell();
+  return kind === 'mobile' ? <MobileCustomerProfile customerId={customerId} /> : <DesktopCustomerProfile customerId={customerId} />;
 }

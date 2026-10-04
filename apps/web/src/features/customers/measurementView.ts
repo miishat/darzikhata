@@ -1,4 +1,4 @@
-import type { MeasurementField, MeasurementSnapshot, MeasurementVersion } from '@darzikhata/domain';
+import { formatMeasurement, type Language, type MeasurementField, type MeasurementSnapshot, type MeasurementValue, type MeasurementVersion } from '@darzikhata/domain';
 import { bn, type MessageKey } from '../../i18n/bn';
 
 export interface FieldGroup {
@@ -61,4 +61,28 @@ export function nextFieldKey(fields: MeasurementField[], key: string): string | 
   const ordered = fieldGroups(fields).flatMap((g) => g.fields);
   const at = ordered.findIndex((field) => field.key === key);
   return ordered[at + 1]?.key ?? null;
+}
+
+/**
+ * How much each field changed against the previous version, by key. Only fields present in both
+ * versions with the same unit and a different value are listed.
+ */
+export function valueDeltas(
+  current: Record<string, MeasurementValue>,
+  previous: Record<string, MeasurementValue> | undefined,
+): Record<string, number> {
+  const deltas: Record<string, number> = {};
+  if (!previous) return deltas;
+  for (const [key, now] of Object.entries(current)) {
+    const before = previous[key];
+    if (!before || before.unit !== now.unit) continue;
+    const delta = Math.round((now.value - before.value) * 1000) / 1000;
+    if (delta !== 0) deltas[key] = delta;
+  }
+  return deltas;
+}
+
+/** A signed change for a badge, such as "+½" or "-1¼" (with a true minus sign). */
+export function deltaText(delta: number, language: Language): string {
+  return `${delta > 0 ? '+' : '−'}${formatMeasurement(Math.abs(delta), language)}`;
 }

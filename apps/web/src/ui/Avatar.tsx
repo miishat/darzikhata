@@ -1,6 +1,6 @@
 import { avatarTone } from './avatarTone';
 
-const SIZES = { sm: 'size-8 text-xs', md: 'size-10 text-sm', lg: 'size-14 text-xl' };
+const SIZES = { sm: 'size-8 text-xs', md: 'size-10 text-sm', lg: 'size-14 text-xl', xl: 'size-[72px] text-3xl' };
 
 /** One letter with its attached vowel signs and marks, so "মোহাম্মদ" gives "মো". */
 function firstCluster(word: string): string {

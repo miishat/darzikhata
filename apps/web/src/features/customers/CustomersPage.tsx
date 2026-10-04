@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { CustomerList } from './CustomerList';
@@ -14,16 +14,7 @@ export function CustomersPage() {
   const list = <CustomerList query={query} onQueryChange={setQuery} activeId={customerId} />;
 
   if (kind === 'mobile') {
-    return customerId ? (
-      <div className="flex flex-col gap-3">
-        <Link to="/app/customers" className="text-brand-strong underline">
-          {t('customers.back')}
-        </Link>
-        <CustomerProfile customerId={customerId} />
-      </div>
-    ) : (
-      list
-    );
+    return customerId ? <CustomerProfile customerId={customerId} /> : list;
   }
 
   return (
