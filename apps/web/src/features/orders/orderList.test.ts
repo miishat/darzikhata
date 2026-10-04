@@ -100,6 +100,15 @@ describe('queryOrders', () => {
     expect(numbers({ sort: 'delivery' })).toEqual(['A-0001', 'A-0002', 'B-0001', 'A-0003']);
   });
 
+  it('filters by worker and by a delivery date range', () => {
+    expect(numbers({ worker: 'tailor-1' })).toEqual(['A-0002', 'A-0001']);
+    expect(numbers({ worker: 'nobody' })).toEqual([]);
+    // Next delivery: A-0001 on 09-30, A-0002 on 10-04, B-0001 on 10-10, A-0003 none.
+    expect(numbers({ from: '2026-10-01', to: '2026-10-09' })).toEqual(['A-0002']);
+    expect(numbers({ from: '2026-10-04' })).toEqual(['B-0001', 'A-0002']);
+    expect(numbers({ to: '2026-09-30' })).toEqual(['A-0001']);
+  });
+
   it('pages results and keeps the page in range', () => {
     expect(queryOrders(state(), { ...DEFAULT_LIST_QUERY, page: 2 }, TODAY, 3)).toMatchObject({ total: 4, page: 2, pages: 2 });
     expect(numbers({ page: 2 }, 3)).toEqual(['A-0001']);
@@ -110,14 +119,16 @@ describe('queryOrders', () => {
 
 describe('list query in the URL', () => {
   it('round-trips and leaves defaults out', () => {
-    const query: OrderListQuery = { text: 'রহিম', status: 'trial', dueOnly: true, sort: 'delivery', page: 3 };
+    const query: OrderListQuery = { text: 'রহিম', status: 'trial', dueOnly: true, sort: 'delivery', page: 3, worker: 'tailor-1', from: '2026-10-01', to: '2026-10-09' };
     const params = writeListQuery(query);
-    expect(params.toString()).toBe('q=%E0%A6%B0%E0%A6%B9%E0%A6%BF%E0%A6%AE&status=trial&due=1&sort=delivery&page=3');
+    expect(params.toString()).toBe(
+      'q=%E0%A6%B0%E0%A6%B9%E0%A6%BF%E0%A6%AE&status=trial&due=1&sort=delivery&page=3&worker=tailor-1&from=2026-10-01&to=2026-10-09',
+    );
     expect(readListQuery(params)).toEqual(query);
     expect(writeListQuery(DEFAULT_LIST_QUERY).toString()).toBe('');
   });
 
   it('ignores values it does not know', () => {
-    expect(readListQuery(new URLSearchParams('status=lost&sort=random&page=-2&due=yes'))).toEqual(DEFAULT_LIST_QUERY);
+    expect(readListQuery(new URLSearchParams('status=lost&sort=random&page=-2&due=yes&from=soon&to=2026-13-40'))).toEqual(DEFAULT_LIST_QUERY);
   });
 });

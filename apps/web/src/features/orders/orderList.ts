@@ -23,9 +23,15 @@ export interface OrderListQuery {
   sort: OrderSort;
   /** 1-based. */
   page: number;
+  /** A staff id: only orders with a garment made by this person. Empty for anyone. */
+  worker: string;
+  /** Next delivery on or after this date (YYYY-MM-DD). Empty for no limit. */
+  from: string;
+  /** Next delivery on or before this date (YYYY-MM-DD). Empty for no limit. */
+  to: string;
 }
 
-export const DEFAULT_LIST_QUERY: OrderListQuery = { text: '', status: 'all', dueOnly: false, sort: 'newest', page: 1 };
+export const DEFAULT_LIST_QUERY: OrderListQuery = { text: '', status: 'all', dueOnly: false, sort: 'newest', page: 1, worker: '', from: '', to: '' };
 export const PAGE_SIZE = 20;
 
 export interface OrderRow {
@@ -80,7 +86,7 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
   };
 }
 
-function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {
+export function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {
   switch (status) {
     case 'all':
       return true;
@@ -95,6 +101,12 @@ function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {
     case 'closed':
       return isOrderClosed(row.order);
   }
+}
+
+function matchesRange(row: OrderRow, from: string, to: string): boolean {
+  if (!from && !to) return true;
+  if (row.nextDelivery === null) return false;
+  return (!from || row.nextDelivery >= from) && (!to || row.nextDelivery <= to);
 }
 
 export function matchesText(row: OrderRow, text: string): boolean {
@@ -140,7 +152,14 @@ export function statusCounts(state: ShopState, today: string): Record<OrderStatu
 export function queryOrders(state: ShopState, query: OrderListQuery, today: string, pageSize = PAGE_SIZE): OrderPage {
   const matched = Object.values(state.orders)
     .map((order) => orderRow(order, state, today))
-    .filter((row) => matchesStatus(row, query.status) && matchesText(row, query.text) && (!query.dueOnly || row.balance > 0))
+    .filter(
+      (row) =>
+        matchesStatus(row, query.status) &&
+        matchesText(row, query.text) &&
+        (!query.dueOnly || row.balance > 0) &&
+        (!query.worker || row.workers.includes(query.worker)) &&
+        matchesRange(row, query.from, query.to),
+    )
     .sort(compare(query.sort));
   const pages = Math.max(1, Math.ceil(matched.length / pageSize));
   const page = Math.min(Math.max(1, Math.floor(query.page) || 1), pages);
@@ -149,6 +168,13 @@ export function queryOrders(state: ShopState, query: OrderListQuery, today: stri
 
 const STATUSES: readonly OrderStatusFilter[] = ['all', 'open', 'trial', 'ready', 'overdue', 'closed'];
 const SORTS: readonly OrderSort[] = ['newest', 'oldest', 'delivery', 'balance'];
+
+function readDate(value: string | null): string {
+  if (!value || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) return '';
+  const [y, m, d] = value.split('-').map(Number);
+  const real = new Date(Date.UTC(y!, m! - 1, d!));
+  return real.getUTCFullYear() === y && real.getUTCMonth() === m! - 1 && real.getUTCDate() === d ? value : '';
+}
 
 /** Reads the list state from the URL; anything unknown falls back to the default. */
 export function readListQuery(params: URLSearchParams): OrderListQuery {
@@ -161,6 +187,9 @@ export function readListQuery(params: URLSearchParams): OrderListQuery {
     dueOnly: params.get('due') === '1',
     sort: sort && SORTS.includes(sort) ? sort : DEFAULT_LIST_QUERY.sort,
     page: Number.isInteger(page) && page >= 1 ? page : DEFAULT_LIST_QUERY.page,
+    worker: params.get('worker') ?? DEFAULT_LIST_QUERY.worker,
+    from: readDate(params.get('from')),
+    to: readDate(params.get('to')),
   };
 }
 
@@ -172,5 +201,8 @@ export function writeListQuery(query: OrderListQuery): URLSearchParams {
   if (query.dueOnly) params.set('due', '1');
   if (query.sort !== DEFAULT_LIST_QUERY.sort) params.set('sort', query.sort);
   if (query.page !== DEFAULT_LIST_QUERY.page) params.set('page', String(query.page));
+  if (query.worker) params.set('worker', query.worker);
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
   return params;
 }

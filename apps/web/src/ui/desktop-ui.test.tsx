@@ -7,7 +7,7 @@ import { FilterButton } from './FilterButton';
 import { FilterChip } from './FilterChip';
 import { Kbd } from './Kbd';
 import { SelectionBar } from './SelectionBar';
-import { ViewTabs } from './ViewTabs';
+import { ViewTabs, viewTabId } from './ViewTabs';
 
 const inBangla = (ui: ReactNode) => render(<I18nProvider fallback="bn">{ui}</I18nProvider>);
 
@@ -33,6 +33,23 @@ describe('ViewTabs', () => {
     expect(document.activeElement).toBe(screen.getByRole('tab', { name: /দেরি/ }));
     await userEvent.keyboard('{End}');
     expect(screen.getByRole('tab', { name: /তৈরি/ }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('links its tabs to the panel they control', () => {
+    inBangla(
+      <>
+        <ViewTabs label="ভিউ" views={VIEWS} value="late" onChange={() => {}} panelId="rows" />
+        <div role="tabpanel" id="rows" aria-labelledby={viewTabId('rows', 'late')} />
+      </>,
+    );
+    const tab = screen.getByRole('tab', { name: /দেরি/ });
+    expect(tab.getAttribute('aria-controls')).toBe('rows');
+    expect(screen.getByRole('tabpanel', { name: /দেরি/ })).toBeTruthy();
+  });
+
+  it('keeps one tab stop when no tab is selected', () => {
+    inBangla(<ViewTabs label="ভিউ" views={VIEWS} value="" onChange={() => {}} />);
+    expect(screen.getAllByRole('tab').map((t) => t.tabIndex)).toEqual([0, -1, -1]);
   });
 
   it('shows a count badge in each tab', () => {

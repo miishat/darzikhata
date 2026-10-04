@@ -14,13 +14,21 @@ export interface ViewTabsProps {
   views: ViewTab[];
   value: string;
   onChange(value: string): void;
+  /** Id of the region the tabs control. Give that region role="tabpanel", this id and aria-labelledby={viewTabId(panelId, value)}. */
+  panelId?: string;
+}
+
+/** The DOM id of a tab, for a tabpanel's aria-labelledby. */
+export function viewTabId(panelId: string, value: string): string {
+  return `${panelId}-tab-${value}`;
 }
 
 /** A row of view tabs with a count badge each; the selected one has a brand underline. Arrow keys move between tabs. */
-export function ViewTabs({ label, views, value, onChange }: ViewTabsProps) {
+export function ViewTabs({ label, views, value, onChange, panelId }: ViewTabsProps) {
   const { number } = useI18n();
   const base = useId();
-  const idOf = (key: string) => `${base}-${key}`;
+  const idOf = (key: string) => (panelId ? viewTabId(panelId, key) : `${base}-${key}`);
+  const anySelected = views.some((v) => v.value === value);
   const keys = views.map((v) => v.value);
   return (
     <div
@@ -38,7 +46,8 @@ export function ViewTabs({ label, views, value, onChange }: ViewTabsProps) {
             type="button"
             role="tab"
             aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
+            aria-controls={panelId}
+            tabIndex={selected || (!anySelected && view === views[0]) ? 0 : -1}
             onClick={() => onChange(view.value)}
             className={`-mb-px inline-flex min-h-10 shrink-0 items-center gap-2 border-b-[3px] px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
               selected ? 'border-brand text-ink' : 'border-transparent text-muted hover:text-ink'
