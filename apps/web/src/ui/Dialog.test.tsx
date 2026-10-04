@@ -36,7 +36,7 @@ describe('Dialog edge', () => {
   it('uses the raised-line token so the hairline shows in dark only', () => {
     render(<Dialog open title="edge" onClose={() => {}} />);
     const dialog = screen.getByRole('dialog', { name: 'edge' });
-    expect(dialog.className).toContain('ring-raised-line');
-    expect(dialog.className).not.toMatch(/ring-line/);
+    expect(dialog.className).toContain('outline-raised-line');
+    expect(dialog.className).not.toMatch(/outline-line/);
   });
 });

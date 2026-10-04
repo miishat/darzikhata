@@ -158,3 +158,14 @@ describe('new tokens', () => {
     expect(darkMedia['raised-line']).toBe(darkMedia['line']);
   });
 });
+
+describe('print block', () => {
+  it('forces light paper even when Device follows a dark phone', () => {
+    const at = css.indexOf('@media print');
+    const afterMedia = css.slice(css.indexOf('{', at) + 1);
+    const selector = afterMedia.slice(0, afterMedia.indexOf('{')).replace(/\/\*[\s\S]*?\*\//g, '').trim();
+    // The dark media block is `:root:not(...)` (two classes of weight); a bare `:root` would lose to it.
+    expect(selector).toContain(':root:root');
+    expect(blockAfter(':root:root,', at)['surface']).toBe('#ffffff');
+  });
+});

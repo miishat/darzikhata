@@ -301,7 +301,8 @@ body {
 }
 
 @media print {
-  :root,
+  /* the doubled :root outranks the dark media block, so Device on a dark phone still prints on white paper. */
+  :root:root,
   :root[data-theme] {
     --surface: #ffffff;
     --panel: #ffffff;
