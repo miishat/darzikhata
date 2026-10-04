@@ -39,7 +39,3 @@ npm run e2e
 - `packages/domain`: the business rules in plain TypeScript (money, numbering, measurements, stages, permissions, search, sync, status links). No browser code.
 - `apps/web`: the React app (PWA). `src/data` is the only code that touches storage.
 - `docs/superpowers`: the design spec and the implementation plans.
-
-## Deploy
-
-The site is static. For now it is hosted on GitHub Pages: set Settings > Pages > Source to "GitHub Actions" once. `.github/workflows/pages.yml` then builds the app on every push to `main` with `VITE_BASE=/<repo>/` and publishes it at `https://<user>.github.io/<repo>/`. The data lives in each visitor's own browser, so a shared link shows the demo, not anyone's real data.
