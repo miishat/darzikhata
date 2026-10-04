@@ -18,7 +18,9 @@ export function SelectionBar({ count, children, onClear }: SelectionBarProps) {
         aria-label={t('desk.selection.label')}
         className="pointer-events-auto flex flex-wrap items-center gap-3 rounded-xl bg-navy px-4 py-2 text-on-navy shadow-xl"
       >
-        <span className="text-sm font-semibold">{t('desk.selection.count', { n: number(count) })}</span>
+        <span role="status" className="text-sm font-semibold">
+          {t('desk.selection.count', { n: number(count) })}
+        </span>
         <div className="flex flex-wrap items-center gap-2">{children}</div>
         <button
           type="button"

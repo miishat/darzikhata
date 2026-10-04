@@ -128,6 +128,18 @@ describe('SelectionBar', () => {
     expect(screen.queryByRole('region')).toBeNull();
   });
 
+  it('announces a changed count politely to screen readers', () => {
+    const { rerender } = inBangla(<SelectionBar count={1} onClear={() => {}} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('১টি পোশাক বাছাই করা');
+    rerender(
+      <I18nProvider fallback="bn">
+        <SelectionBar count={2} onClear={() => {}} />
+      </I18nProvider>,
+    );
+    expect(screen.getByRole('status').textContent).toBe('২টি পোশাক বাছাই করা');
+  });
+
   it('announces the count, holds actions and clears', async () => {
     const onClear = vi.fn();
     inBangla(

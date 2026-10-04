@@ -43,7 +43,7 @@ export function DesktopShell({ role }: { role: Role }) {
             </Link>
           )}
         </header>
-        <main className="min-w-0 flex-1 overflow-auto p-6">
+        <main className="min-w-0 flex-1 overflow-x-clip p-6">
           <Suspense fallback={<Loading />}>
             <Outlet />
           </Suspense>
