@@ -98,6 +98,14 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
   return (
     <div className="flex flex-col gap-4" ref={body}>
       <h1 className="text-xl font-semibold">{t('nav.newOrder')}</h1>
+      {entry.restored && step === 'customer' && (
+        <p role="status" className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
+          {t('entry.draftRestored')}
+          <Button variant="ghost" className="min-h-11" onClick={entry.discard}>
+            {t('entry.startFresh')}
+          </Button>
+        </p>
+      )}
       <div
         role="progressbar"
         aria-label={stepText}

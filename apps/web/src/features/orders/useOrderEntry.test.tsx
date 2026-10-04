@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { waitFor } from '@testing-library/react';
 import { DarziDb } from '../../data/db';
 import { StoreProvider } from '../../data/StoreContext';
 import { ShopStore } from '../../data/store';
@@ -15,11 +16,15 @@ afterEach(async () => {
   for (const db of dbs.splice(0)) await db.delete();
 });
 
-async function setup(path = '/app/orders/new') {
+async function setup(path = '/app/orders/new', who: { shop?: 'rahman' | 'nakshi'; as?: { staffId: string; pin: string } } = {}) {
   const db = new DarziDb(`entry-${++count}`);
   dbs.push(db);
   const store = new ShopStore({ db });
-  await store.startDemo('rahman');
+  await store.startDemo(who.shop ?? 'rahman');
+  if (who.as) {
+    await store.signOut();
+    await store.signIn(who.as.staffId, who.as.pin);
+  }
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StoreProvider store={store}>
       <I18nProvider>
@@ -139,5 +144,117 @@ describe('useOrderEntry', () => {
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(Object.keys(store.getSnapshot().state.orders).length).toBe(ordersBefore + 1);
+  });
+});
+
+describe('draft autosave', () => {
+  const KEY = 'dk.draft.rahman.main.rahman-owner';
+  const stored = () => window.localStorage.getItem(KEY);
+  const typeSomething = (r: { current: ReturnType<typeof useOrderEntry> }) => {
+    act(() => r.current.setCustomer({ kind: 'new', name: 'জসিম', nameAlt: '', phone: '', gender: 'male' }));
+    act(() => r.current.addItem('shirt'));
+    act(() => r.current.update({ advance: { amount: 50000, method: 'cash', reference: '' } }));
+  };
+
+  it('writes after a pause, brings the draft back, and clears on save', async () => {
+    const first = await setup();
+    expect(first.result.current.restored).toBe(false);
+    typeSomething(first.result);
+    expect(stored()).toBeNull();
+    await waitFor(() => expect(stored()).not.toBeNull(), { timeout: 2000 });
+    first.unmount();
+
+    const second = await setup();
+    expect(second.result.current.restored).toBe(true);
+    expect(second.result.current.draft.customer).toMatchObject({ kind: 'new', name: 'জসিম' });
+    expect(second.result.current.draft.items).toHaveLength(1);
+    expect(second.result.current.draft.advance.amount).toBe(50000);
+    expect(second.result.current.dirty).toBe(true);
+
+    const key = second.result.current.draft.items[0]!.key;
+    act(() => second.result.current.updateItem(key, { measurements: { kind: 'new', values: shirtValues, source: 'body', notes: '' } }));
+    let saved: SaveResult | undefined;
+    await act(async () => {
+      saved = await second.result.current.save();
+    });
+    expect(saved?.ok).toBe(true);
+    expect(stored()).toBeNull();
+    second.unmount();
+    expect(stored()).toBeNull();
+  });
+
+  it('keeps a change made just before leaving', async () => {
+    const { result, unmount } = await setup();
+    typeSomething(result);
+    unmount();
+    expect(stored()).not.toBeNull();
+  });
+
+  it('never records the advance: restoring only refills the field', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const second = await setup();
+    const { state } = second.store.getSnapshot();
+    expect(Object.values(state.orders).some((o) => o.number === 'A-0041')).toBe(false);
+    expect(second.result.current.draft.advance.amount).toBe(50000);
+  });
+
+  it('keeps drafts apart by user and does not hand one to another', async () => {
+    const owner = await setup('/app/orders/new', { shop: 'nakshi' });
+    act(() => owner.result.current.setCustomer({ kind: 'new', name: 'রিনা', nameAlt: '', phone: '', gender: 'female' }));
+    await waitFor(() => expect(window.localStorage.getItem('dk.draft.nakshi.main.nakshi-owner')).not.toBeNull(), { timeout: 2000 });
+    owner.unmount();
+
+    const counter = await setup('/app/orders/new', { shop: 'nakshi', as: { staffId: 'nakshi-counter', pin: '2222' } });
+    expect(counter.result.current.restored).toBe(false);
+    expect(counter.result.current.draft.customer).toBeNull();
+  });
+
+  it('ignores a corrupt stored draft', async () => {
+    window.localStorage.setItem(KEY, '{broken');
+    const { result } = await setup();
+    expect(result.current.restored).toBe(false);
+    expect(result.current.draft.items).toEqual([]);
+    typeSomething(result);
+    await waitFor(() => expect(JSON.parse(stored()!).v).toBe(1), { timeout: 2000 });
+  });
+
+  it('discard clears storage and starts empty', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const { result } = await setup();
+    expect(result.current.restored).toBe(true);
+    act(() => result.current.discard());
+    expect(stored()).toBeNull();
+    expect(result.current.restored).toBe(false);
+    expect(result.current.draft.items).toEqual([]);
+    expect(result.current.dirty).toBe(false);
+    await new Promise((r) => setTimeout(r, 700));
+    expect(stored()).toBeNull();
+  });
+
+  it('does not restore over a repeat order or a chosen customer', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const { result } = await setup('/app/orders/new?customer=rahman-c1');
+    expect(result.current.restored).toBe(false);
+    expect(result.current.draft.items).toEqual([]);
+  });
+
+  it('keeps no measurement values for someone who may not see women’s measurements', async () => {
+    const { result, unmount } = await setup('/app/orders/new', { shop: 'nakshi', as: { staffId: 'nakshi-counter', pin: '2222' } });
+    act(() => result.current.setCustomer({ kind: 'new', name: 'রিনা', nameAlt: '', phone: '', gender: 'female' }));
+    act(() => result.current.addItem('alteration'));
+    act(() => result.current.addItem('blouse'));
+    const blouse = result.current.draft.items.find((i) => i.templateId === 'blouse')!;
+    act(() => result.current.updateItem(blouse.key, { measurements: { kind: 'new', values: { chest: 34 }, source: 'body', notes: 'গোপন' } }));
+    unmount();
+    const raw = window.localStorage.getItem('dk.draft.nakshi.main.nakshi-counter') ?? '';
+    expect(raw).not.toBe('');
+    expect(raw).not.toContain('গোপন');
+    expect(raw).not.toContain('34');
   });
 });

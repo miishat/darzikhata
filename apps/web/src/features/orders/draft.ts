@@ -21,6 +21,7 @@ import {
 } from '@darzikhata/domain';
 import type { MessageKey } from '../../i18n/bn';
 import { isValidPhone } from '../customers/customerInput';
+import { assignees } from '../work/workList';
 
 export type DraftCustomer =
   | { kind: 'existing'; customerId: string }
@@ -54,6 +55,8 @@ export interface DraftItem {
   /** YYYY-MM-DD, or '' for none. */
   trialDate: string;
   deliveryDate: string;
+  /** Staff id of the worker the garment goes to; absent or null means nobody yet. */
+  assignedTo?: string | null;
 }
 
 export interface OrderDraft {
@@ -81,6 +84,10 @@ export interface DraftContext {
   today: string;
   /** Whether the person entering the order may see measurements of a customer with this gender. */
   canSeeMeasurements(gender: Gender | null): boolean;
+  /** The branch the order is taken in; when given, a chosen worker must work there. */
+  branchId?: string;
+  /** Whether the person entering the order may assign work. When false, a chosen worker is ignored. */
+  canAssign?: boolean;
 }
 
 export function emptyDraft(): OrderDraft {
@@ -200,6 +207,11 @@ export function validateDraft(draft: OrderDraft, ctx: DraftContext): DraftErrors
       }
     }
 
+    if (item.assignedTo && ctx.canAssign !== false) {
+      const people = assignees(ctx.config, ctx.branchId ? [ctx.branchId] : []);
+      if (!people.some((s) => s.id === item.assignedTo)) errors[`${at}.assignedTo`] = 'unknown';
+    }
+
     if (!item.deliveryDate) errors[`${at}.deliveryDate`] = 'required';
     else if (item.deliveryDate < ctx.today) errors[`${at}.deliveryDate`] = 'past';
     if (item.trialDate && item.trialDate < ctx.today) errors[`${at}.trialDate`] = 'past';
@@ -235,6 +247,8 @@ export function draftErrorKey(path: string, code: DraftErrorCode): MessageKey {
       return 'draft.error.price';
     case 'measurements':
       return code === 'confirm' ? 'draft.error.confirm' : code === 'unknown' ? 'draft.error.measurementsUnknown' : 'draft.error.measurements';
+    case 'assignedTo':
+      return 'draft.error.worker';
     case 'deliveryDate':
       return code === 'past' ? 'draft.error.past' : 'draft.error.deliveryDate';
     default:
@@ -267,6 +281,8 @@ export interface BuildContext {
   staffId: string;
   /** ISO timestamp used as the time new measurements were taken. */
   now: string;
+  /** Whether the person saving may assign work. When false, no worker is sent. */
+  canAssign?: boolean;
 }
 
 /**
@@ -338,7 +354,7 @@ export function buildOrderEvents(draft: OrderDraft, ctx: BuildContext): { orderI
         fabricNote: item.fabricNote.trim(),
         photoIds: [...item.photoIds],
         stages: template.stages,
-        assignedTo: null,
+        assignedTo: ctx.canAssign === false ? null : (item.assignedTo ?? null),
         trialDate: item.trialDate || null,
         deliveryDate: item.deliveryDate || null,
       });

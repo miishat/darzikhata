@@ -1,5 +1,5 @@
 import { moneySummary } from '@darzikhata/domain';
-import { screen, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -220,4 +220,27 @@ describe('Measuring a shirt with the keypad on a phone', () => {
       height.mockRestore();
     }
   });
+
+  it('brings a kept draft back at the first step and lets the steps carry on from it', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(screen.getByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.type(screen.getByLabelText('নাম'), 'জসিম উদ্দিন');
+    await waitFor(() => expect(window.localStorage.getItem('dk.draft.rahman.main.rahman-owner')).not.toBeNull(), { timeout: 2000 });
+    cleanup();
+
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    expect(await screen.findByRole('heading', { name: 'কাস্টমার' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('আগের খসড়া ফিরিয়ে আনা হয়েছে।');
+    expect((screen.getByLabelText('নাম') as HTMLInputElement).value).toBe('জসিম উদ্দিন');
+    await next();
+    expect(await screen.findByRole('heading', { name: 'পোশাক ও মাপ' })).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'আগের ধাপ' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন করে শুরু' }));
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByLabelText('নাম')).toBeNull();
+    expect(store.getSnapshot().session).toBeTruthy();
+    expect(window.localStorage.getItem('dk.draft.rahman.main.rahman-owner')).toBeNull();
+  }, 30_000);
 });

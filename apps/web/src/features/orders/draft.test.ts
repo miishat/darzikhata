@@ -331,3 +331,69 @@ describe('draftFromOrder', () => {
     expect(draft.items[0]!.wearer).toBe('ক্লাস ৭ - রাফি');
   });
 });
+
+describe('assignedTo', () => {
+  const nakshi = shopConfig('nakshi');
+  const nakshiCtx = (extra: Partial<DraftContext> = {}): DraftContext => ({
+    config: nakshi,
+    state: baseState(),
+    today: TODAY,
+    canSeeMeasurements: () => true,
+    branchId: 'main',
+    ...extra,
+  });
+  const alteration = nakshi.templates.find((t) => t.id === 'alteration')!;
+  const draftWith = (assignedTo: string | null | undefined): OrderDraft => {
+    const base = newDraftItem(alteration, 'w1', { customerId: null, state: baseState(), canSee: true, deliveryDate: '2026-10-12' });
+    return {
+      ...emptyDraft(),
+      customer: { kind: 'new', name: 'করিম', nameAlt: '', phone: '', gender: 'male' },
+      items: [assignedTo === undefined ? base : { ...base, assignedTo }],
+    };
+  };
+  const build = (draft: OrderDraft, canAssign?: boolean) => {
+    let n = 0;
+    const { events } = buildOrderEvents(draft, {
+      config: nakshi,
+      state: baseState(),
+      newId: () => `id-${++n}`,
+      number: 'A-0001',
+      branchId: 'main',
+      staffId: 'nakshi-owner',
+      now: '2026-10-03T06:00:00.000Z',
+      ...(canAssign === undefined ? {} : { canAssign }),
+    });
+    const created = events.find((e) => e.type === 'order.created');
+    if (created?.type !== 'order.created') throw new Error('expected order.created');
+    return created.order.items.map((i) => i.assignedTo);
+  };
+
+  it('starts unassigned and an unassigned or missing field is valid', () => {
+    expect(draftWith(undefined).items[0]!.assignedTo ?? null).toBeNull();
+    expect(validateDraft(draftWith(null), nakshiCtx())).toEqual({});
+    expect(validateDraft(draftWith(undefined), nakshiCtx())).toEqual({});
+  });
+
+  it('carries a chosen worker into every item of the saved order', () => {
+    const draft = draftWith('nakshi-tailor');
+    draft.items[0] = { ...draft.items[0]!, quantity: 2 };
+    expect(validateDraft(draft, nakshiCtx())).toEqual({});
+    expect(build(draft)).toEqual(['nakshi-tailor', 'nakshi-tailor']);
+    expect(build(draftWith(null))).toEqual([null]);
+    expect(build(draftWith(undefined))).toEqual([null]);
+  });
+
+  it('rejects someone who does not exist, is not a maker, or is inactive', () => {
+    expect(validateDraft(draftWith('ghost'), nakshiCtx())).toEqual({ 'items.w1.assignedTo': 'unknown' });
+    expect(validateDraft(draftWith('nakshi-counter'), nakshiCtx())).toEqual({ 'items.w1.assignedTo': 'unknown' });
+    const inactive = { ...nakshi, staff: nakshi.staff.map((s) => (s.id === 'nakshi-tailor' ? { ...s, active: false } : s)) };
+    expect(validateDraft(draftWith('nakshi-tailor'), nakshiCtx({ config: inactive }))).toEqual({ 'items.w1.assignedTo': 'unknown' });
+    expect(draftErrorKey('items.w1.assignedTo', 'unknown')).toBe('draft.error.worker');
+  });
+
+  it('does not send or check a worker for a role that may not assign', () => {
+    const draft = draftWith('ghost');
+    expect(validateDraft(draft, nakshiCtx({ canAssign: false }))).toEqual({});
+    expect(build(draft, false)).toEqual([null]);
+  });
+});

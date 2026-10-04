@@ -1,11 +1,12 @@
 import { templateById, type Gender } from '@darzikhata/domain';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { addDays } from '../../lib/dates';
-import { useMeasurementAccess, useToday } from '../common/hooks';
+import { useCan, useMeasurementAccess, useToday } from '../common/hooks';
 import { problemText } from '../common/problemText';
+import { assignees } from '../work/workList';
 import {
   buildOrderEvents,
   draftFromOrder,
@@ -20,6 +21,7 @@ import {
   type DraftTotals,
   type OrderDraft,
 } from './draft';
+import { clearDraft, draftKey, readDraft, restoreDraft, writeDraft } from './draftStorage';
 
 export type SaveResult = { ok: true; orderId: string } | { ok: false; problem: string | null };
 
@@ -35,6 +37,16 @@ export interface OrderEntry {
   /** Whether the signed-in person may see the chosen customer's measurements. */
   canSeeMeasurements: boolean;
   saving: boolean;
+  /** Active people the garments of this order can be given to, in this branch. */
+  workers: Array<{ id: string; name: string }>;
+  /** Whether the signed-in person may give garments to a worker. */
+  canAssign: boolean;
+  /** The draft was brought back from an earlier visit rather than started now. */
+  restored: boolean;
+  /** Changes when the draft is replaced wholesale, so fields that keep their own text start over. */
+  generation: number;
+  /** Throws the draft away, here and in storage, and starts an empty one. */
+  discard(): void;
   setCustomer(customer: DraftCustomer | null): void;
   addItem(templateId: string): void;
   updateItem(key: string, changes: Partial<DraftItem>): void;
@@ -46,6 +58,8 @@ export interface OrderEntry {
 }
 
 const DELIVERY_DAYS = 7;
+/** How long the draft must stay unchanged before it is written to storage. */
+export const DRAFT_SAVE_DELAY_MS = 500;
 
 /** The order being entered, with its problems and totals, and the one save that writes it. */
 export function useOrderEntry(): OrderEntry {
@@ -54,29 +68,58 @@ export function useOrderEntry(): OrderEntry {
   const { language } = useI18n();
   const today = useToday();
   const mayView = useMeasurementAccess();
+  const can = useCan();
   const [params] = useSearchParams();
+  const canAssign = can('work.assign');
+  const keepMeasurements = can('measurements.view.female');
+  const session = store.getSnapshot().session;
+  const device = config?.devices.find((d) => d.id === store.getSnapshot().deviceId);
+  const branchId = device?.branchId ?? null;
+  const storageKey = session?.staffId && branchId ? draftKey(session.shopKey, branchId, session.staffId) : null;
+  const workers = useMemo(
+    () => (config && branchId ? assignees(config, [branchId]).map((s) => ({ id: s.id, name: s.name })) : []),
+    [config, branchId],
+  );
 
-  const [initial] = useState<OrderDraft>(() => {
+  const [start] = useState<{ base: OrderDraft; kept: OrderDraft | null }>(() => {
     const snapshot = store.getSnapshot();
     const repeat = params.get('repeat');
     const order = repeat ? snapshot.state.orders[repeat] : undefined;
     if (order && snapshot.config) {
       const gender = snapshot.state.customers[order.customerId]?.gender ?? null;
-      return draftFromOrder(order, {
+      const base = draftFromOrder(order, {
         config: snapshot.config,
         state: snapshot.state,
         canSee: mayView({ gender }),
         newKey: store.createId,
         deliveryDate: addDays(today, DELIVERY_DAYS),
       });
+      return { base, kept: null };
     }
     const customerId = params.get('customer');
     if (customerId && snapshot.state.customers[customerId]) {
-      return { ...emptyDraft(), customer: { kind: 'existing', customerId } };
+      return { base: { ...emptyDraft(), customer: { kind: 'existing', customerId } }, kept: null };
     }
-    return emptyDraft();
+    // Plain "new order": bring back what was being typed before, if anything.
+    const base = emptyDraft();
+    const stored = storageKey ? readDraft(storageKey) : null;
+    if (!stored || !snapshot.config) return { base, kept: null };
+    const kept = restoreDraft(stored, {
+      config: snapshot.config,
+      state: snapshot.state,
+      keepMeasurements,
+      workers: workers.map((w) => w.id),
+    });
+    return { base, kept: JSON.stringify(kept) === JSON.stringify(base) ? null : kept };
   });
-  const [draft, setDraft] = useState<OrderDraft>(initial);
+  const initial = start.base;
+  const [draft, setDraft] = useState<OrderDraft>(start.kept ?? start.base);
+  const [restored, setRestored] = useState(start.kept !== null);
+  const [generation, setGeneration] = useState(0);
+  const firstDraft = useRef(draft);
+  const stopSaving = useRef(false);
+  const latest = useRef({ draft, keepMeasurements, storageKey });
+  latest.current = { draft, keepMeasurements, storageKey };
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const inFlight = useRef(false);
@@ -89,10 +132,39 @@ export function useOrderEntry(): OrderEntry {
   const canSeeMeasurements = mayView({ gender: genderOf(draft.customer) });
 
   const errors: DraftErrors = config
-    ? validateDraft(draft, { config, state, today, canSeeMeasurements: (gender) => mayView({ gender }) })
+    ? validateDraft(draft, {
+        config,
+        state,
+        today,
+        canSeeMeasurements: (gender) => mayView({ gender }),
+        canAssign,
+        ...(branchId ? { branchId } : {}),
+      })
     : {};
   const totals = useMemo(() => draftTotals(draft), [draft]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+
+  // Keep the draft in this browser a moment after the last change, and once more on the way out.
+  const persist = () => {
+    const { draft: current, keepMeasurements: keep, storageKey: key } = latest.current;
+    if (!key || stopSaving.current || current === firstDraft.current) return;
+    if (JSON.stringify(current) === JSON.stringify(initial)) clearDraft(key);
+    else writeDraft(key, current, { keepMeasurements: keep });
+  };
+  useEffect(() => {
+    const timer = setTimeout(persist, DRAFT_SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+  useEffect(() => persist, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const discard = () => {
+    if (storageKey) clearDraft(storageKey);
+    setDraft(initial);
+    setAttempted(false);
+    setRestored(false);
+    setGeneration((n) => n + 1);
+  };
 
   const setCustomer = (customer: DraftCustomer | null) => {
     const customerId = customer?.kind === 'existing' ? customer.customerId : null;
@@ -160,9 +232,14 @@ export function useOrderEntry(): OrderEntry {
         branchId: device.branchId,
         staffId: snapshot.session.staffId,
         now: new Date().toISOString(),
+        canAssign,
       });
       const outcome = await store.dispatchBatch(events);
-      if (outcome.ok) return { ok: true, orderId };
+      if (outcome.ok) {
+        stopSaving.current = true;
+        if (storageKey) clearDraft(storageKey);
+        return { ok: true, orderId };
+      }
       return { ok: false, problem: problemText(outcome.outcome, language) };
     } finally {
       inFlight.current = false;
@@ -170,5 +247,5 @@ export function useOrderEntry(): OrderEntry {
     }
   };
 
-  return { draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, setCustomer, addItem, updateItem, removeItem, update, setUnreadable, save };
+  return { draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, workers, canAssign, restored, generation, discard, setCustomer, addItem, updateItem, removeItem, update, setUnreadable, save };
 }

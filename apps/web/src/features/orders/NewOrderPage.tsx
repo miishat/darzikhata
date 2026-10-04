@@ -5,23 +5,32 @@ import { DesktopOrderForm } from './DesktopOrderForm';
 import { MobileOrderSteps } from './MobileOrderSteps';
 import { useOrderEntry } from './useOrderEntry';
 
-/** Enter a new order. Saving opens its receipt. */
+/** Enter a new order. Saving opens its receipt. The draft is kept in the browser until it is saved or discarded. */
 export function NewOrderPage() {
   const entry = useOrderEntry();
   const navigate = useNavigate();
   const { kind } = useShell();
   const { dialog, allowNextNavigation } = useUnsavedGuard(entry.dirty);
 
-  const Layout = kind === 'desktop' ? DesktopOrderForm : MobileOrderSteps;
+  const onSaved = (orderId: string) => {
+    allowNextNavigation();
+    navigate(`/print/receipt/${orderId}`);
+  };
   return (
     <>
-      <Layout
-        entry={entry}
-        onSaved={(orderId) => {
-          allowNextNavigation();
-          navigate(`/print/receipt/${orderId}`);
-        }}
-      />
+      {kind === 'desktop' ? (
+        <DesktopOrderForm
+          key={entry.generation}
+          entry={entry}
+          onSaved={onSaved}
+          onDiscarded={() => {
+            allowNextNavigation();
+            navigate('/app/orders');
+          }}
+        />
+      ) : (
+        <MobileOrderSteps key={entry.generation} entry={entry} onSaved={onSaved} />
+      )}
       {dialog}
     </>
   );

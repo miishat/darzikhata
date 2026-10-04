@@ -2,6 +2,7 @@ import type { PaymentMethod } from '@darzikhata/domain';
 import { useI18n } from '../../../i18n/I18nProvider';
 import { ChoiceGroup } from '../../../ui/ChoiceGroup';
 import { NumberField } from '../../../ui/NumberField';
+import { SelectField } from '../../../ui/SelectField';
 import { TextAreaField } from '../../../ui/TextAreaField';
 import { TextField } from '../../../ui/TextField';
 import type { DraftErrors, DraftItem } from '../draft';
@@ -40,13 +41,13 @@ export function ItemMoney({ entry, item, errors }: { entry: OrderEntry; item: Dr
   );
 }
 
-/** Desktop: trial date, delivery date and price in one row. */
+/** Desktop: trial date, delivery date, worker (for roles that may assign) and price in one row. */
 export function ItemSchedule({ entry, item, errors }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors }) {
   const { t } = useI18n();
   const errorText = useErrorText(errors);
   const at = `items.${item.key}`;
   return (
-    <div className="grid items-start gap-3 sm:grid-cols-3">
+    <div className={`grid items-start gap-3 ${entry.canAssign ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
       <TextField
         label={t('entry.trialDate')}
         type="date"
@@ -61,6 +62,15 @@ export function ItemSchedule({ entry, item, errors }: { entry: OrderEntry; item:
         onChange={(e) => entry.updateItem(item.key, { deliveryDate: e.target.value })}
         error={errorText(`${at}.deliveryDate`)}
       />
+      {entry.canAssign && (
+        <SelectField
+          label={t('work.worker')}
+          value={item.assignedTo ?? ''}
+          onChange={(id) => entry.updateItem(item.key, { assignedTo: id === '' ? null : id })}
+          options={[{ value: '', label: t('work.nobody') }, ...entry.workers.map((w) => ({ value: w.id, label: w.name }))]}
+          error={errorText(`${at}.assignedTo`)}
+        />
+      )}
       <NumberField
         label={t('entry.price')}
         kind="money"

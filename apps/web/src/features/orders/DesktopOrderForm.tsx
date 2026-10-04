@@ -2,6 +2,7 @@ import { profileKey, templateById } from '@darzikhata/domain';
 import { ArrowLeft, Shirt } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { Dialog } from '../../ui/Dialog';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
@@ -22,6 +23,8 @@ interface Props {
   entry: OrderEntry;
   /** Called with the new order's id once it is saved. */
   onSaved(orderId: string): void;
+  /** Called after the draft was thrown away on purpose. Defaults to going back to the orders list. */
+  onDiscarded?(): void;
 }
 
 function Column({ title, className = '', children }: { title: string; className?: string; children: ReactNode }) {
@@ -34,7 +37,7 @@ function Column({ title, className = '', children }: { title: string; className?
 }
 
 /** Order entry on one screen, for a desktop: customer and garments, the chosen garment's details, and the money. */
-export function DesktopOrderForm({ entry, onSaved }: Props) {
+export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const { t, label, money, number } = useI18n();
   const { config, state } = useSnapshot();
   const navigate = useNavigate();
@@ -45,6 +48,7 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
   );
   const [showErrors, setShowErrors] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const templates = (config?.templates ?? []).filter((tpl) => tpl.active);
 
   const errors = showErrors ? entry.errors : {};
@@ -119,6 +123,14 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
         <h1 className="text-xl font-semibold">{t('nav.newOrder')}</h1>
         <p className="text-sm text-muted">{t('entry.newDraftNote')}</p>
       </header>
+      {entry.restored && (
+        <p role="status" className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
+          {t('entry.draftRestored')}
+          <Button variant="ghost" onClick={entry.discard}>
+            {t('entry.startFresh')}
+          </Button>
+        </p>
+      )}
       <div className="grid grid-cols-[300px_minmax(0,1fr)_320px] items-start gap-4">
         <Column title={t('entry.left')}>
           <CustomerPicker entry={entry} errors={errors} card />
@@ -226,11 +238,35 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
           <Button size="lg" data-tour="save-order" disabled={entry.saving} onClick={() => void save()}>
             {entry.saving ? t('entry.saving') : t('entry.saveAndReceipt')}
           </Button>
-          <Button variant="ghost" className="text-muted" onClick={() => navigate('/app/orders')}>
+          <Button variant="ghost" className="text-muted" onClick={() => (entry.dirty ? setConfirmDiscard(true) : navigate('/app/orders'))}>
             {t('entry.discardDraft')}
           </Button>
         </Column>
       </div>
+      <Dialog
+        open={confirmDiscard}
+        title={t('entry.discardTitle')}
+        onClose={() => setConfirmDiscard(false)}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmDiscard(false)}>
+              {t('entry.discardKeep')}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setConfirmDiscard(false);
+                entry.discard();
+                (onDiscarded ?? (() => navigate('/app/orders')))();
+              }}
+            >
+              {t('entry.discardYes')}
+            </Button>
+          </>
+        }
+      >
+        <p>{t('entry.discardBody')}</p>
+      </Dialog>
     </div>
   );
 }
