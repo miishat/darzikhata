@@ -31,7 +31,7 @@ describe('MeasureTiles', () => {
     await userEvent.click(screen.getByRole('button', { name: '৩' }));
     await userEvent.click(screen.getByRole('button', { name: '৮' }));
     await userEvent.click(screen.getByRole('button', { name: 'এক চতুর্থাংশ' }));
-    expect((chest as HTMLInputElement).value).toBe('৩৮¼');
+    expect((chest as HTMLInputElement).value).toBe('৩৮.২৫');
     expect(screen.getByTestId('values').textContent).toBe('{"chest":38.25}');
   });
 

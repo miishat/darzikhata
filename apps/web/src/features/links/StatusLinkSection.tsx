@@ -26,7 +26,7 @@ function RevokeDialog({ order, token, onClose }: { order: Order; token: string; 
 }
 
 /** Create, share and turn off the customer's status link for one order. */
-export function StatusLinkSection({ order }: { order: Order }) {
+export function StatusLinkSection({ order, inDialog = false }: { order: Order; /** The dialog's own title is the heading, so the heading and the card around it are left off. */ inDialog?: boolean }) {
   const { t, language } = useI18n();
   const { config } = useSnapshot();
   const [copied, setCopied] = useState(false);
@@ -45,10 +45,16 @@ export function StatusLinkSection({ order }: { order: Order }) {
   };
 
   return (
-    <section aria-labelledby={`link-${order.id}`} className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-4">
-      <h3 id={`link-${order.id}`} className="text-lg font-semibold">
-        {t('link.section')}
-      </h3>
+    <section
+      aria-label={inDialog ? t('link.section') : undefined}
+      aria-labelledby={inDialog ? undefined : `link-${order.id}`}
+      className={inDialog ? 'flex flex-col gap-3' : 'flex flex-col gap-3 rounded-lg border border-line bg-panel p-4'}
+    >
+      {!inDialog && (
+        <h3 id={`link-${order.id}`} className="text-lg font-semibold">
+          {t('link.section')}
+        </h3>
+      )}
       <p>{t('link.about')}</p>
       <p className="text-sm text-muted">{t('link.demoNote')}</p>
       <p className="text-sm text-muted">{t('link.expiresAfter', { n: expiryDays })}</p>

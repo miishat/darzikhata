@@ -1,5 +1,5 @@
 import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order } from '@darzikhata/domain';
-import { ArrowLeft, EllipsisVertical, MessageCircle, Phone, Printer, Share2 } from 'lucide-react';
+import { ArrowLeft, EllipsisVertical, FileText, MessageCircle, Phone, Printer, Repeat, Share2, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -42,7 +42,8 @@ export function MobileOrderDetail({ order }: { order: Order }) {
   const taken = date(order.createdAt.slice(0, 10));
 
   const showTake = can('money.view') && can('payments.record') && moneySummary(order).balance > 0;
-  const hasBar = can('money.view');
+  // Receipt printing is also in the more menu, so a fully paid order needs no bar.
+  const hasBar = showTake;
 
   return (
     <div className={`flex flex-col gap-3 ${hasBar ? BOTTOM_BAR_SPACE : ''}`}>
@@ -60,11 +61,11 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         <ActionSheet label={t('order.more')} icon={EllipsisVertical} title={t('nav.more')}>
           {() => (
             <>
-              {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`}>{t('order.printReceipt')}</ActionSheetItem>}
-              <ActionSheetItem to={`/print/job/${order.id}`}>{t('order.jobSlip')}</ActionSheetItem>
-              <ActionSheetItem to={`/print/tags/${order.id}`}>{t('order.tags')}</ActionSheetItem>
+              {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`} icon={Printer} tone="brand">{t('order.printReceipt')}</ActionSheetItem>}
+              <ActionSheetItem to={`/print/job/${order.id}`} icon={FileText} tone="ok">{t('order.jobSlip')}</ActionSheetItem>
+              <ActionSheetItem to={`/print/tags/${order.id}`} icon={Tag} tone="warn">{t('order.tags')}</ActionSheetItem>
               {can('orders.create') && (
-                <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} data-tour="order-again">
+                <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} icon={Repeat} tone="neutral" data-tour="order-again">
                   {t('order.orderAgain')}
                 </ActionSheetItem>
               )}
@@ -165,7 +166,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
           }
         >
           <div className="text-ink">
-            <StatusLinkSection order={order} />
+            <StatusLinkSection order={order} inDialog />
           </div>
         </Dialog>
       )}

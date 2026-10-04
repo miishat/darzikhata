@@ -295,6 +295,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* On a phone a dialog is a bottom sheet that slides up. */
+@media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+  .dialog-panel {
+    animation: sheet-up 200ms ease-out;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
 @page {
   size: A4;
   margin: 12mm;

@@ -185,9 +185,9 @@ describe('MeasureKeypad', () => {
     await userEvent.click(screen.getByRole('button', { name: '৩' }));
     await userEvent.click(screen.getByRole('button', { name: '৮' }));
     await userEvent.click(screen.getByRole('button', { name: 'অর্ধেক' }));
-    expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮½');
+    expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮.৫');
     await userEvent.click(screen.getByRole('button', { name: 'তিন চতুর্থাংশ' }));
-    expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮¾');
+    expect(screen.getByTestId('keypad-value').textContent).toBe('৩৮.৭৫');
   });
 
   it('names the value display with the measurement label', async () => {

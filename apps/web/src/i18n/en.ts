@@ -387,7 +387,6 @@ export const en: Messages = {
   'orders.filterStatus': 'Status: {status}',
   'orders.filterText': 'Search: {text}',
   'orders.clearFilters': 'Clear all filters',
-  'orders.count': '{n} orders',
   'orders.page': 'Page {page} of {pages}',
   'orders.prev': 'Previous page',
   'orders.next': 'Next page',

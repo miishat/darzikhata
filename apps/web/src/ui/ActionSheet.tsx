@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../i18n/I18nProvider';
@@ -28,6 +28,8 @@ export function ActionSheet({ label, icon, title, triggerClassName = '', childre
       <Dialog
         open={open}
         title={title}
+        hideTitleOnPhone
+        actionsDesktopOnly
         onClose={close}
         actions={
           <Button variant="secondary" onClick={close}>
@@ -41,32 +43,57 @@ export function ActionSheet({ label, icon, title, triggerClassName = '', childre
   );
 }
 
-const ITEM = 'flex min-h-11 w-full items-center rounded-lg px-2 py-2 text-start text-base hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
+const ITEM = 'flex min-h-14 w-full items-center gap-3 rounded-lg px-1 py-2 text-start text-base hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
 
-/** One row of an ActionSheet: a link when it has `to`, otherwise a button. */
+export type ActionTone = 'brand' | 'ok' | 'warn' | 'neutral';
+
+const CHIP: Record<ActionTone | 'danger', string> = {
+  brand: 'bg-brand-soft text-brand-strong',
+  ok: 'bg-ok-soft text-ok',
+  warn: 'bg-warn-soft text-warn-ink',
+  neutral: 'bg-surface text-muted',
+  danger: 'bg-danger/10 text-danger',
+};
+
+/** One row of an ActionSheet: a link when it has `to`, otherwise a button. The icon sits in a tinted chip. */
 export function ActionSheetItem({
   to,
   onClick,
   danger,
+  icon: Icon,
+  tone = 'brand',
   children,
   ...rest
 }: {
   to?: string;
   onClick?(): void;
   danger?: boolean;
+  icon?: LucideIcon;
+  tone?: ActionTone;
   children: ReactNode;
   'data-tour'?: string;
 }) {
-  const tone = danger ? 'text-danger' : 'text-ink';
+  const color = danger ? 'text-danger' : 'text-ink';
+  const content = (
+    <>
+      {Icon && (
+        <span aria-hidden="true" className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${CHIP[danger ? 'danger' : tone]}`}>
+          <Icon size={19} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">{children}</span>
+      <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-muted rtl:rotate-180" />
+    </>
+  );
   return (
     <li>
       {to ? (
-        <Link to={to} className={`${ITEM} ${tone}`} {...rest}>
-          {children}
+        <Link to={to} className={`${ITEM} ${color}`} {...rest}>
+          {content}
         </Link>
       ) : (
-        <button type="button" onClick={onClick} className={`${ITEM} ${tone}`} {...rest}>
-          {children}
+        <button type="button" onClick={onClick} className={`${ITEM} ${color}`} {...rest}>
+          {content}
         </button>
       )}
     </li>

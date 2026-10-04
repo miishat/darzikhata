@@ -59,9 +59,9 @@ describe('valueDeltas', () => {
     expect(valueDeltas({ chest: v(36, 'cm') }, { chest: v(14, 'inch') })).toEqual({});
   });
   it('writes a signed badge with fractions', () => {
-    expect(deltaText(0.5, 'bn')).toBe('+½');
+    expect(deltaText(0.5, 'bn')).toBe('+০.৫');
     expect(deltaText(0.75, 'en')).toBe('+¾');
-    expect(deltaText(-1.25, 'bn')).toBe('−১¼');
+    expect(deltaText(-1.25, 'bn')).toBe('−১.২৫');
   });
 });
 

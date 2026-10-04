@@ -1,5 +1,5 @@
 import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
-import { Ellipsis, EllipsisVertical, ExternalLink, Phone, Scissors, TriangleAlert, X } from 'lucide-react';
+import { Ellipsis, EllipsisVertical, ExternalLink, FileText, MessageSquare, Pencil, Phone, Printer, Repeat, Scissors, Share2, Tag, Ban, TriangleAlert, X, ArrowRightLeft, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -81,16 +81,18 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
             <ActionSheet label={t('order.more')} icon={EllipsisVertical} title={t('nav.more')}>
               {(close) => (
                 <>
-                  {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`}>{t('order.printReceipt')}</ActionSheetItem>}
-                  <ActionSheetItem to={`/print/job/${order.id}`}>{t('order.jobSlip')}</ActionSheetItem>
-                  <ActionSheetItem to={`/print/tags/${order.id}`}>{t('order.tags')}</ActionSheetItem>
+                  {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`} icon={Printer} tone="brand">{t('order.printReceipt')}</ActionSheetItem>}
+                  <ActionSheetItem to={`/print/job/${order.id}`} icon={FileText} tone="ok">{t('order.jobSlip')}</ActionSheetItem>
+                  <ActionSheetItem to={`/print/tags/${order.id}`} icon={Tag} tone="warn">{t('order.tags')}</ActionSheetItem>
                   {can('orders.create') && (
-                    <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} data-tour="order-again">
+                    <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} icon={Repeat} tone="neutral" data-tour="order-again">
                       {t('order.orderAgain')}
                     </ActionSheetItem>
                   )}
                   {can('links.manage') && (
                     <ActionSheetItem
+                      icon={Share2}
+                      tone="brand"
                       onClick={() => {
                         close();
                         setSharing(true);
@@ -173,7 +175,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
           }
         >
           <div className="text-ink">
-            <StatusLinkSection order={order} />
+            <StatusLinkSection order={order} inDialog />
           </div>
         </Dialog>
       )}
@@ -240,11 +242,13 @@ function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
   const canMove = can('work.updateStage') && next !== null;
   const delivered = group === 'delivered';
   const open = group === 'unfinished' || group === 'ready';
-  const menu = canMove || can('orders.edit') || (can('orders.cancel') && !delivered);
+  const menu = canMove || can('orders.edit') || (can('orders.cancel') && !delivered && !item.cancelled);
   const hasDetails = item.designNotes || item.fabricNote || item.photoIds.length > 0 || item.adjustments.length > 0 || item.stageHistory.length > 0 || (item.measurements && canSee && template);
 
-  const menuItem = (kind: DialogKind, text: string, done: () => void, danger?: boolean) => (
+  const menuItem = (kind: DialogKind, text: string, icon: LucideIcon, done: () => void, danger?: boolean) => (
     <ActionSheetItem
+      icon={icon}
+      tone="neutral"
       {...(danger ? { danger } : {})}
       onClick={() => {
         done();
@@ -268,14 +272,14 @@ function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
             <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title}>
               {(done) => (
                 <>
-                  {canMove && menuItem('stage', t('item.otherStage'), done)}
+                  {canMove && menuItem('stage', t('item.otherStage'), ArrowRightLeft, done)}
                   {can('orders.edit') && (
                     <>
-                      {menuItem('adjust', t('item.addAdjustment'), done)}
-                      {menuItem('edit', t('item.edit'), done)}
+                      {menuItem('adjust', t('item.addAdjustment'), MessageSquare, done)}
+                      {menuItem('edit', t('item.edit'), Pencil, done)}
                     </>
                   )}
-                  {can('orders.cancel') && !delivered && menuItem('cancel', t('item.cancel'), done, true)}
+                  {can('orders.cancel') && !delivered && !item.cancelled && menuItem('cancel', t('item.cancel'), Ban, done, true)}
                 </>
               )}
             </ActionSheet>

@@ -1,4 +1,4 @@
-import { toEnglishDigits, toScript, type DigitScript } from './digits';
+import { toBanglaDigits, toEnglishDigits, toScript, type DigitScript } from './digits';
 import type { Label } from './label';
 
 export type Unit = 'inch' | 'cm';
@@ -93,11 +93,16 @@ export function parseMeasurement(input: string): number | null {
   return value !== null && value > 0 ? value : null;
 }
 
-/** Formats a measurement, using unicode fractions for eighths: 38.5 -> "৩৮½". */
+/**
+ * Formats a measurement. Bangla has no fraction glyphs in its fonts, so Bangla is written as a
+ * decimal (38.5 -> "৩৮.৫"); English uses unicode fractions for eighths (38.5 -> "38½").
+ */
 export function formatMeasurement(value: number, script: DigitScript = 'bn'): string {
   const eighths = Math.round(value * 8);
+  const isEighth = Math.abs(value * 8 - eighths) < 1e-9;
+  if (script === 'bn') return toBanglaDigits(String(isEighth ? eighths / 8 : Math.round(value * 100) / 100));
   let text: string;
-  if (Math.abs(value * 8 - eighths) < 1e-9) {
+  if (isEighth) {
     const whole = Math.floor(eighths / 8);
     const remainder = eighths % 8;
     const fraction = remainder ? EIGHTHS_TO_UNICODE[remainder]! : '';

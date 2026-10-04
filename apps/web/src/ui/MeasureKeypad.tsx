@@ -1,13 +1,16 @@
-import { toScript } from '@darzikhata/domain';
+import { toEnglishDigits, toScript } from '@darzikhata/domain';
 import { Delete } from 'lucide-react';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/bn';
 
 const FRACTIONS = ['¼', '½', '¾'];
+/** Bangla fonts have no fraction glyphs, so in Bangla the fraction keys type these decimals instead. */
+const DECIMAL_FRACTIONS = ['.25', '.5', '.75'];
 
 /** The value after pressing a key. Digits and dot are ignored after a fraction; a fraction replaces another. */
 export function applyKey(value: string, key: string): string {
   if (key === 'back') return value.slice(0, -1);
+  if (DECIMAL_FRACTIONS.includes(toEnglishDigits(key))) return value === '' ? value : value.replace(/\..*$/, '') + key;
   const endsWithFraction = FRACTIONS.some((f) => value.endsWith(f));
   if (FRACTIONS.includes(key)) return value === '' ? value : value.replace(/[¼½¾]$/, '') + key;
   if (endsWithFraction) return value;
@@ -41,10 +44,16 @@ const KEY_STYLE: Record<KeyDef['kind'], string> = {
 export function MeasureKeypad({ value, onChange, onNext, label, previous }: MeasureKeypadProps) {
   const { t, language } = useI18n();
   const digit = (n: string): KeyDef => ({ id: n, text: toScript(n, language), name: null, kind: 'digit' });
+  const fraction = (id: string, decimal: string, name: MessageKey): KeyDef => ({
+    id,
+    text: language === 'bn' ? toScript(decimal, 'bn') : id,
+    name,
+    kind: 'fraction',
+  });
   const keys: KeyDef[] = [
-    digit('1'), digit('2'), digit('3'), { id: '¼', text: '¼', name: 'ui.key.quarter', kind: 'fraction' },
-    digit('4'), digit('5'), digit('6'), { id: '½', text: '½', name: 'ui.key.half', kind: 'fraction' },
-    digit('7'), digit('8'), digit('9'), { id: '¾', text: '¾', name: 'ui.key.threeQuarters', kind: 'fraction' },
+    digit('1'), digit('2'), digit('3'), fraction('¼', '.25', 'ui.key.quarter'),
+    digit('4'), digit('5'), digit('6'), fraction('½', '.5', 'ui.key.half'),
+    digit('7'), digit('8'), digit('9'), fraction('¾', '.75', 'ui.key.threeQuarters'),
     { id: 'back', text: '', name: 'ui.key.back', kind: 'back' },
     digit('0'),
     { id: '.', text: '.', name: 'ui.key.dot', kind: 'digit' },
