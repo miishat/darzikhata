@@ -13,7 +13,7 @@ export function LanguageToggle({ compact = false }: { compact?: boolean }) {
       aria-label={compact ? t(next === 'en' ? 'more.language.english' : 'more.language.bangla') : undefined}
       className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
     >
-      {compact ? (next === 'en' ? 'EN' : 'বাং') : next === 'en' ? 'English' : 'বাংলা'}
+      {compact ? (next === 'en' ? 'EN' : 'বাংলা') : next === 'en' ? 'English' : 'বাংলা'}
     </button>
   );
 }
