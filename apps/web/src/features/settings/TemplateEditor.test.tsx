@@ -42,7 +42,7 @@ describe('Template editor', () => {
     const saved = store.getSnapshot().config!.templates.find((t) => t.id === template.id)!;
     expect(saved.stages.map((s) => s.key)).not.toContain('trial');
 
-    await act(() => router.navigate(`/app/orders/${order.id}`));
+    await act(() => router.navigate(`/app/orders/${order.id}?full=1`));
     const card = await screen.findByRole('region', { name: `${item.garmentName.bn} ${bn(order.items.indexOf(item) + 1)}` });
     expect(within(card).getByText('ধাপ: ট্রায়াল')).toBeTruthy();
   });

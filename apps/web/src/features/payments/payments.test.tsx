@@ -16,7 +16,7 @@ function find(store: ShopStore, keep: (order: Order) => boolean): Order {
 async function openOrder(keep: (order: Order) => boolean, as?: { staffId: string; pin: string }, shop: 'rahman' | 'nakshi' = 'rahman') {
   const app = await renderApp({ layout: 'desktop', shop, path: '/app/orders', ...(as ? { as } : {}) });
   const order = find(app.store, keep);
-  await act(() => app.router.navigate(`/app/orders/${order.id}`));
+  await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
   const money = await screen.findByRole('region', { name: 'টাকার হিসাব' });
   return { ...app, order, money };
 }
@@ -108,7 +108,7 @@ describe('Payments on an order', () => {
     const credit = moneySummary(latest(app.store, order.id)).creditDue;
     expect(credit).toBe(item.price);
 
-    await act(() => app.router.navigate(`/app/orders/${order.id}`));
+    await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
     const money = await screen.findByRole('region', { name: 'টাকার হিসাব' });
     expect(within(totalsRow(money, /^ফেরত পাওনা/)).getByText(formatTaka(credit, 'bn'))).toBeTruthy();
     expect(within(money).getByText('ফেরত দিন, অথবা কাস্টমারের ক্রেডিট হিসেবে রেখে দিন। নিজে থেকে কিছু হবে না।')).toBeTruthy();

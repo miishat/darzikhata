@@ -5,7 +5,7 @@ import { renderApp } from '../../test/renderApp';
 async function openDetail(shop: 'rahman' | 'uniform', orderId: string) {
   const app = await renderApp({ layout: 'desktop', shop, path: '/app/orders' });
   await screen.findByRole('table', { name: 'অর্ডার তালিকা' });
-  await act(() => app.router.navigate(`/app/orders/${orderId}`));
+  await act(() => app.router.navigate(`/app/orders/${orderId}?full=1`));
   return screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' });
 }
 

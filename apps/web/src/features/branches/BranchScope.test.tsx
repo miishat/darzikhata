@@ -10,20 +10,20 @@ describe('Branch scope', () => {
   it('lets the owner switch between branches, remembers the choice, and filters the orders list', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders' });
     const count = Object.keys(store.getSnapshot().state.orders).length;
-    expect(await screen.findByText(`${toBanglaDigits(String(count))}টি অর্ডার`)).toBeTruthy();
+    expect(await screen.findByText(`১–২০, মোট ${toBanglaDigits(String(count))}`)).toBeTruthy();
     await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     const branch = screen.getByLabelText('শাখা');
     expect(branch).toHaveProperty('value', 'all');
 
     await userEvent.selectOptions(branch, 'কারখানা');
-    expect(await screen.findByText('১টি অর্ডার')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'A-0027' })).toBeTruthy();
+    expect(await screen.findByText('১–১, মোট ১')).toBeTruthy();
+    expect(screen.getByRole('row', { name: /A-0027/ })).toBeTruthy();
     expect(window.localStorage.getItem('dk.branch')).toBe('workshop');
   });
 
   it('shows staff of one branch only that branch, with no switcher', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders', as: supervisor });
-    expect(await screen.findByText('১টি অর্ডার')).toBeTruthy();
+    expect(await screen.findByText('১–১, মোট ১')).toBeTruthy();
     expect(screen.queryByLabelText('শাখা')).toBeNull();
     expect(screen.getByText('কারখানা')).toBeTruthy();
 
@@ -48,7 +48,7 @@ describe('Branch scope', () => {
 
   it('keeps orders of other branches off a customer profile', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders', as: supervisor });
-    await screen.findByText('১টি অর্ডার');
+    await screen.findByText('১–১, মোট ১');
     const shopOrder = Object.values(store.getSnapshot().state.orders).find((o) => o.branchId === 'shop')!;
     await act(() => router.navigate(`/app/customers/${shopOrder.customerId}`));
     const region = await screen.findByRole('region', { name: 'অর্ডারের ইতিহাস' });

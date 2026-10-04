@@ -14,7 +14,7 @@ afterEach(() => {
 async function openOrder(shop: SeedShopKey, keep: (order: Order) => boolean, as?: { staffId: string; pin: string }) {
   const app = await renderApp({ layout: 'desktop', shop, path: '/app/orders', ...(as ? { as } : {}) });
   const order = Object.values(app.store.getSnapshot().state.orders).find(keep)!;
-  await act(() => app.router.navigate(`/app/orders/${order.id}`));
+  await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
   await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' });
   return { ...app, order };
 }

@@ -11,16 +11,19 @@ import { progressText } from '../common/orderText';
 import { OrderMoney } from '../payments/OrderMoney';
 import { ItemCard } from './ItemCard';
 import { MobileOrderDetail } from './MobileOrderDetail';
+import { OrderPanel } from './OrderPanel';
 import { wearerGroups } from './wearers';
 
 interface Props {
   orderId: string;
   /** Shown as a close button when the order sits beside the list. */
   onClose?: () => void;
+  /** Laptop only: the order's own page with every detail, instead of the compact panel. */
+  full?: boolean;
 }
 
 /** One order: number, customer, when it was taken, whether it is still open, and progress. */
-export function OrderDetail({ orderId, onClose }: Props) {
+export function OrderDetail({ orderId, onClose, full }: Props) {
   const { t } = useI18n();
   const { kind } = useShell();
   const { state } = useSnapshot();
@@ -43,11 +46,12 @@ export function OrderDetail({ orderId, onClose }: Props) {
     );
   }
   if (kind === 'mobile') return <MobileOrderDetail order={order} />;
-  return <DesktopOrderDetail order={order} {...(onClose ? { onClose } : {})} />;
+  if (full || !onClose) return <FullOrderDetail order={order} {...(onClose ? { onClose } : {})} />;
+  return <OrderPanel order={order} onClose={onClose} />;
 }
 
-/** The desktop order panel: everything on one scrolling column, with its buttons inline. */
-function DesktopOrderDetail({ order, onClose }: { order: Order; onClose?: () => void }) {
+/** The laptop's full order page: everything on one scrolling column, with its buttons inline. */
+function FullOrderDetail({ order, onClose }: { order: Order; onClose?: () => void }) {
   const { t, language, date } = useI18n();
   const { state } = useSnapshot();
   const can = useCan();

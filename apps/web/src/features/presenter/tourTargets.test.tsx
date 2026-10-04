@@ -45,10 +45,17 @@ describe('Tour targets', () => {
   it('marks the order detail, its status link and the receipt balance', async () => {
     const { router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/rahman-o32' });
     const detail = await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' });
-    expectMarked(['hand-over', 'order-status', 'create-link', 'order-again']);
-    await userEvent.click(within(detail).getByRole('button', { name: 'লিংক তৈরি করুন' }));
-    await within(detail).findByRole('button', { name: 'লিংক বন্ধ করুন' });
+    expectMarked(['hand-over', 'order-status']);
+    // The rest sit in the panel's menu and in the share dialog, as on a phone.
+    await userEvent.click(within(detail).getByRole('button', { name: 'আরও: রসিদ, স্লিপ, ট্যাগ, আবার অর্ডার' }));
+    expectMarked(['order-again']);
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'আরও' })).getByRole('button', { name: 'স্ট্যাটাস লিংক শেয়ার করুন' }));
+    const share = await screen.findByRole('dialog', { name: 'স্ট্যাটাস লিংক' });
+    expectMarked(['create-link']);
+    await userEvent.click(within(share).getByRole('button', { name: 'লিংক তৈরি করুন' }));
+    await within(share).findByRole('button', { name: 'লিংক বন্ধ করুন' });
     expectMarked(['open-link', 'revoke-link']);
+    await userEvent.click(within(share).getByRole('button', { name: 'বন্ধ করুন' }));
     await act(() => router.navigate('/print/receipt/rahman-o32'));
     await screen.findByRole('heading', { name: 'রসিদ' });
     expectMarked(['receipt-balance']);

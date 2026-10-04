@@ -1,15 +1,17 @@
 import { ArrowDownUp, Search } from 'lucide-react';
+import { useSnapshot } from '../../data/StoreContext';
 import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
-import { Checkbox } from '../../ui/Checkbox';
 import { ChipGroup } from '../../ui/ChipGroup';
 import { Dialog } from '../../ui/Dialog';
-import { SelectField } from '../../ui/SelectField';
-import { TextField } from '../../ui/TextField';
+import { FilterButton } from '../../ui/FilterButton';
+import { FilterChip } from '../../ui/FilterChip';
+import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
-import { DEFAULT_LIST_QUERY, type OrderListQuery, type OrderSort, type OrderStatusFilter } from './orderList';
+import { type OrderListQuery, type OrderSort, type OrderStatusFilter } from './orderList';
+import { viewOfQuery } from './orderViews';
 
 interface Props {
   query: OrderListQuery;
@@ -20,7 +22,6 @@ interface Props {
   counts: Record<OrderStatusFilter | 'owed', number>;
 }
 
-const STATUSES: OrderStatusFilter[] = ['all', 'open', 'trial', 'ready', 'overdue', 'closed'];
 const CHIPS = ['all', 'open', 'trial', 'ready', 'overdue', 'owed'] as const;
 
 /** Sort choices; the largest-balance sort needs money access. */
@@ -86,12 +87,7 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
   const { kind } = useShell();
   const can = useCan();
   const money = can('money.view');
-  const sorts = useSortOptions();
 
-  const active: string[] = [];
-  if (query.status !== DEFAULT_LIST_QUERY.status) active.push(t('orders.filterStatus', { status: t(`orders.status.${query.status}`) }));
-  if (query.text.trim()) active.push(t('orders.filterText', { text: query.text.trim() }));
-  if (query.dueOnly && money) active.push(t('orders.dueOnly'));
 
   const activeList = (list: string[]) => (
     <div className="flex flex-wrap items-center gap-2">
@@ -145,31 +141,112 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
     );
   }
 
+  return <DesktopFilters query={query} onChange={onChange} onClear={onClear} />;
+}
+
+const DATE_INPUT = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-brand';
+
+/** The laptop filter row: table search, worker and date filters, a chip for each active filter, and the sort on the right. */
+function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
+  const { t, date, label } = useI18n();
+  const can = useCan();
+  const money = can('money.view');
+  const sorts = useSortOptions();
+  const { config } = useSnapshot();
+  const { allowed, choice, setChoice } = useBranchScope();
+  const staff = config?.staff ?? [];
+  const workerName = (id: string) => staff.find((s) => s.id === id)?.name ?? id;
+
+  const chips: Array<{ key: string; label: string; remove(): void }> = [];
+  // A tab shows the status or money filter; only what no tab can show is listed as a chip.
+  if (viewOfQuery(query, money) === null) {
+    const status: OrderStatusFilter = query.status;
+    if (status !== 'all') chips.push({ key: 'status', label: t('orders.filterStatus', { status: t(`orders.status.${status}`) }), remove: () => onChange({ status: 'all' }) });
+    if (query.dueOnly && money) chips.push({ key: 'due', label: t('orders.dueOnly'), remove: () => onChange({ dueOnly: false }) });
+  }
+  if (query.worker) chips.push({ key: 'worker', label: t('orders.chipWorker', { name: workerName(query.worker) }), remove: () => onChange({ worker: '' }) });
+  if (query.from) chips.push({ key: 'from', label: t('orders.chipFrom', { date: date(query.from) }), remove: () => onChange({ from: '' }) });
+  if (query.to) chips.push({ key: 'to', label: t('orders.chipTo', { date: date(query.to) }), remove: () => onChange({ to: '' }) });
+  if (allowed.length > 1 && choice !== 'all') {
+    const branch = allowed.find((b) => b.id === choice);
+    if (branch) chips.push({ key: 'branch', label: t('orders.chipBranch', { name: label(branch.name) }), remove: () => setChoice('all') });
+  }
+  const clearable = chips.some((chip) => chip.key !== 'branch') || query.text.trim() !== '';
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <TextField
-          label={t('orders.search')}
-          type="search"
-          value={query.text}
-          onChange={(event) => onChange({ text: event.target.value })}
-          className="min-w-56 flex-1"
-        />
-        <SelectField
-          label={t('orders.status')}
-          value={query.status}
-          options={STATUSES.map((value) => ({ value, label: t(`orders.status.${value}`) }))}
-          onChange={(value) => onChange({ status: value as OrderStatusFilter })}
-        />
-        <SelectField
-          label={t('orders.sort')}
-          value={query.sort}
-          options={sorts.map((value) => ({ value, label: t(`orders.sort.${value}`) }))}
-          onChange={(value) => onChange({ sort: value as OrderSort })}
-        />
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex min-h-10 w-72 max-w-full items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-brand">
+          <Search aria-hidden="true" size={18} />
+          <input
+            type="search"
+            aria-label={t('orders.search')}
+            placeholder={t('orders.searchPlaceholder')}
+            value={query.text}
+            onChange={(event) => onChange({ text: event.target.value })}
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          />
+        </label>
+        <FilterButton label={t('orders.filter.worker')}>
+          <button
+            type="button"
+            aria-pressed={query.worker === ''}
+            onClick={() => onChange({ worker: '' })}
+            className={`rounded-lg px-3 py-2 text-start text-sm ${query.worker === '' ? 'bg-brand-soft font-semibold text-brand-strong' : 'text-ink hover:bg-surface'}`}
+          >
+            {t('orders.filter.anyWorker')}
+          </button>
+          {staff.map((person) => (
+            <button
+              key={person.id}
+              type="button"
+              aria-pressed={query.worker === person.id}
+              onClick={() => onChange({ worker: person.id })}
+              className={`rounded-lg px-3 py-2 text-start text-sm ${query.worker === person.id ? 'bg-brand-soft font-semibold text-brand-strong' : 'text-ink hover:bg-surface'}`}
+            >
+              {person.name}
+            </button>
+          ))}
+        </FilterButton>
+        <FilterButton label={t('orders.filter.dates')}>
+          <label className="flex items-center justify-between gap-2 px-1 text-sm">
+            {t('orders.filter.from')}
+            <input type="date" value={query.from} max={query.to || undefined} onChange={(e) => onChange({ from: e.target.value })} className={DATE_INPUT} />
+          </label>
+          <label className="flex items-center justify-between gap-2 px-1 text-sm">
+            {t('orders.filter.to')}
+            <input type="date" value={query.to} min={query.from || undefined} onChange={(e) => onChange({ to: e.target.value })} className={DATE_INPUT} />
+          </label>
+        </FilterButton>
+        {chips.length > 0 && (
+          <ul aria-label={t('orders.activeFilters')} className="m-0 flex list-none flex-wrap items-center gap-2 p-0">
+            {chips.map((chip) => (
+              <li key={chip.key}>
+                <FilterChip label={chip.label} onRemove={chip.remove} />
+              </li>
+            ))}
+          </ul>
+        )}
+        {clearable && (
+          <Button variant="ghost" className="min-h-9!" onClick={onClear}>
+            {t('orders.clearFilters')}
+          </Button>
+        )}
+        <label className="ms-auto flex items-center gap-2 text-sm text-muted">
+          {t('orders.sort')}
+          <select
+            value={query.sort}
+            onChange={(e) => onChange({ sort: e.target.value as OrderSort })}
+            className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            {sorts.map((value) => (
+              <option key={value} value={value}>
+                {t(`orders.sort.${value}`)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-      {money && <Checkbox label={t('orders.dueOnly')} checked={query.dueOnly} onChange={(dueOnly) => onChange({ dueOnly })} />}
-      {active.length > 0 && activeList(active)}
     </div>
   );
 }
