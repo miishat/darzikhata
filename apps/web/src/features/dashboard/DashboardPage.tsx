@@ -1,9 +1,10 @@
-import { balanceDue, itemSummaryGroup, labelIn, stageByKey, type ItemRef, type Order } from '@darzikhata/domain';
-import { CheckCheck, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { balanceDue, itemSummaryGroup, labelIn, stageByKey, toScript, type ItemRef, type Order, type PaymentMethod } from '@darzikhata/domain';
+import { CheckCheck, Printer, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useScopedState } from '../branches/BranchScopeProvider';
+import { useCurrentStaff } from '../../data/StoreContext';
 import { useCan, useToday } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
 import { useShell } from '../../shell/ShellPreference';
@@ -11,39 +12,9 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
-import { dashboardModel, todoRows } from './dashboard';
+import { dashboardModel, dayPart, todoRows, firstTrialTime } from './dashboard';
 
-function OrderLink({ order }: { order: Order }) {
-  return (
-    <Link to={`/app/orders/${order.id}`} className="font-semibold text-brand-strong underline">
-      {order.number}
-    </Link>
-  );
-}
-
-function Card({ label, value }: { label: string; value: string }) {
-  return (
-    <li className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="text-2xl font-semibold">{value}</span>
-    </li>
-  );
-}
-
-function Block({ title, empty, children, tour }: { title: string; empty: string; children: ReactNode[]; tour?: string }) {
-  return (
-    <section aria-label={title} data-tour={tour} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-3">
-      <h2 className="text-base font-semibold">{title}</h2>
-      {children.length === 0 ? (
-        <p className="text-muted">{empty}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-line">{children}</ul>
-      )}
-    </section>
-  );
-}
-
-function Tile({ to, label, count, icon: Icon, late }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean }) {
+function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null }) {
   return (
     <Link
       to={to}
@@ -56,6 +27,7 @@ function Tile({ to, label, count, icon: Icon, late }: { to: string; label: strin
         {label}
       </span>
       <span className="font-display text-3xl font-bold leading-none">{count}</span>
+      {sub !== undefined && <span className={`min-h-5 text-sm ${late ? 'text-warn-ink' : 'text-on-navy-muted'}`}>{sub}</span>}
     </Link>
   );
 }
@@ -81,17 +53,6 @@ export function DashboardPage() {
   const showMoney = can('money.view');
   const model = useMemo(() => dashboardModel(Object.values(state.orders), today), [state, today]);
   const customerName = (order: Order) => state.customers[order.customerId]?.name ?? '';
-
-  const garmentRow = ({ order, item }: ItemRef, withDelivery: boolean) => (
-    <li key={`${order.id}:${item.id}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2">
-      <OrderLink order={order} />
-      <span>{itemTitle(order, item, language)}</span>
-      <span className="text-muted">{customerName(order)}</span>
-      {withDelivery && item.deliveryDate && (
-        <span className="text-muted">{t('item.delivery', { date: date(item.deliveryDate) })}</span>
-      )}
-    </li>
-  );
 
   const { kind } = useShell();
   if (kind === 'mobile') {
@@ -162,41 +123,190 @@ export function DashboardPage() {
     );
   }
 
+  return <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} />;
+}
+
+const ROW_LIMIT = 5;
+const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
+
+interface ListProps {
+  title: string;
+  count: number;
+  seeAll: string;
+  late?: boolean;
+  tour?: string;
+  empty: string;
+  children: ReactNode[];
+}
+
+/** One of the four lists: title, count badge, "see all", and at most five rows. */
+function TodoList({ title, count, seeAll, late, tour, empty, children }: ListProps) {
+  const { t, number } = useI18n();
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{t('nav.dashboard')}</h1>
-      <ul aria-label={t('dashboard.summary')} className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Card label={t('dashboard.openOrders')} value={number(model.openOrders)} />
-        <Card label={t('dashboard.inProgress')} value={number(model.inProgress)} />
-        <Card label={t('dashboard.readyGarments')} value={number(model.readyGarments)} />
-        <Card label={t('dashboard.overdueGarments')} value={number(model.overdueGarments)} />
-        {showMoney && <Card label={t('dashboard.collectedToday')} value={money(model.collectedToday)} />}
-        {showMoney && <Card label={t('payments.dueTotal')} value={money(model.dueTotal)} />}
-      </ul>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Block title={t('dashboard.trialsToday')} empty={t('dashboard.none')}>
-          {model.trialsToday.map((ref) => garmentRow(ref, false))}
-        </Block>
-        <Block title={t('dashboard.deliveriesToday')} empty={t('dashboard.none')}>
-          {model.deliveriesToday.map((ref) => garmentRow(ref, false))}
-        </Block>
-        <Block title={t('dashboard.overdue')} empty={t('dashboard.none')}>
-          {model.overdue.map((ref) => garmentRow(ref, true))}
-        </Block>
-        <Block title={t('dashboard.ready')} tour="ready-list" empty={t('dashboard.none')}>
-          {model.ready.map((order) => {
-            const readyCount = order.items.filter((i) => itemSummaryGroup(i) === 'ready').length;
-            const owed = balanceDue(order);
-            return (
-              <li key={order.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2">
-                <OrderLink order={order} />
-                <span className="text-muted">{customerName(order)}</span>
-                <span>{t('progress.ready', { n: number(readyCount) })}</span>
-                {showMoney && owed > 0 && <span className="font-semibold">{t('customer.balance', { amount: money(owed) })}</span>}
-              </li>
-            );
+    <section aria-label={title} data-tour={tour} className="flex min-w-0 flex-col rounded-2xl border border-line bg-panel">
+      <div className="flex items-center gap-2 px-4 pb-2 pt-3">
+        <h2 className="font-display text-base font-semibold">{title}</h2>
+        <span
+          className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
+            late && count > 0 ? 'bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
+          }`}
+        >
+          {number(count)}
+        </span>
+        <Link to={seeAll} className="ms-auto text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-brand">
+          {t('dashboard.seeAll')}
+          <span className="sr-only"> {title}</span>
+        </Link>
+      </div>
+      {children.length === 0 ? (
+        <p className="border-t border-line px-4 py-3 text-muted">{empty}</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-line border-t border-line">{children}</ul>
+      )}
+    </section>
+  );
+}
+
+function RowLink({ to, id, name, detail, children }: { to: string; id: string; name: string; detail: string; children?: ReactNode }) {
+  return (
+    <li>
+      <Link to={to} className="flex min-h-[52px] items-center gap-3 px-4 py-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand">
+        <Avatar id={id} name={name} size="sm" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate font-semibold">{name}</span>
+          <span className="truncate text-sm text-muted">{detail}</span>
+        </span>
+        {children}
+      </Link>
+    </li>
+  );
+}
+
+interface DesktopHomeProps {
+  model: ReturnType<typeof dashboardModel>;
+  today: string;
+  showMoney: boolean;
+  customerName: (order: Order) => string;
+}
+
+/** The laptop and desktop Home: today's panel and money card on top, the four lists below. */
+function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps) {
+  const { t, language, money, number, date } = useI18n();
+  const current = useCurrentStaff();
+  const greeting = t(`dashboard.greeting.${dayPart(new Date())}`, { name: current?.staff.name ?? '' });
+
+  const trialSub = model.firstTrialTime ? t('dashboard.sub.trialAt', { time: toScript(model.firstTrialTime, language) }) : null;
+  const deliverySub =
+    showMoney && model.deliveriesOwing > 0 ? t('dashboard.sub.deliveryOwing', { n: number(model.deliveriesOwing) }) : null;
+  const readySub = showMoney && model.readyOwed > 0 ? t('dashboard.sub.readyOwed', { amount: money(model.readyOwed) }) : null;
+  const lateSub = model.oldestLateDays === null ? null : t('dashboard.sub.lateAge', { n: number(model.oldestLateDays) });
+
+  // The biggest pick-ups first, so a customer waiting on several garments is never hidden below the five rows.
+  const readyFirst = model.ready
+    .map((order) => ({ order, readyCount: order.items.filter((i) => itemSummaryGroup(i) === 'ready').length }))
+    .sort((a, b) => b.readyCount - a.readyCount);
+
+  const stagePill = (ref: ItemRef) => {
+    const stage = stageByKey(ref.item.stages, ref.item.stageKey);
+    return (
+      <StagePill label={labelIn(stage.label, language)} tone={stageTone(stage, itemSummaryGroup(ref.item), ref.item.stages.indexOf(stage))} />
+    );
+  };
+  const owed = (order: Order) =>
+    showMoney && balanceDue(order) > 0 ? (
+      <span className="shrink-0 text-sm font-semibold">{t('customer.balance', { amount: money(balanceDue(order)) })}</span>
+    ) : null;
+  const garmentRow = (ref: ItemRef, right: ReactNode) => (
+    <RowLink
+      key={`${ref.order.id}:${ref.item.id}`}
+      to={`/app/orders/${ref.order.id}`}
+      id={ref.order.customerId}
+      name={customerName(ref.order)}
+      detail={`${itemTitle(ref.order, ref.item, language)} · ${ref.order.number}`}
+    >
+      {right}
+    </RowLink>
+  );
+
+  return (
+    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-3">
+      <h1 className="sr-only">{t('nav.dashboard')}</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col">
+          <span className="text-sm text-muted">{date(today)}</span>
+          <p className="font-display text-2xl font-bold">{greeting}</p>
+        </div>
+        <Link
+          to="/print/work"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel px-3.5 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          <Printer aria-hidden="true" size={16} />
+          {t('dashboard.printToday')}
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <section aria-label={t('dashboard.title')} className="flex min-w-72 flex-[2_1_520px] flex-col gap-3 rounded-3xl bg-navy p-3.5 text-on-navy">
+          <h2 className="font-display text-lg font-semibold">{t('dashboard.title')}</h2>
+          <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+            <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} sub={trialSub} />
+            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} sub={deliverySub} />
+            <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} sub={readySub} />
+            <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late sub={lateSub} />
+          </div>
+        </section>
+        {showMoney && (
+          <section aria-label={t('dashboard.money')} className="flex min-w-72 flex-[1_1_320px] flex-col gap-2 rounded-3xl border border-line bg-panel p-3.5">
+            <div className="grid grid-cols-2 gap-3">
+              <Link to="/app/payments" className="flex flex-col gap-0.5 focus-visible:outline-2 focus-visible:outline-brand">
+                <span className="text-sm text-muted">{t('dashboard.collectedToday')}</span>
+                <span className="font-display text-2xl font-bold">{money(model.collectedToday)}</span>
+                <span className="text-sm text-muted">{t('dashboard.paymentsCount', { n: number(model.collectedCount) })}</span>
+              </Link>
+              <Link to="/app/payments" className="flex flex-col gap-0.5 border-s border-line ps-3 focus-visible:outline-2 focus-visible:outline-brand">
+                <span className="text-sm text-muted">{t('payments.dueTotal')}</span>
+                <span className="font-display text-2xl font-bold text-warn">{money(model.dueTotal)}</span>
+                <span className="text-sm text-muted">{t('dashboard.dueOrders', { n: number(model.dueOrders) })}</span>
+              </Link>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-line pt-2.5 text-sm">
+              {METHODS.map((method) => (
+                <div key={method} className="flex justify-between gap-2">
+                  <dt className="text-muted">{t(`method.${method}`)}</dt>
+                  <dd className="font-semibold">{money(model.collectedByMethod[method])}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <TodoList title={t('dashboard.trialsToday')} count={model.trialsToday.length} seeAll="/app/orders?status=trial&sort=delivery" empty={t('dashboard.none')}>
+          {model.trialsToday.slice(0, ROW_LIMIT).map((ref) => {
+            const time = firstTrialTime([ref]);
+            return garmentRow(ref, time ? <span className="shrink-0 text-sm font-semibold">{toScript(time, language)}</span> : stagePill(ref));
           })}
-        </Block>
+        </TodoList>
+        <TodoList title={t('dashboard.deliveriesToday')} count={model.deliveriesToday.length} seeAll="/app/orders?status=open&sort=delivery" empty={t('dashboard.none')}>
+          {model.deliveriesToday.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, owed(ref.order) ?? stagePill(ref)))}
+        </TodoList>
+        <TodoList title={t('dashboard.overdue')} count={model.overdue.length} seeAll="/app/orders?status=overdue" late empty={t('dashboard.none')}>
+          {model.overdue.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, ref.item.deliveryDate ? <DueLabel date={ref.item.deliveryDate} /> : stagePill(ref)))}
+        </TodoList>
+        <TodoList title={t('dashboard.ready')} count={model.ready.length} seeAll="/app/orders?status=ready" tour="ready-list" empty={t('dashboard.none')}>
+          {readyFirst.slice(0, ROW_LIMIT).map(({ order, readyCount }) => (
+            <RowLink
+              key={order.id}
+              to={`/app/orders/${order.id}`}
+              id={order.customerId}
+              name={customerName(order)}
+              detail={`${t('progress.ready', { n: number(readyCount) })} · ${order.number}`}
+            >
+              {owed(order)}
+            </RowLink>
+          ))}
+        </TodoList>
       </div>
     </section>
   );

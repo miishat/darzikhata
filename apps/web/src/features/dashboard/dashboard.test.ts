@@ -1,6 +1,7 @@
+import type { OrderItem } from '@darzikhata/domain';
 import { makeItem, makeOrder, makePayment } from '@darzikhata/domain/testing';
 import { describe, expect, it } from 'vitest';
-import { dashboardModel, todoRows } from './dashboard';
+import { dashboardModel, dayPart, firstTrialTime, todoRows } from './dashboard';
 
 const TODAY = '2026-10-03';
 /** 00:30 on 3 October in Dhaka, and 23:59 on 2 October. */
@@ -70,6 +71,12 @@ describe('dashboardModel', () => {
       deliveriesToday: [],
       overdue: [],
       ready: [],
+      collectedCount: 0,
+      collectedByMethod: { cash: 0, bkash: 0, nagad: 0, bank: 0 },
+      firstTrialTime: null,
+      deliveriesOwing: 0,
+      readyOwed: 0,
+      oldestLateDays: null,
     });
   });
 });
@@ -103,5 +110,104 @@ describe('todoRows', () => {
   it('stops at six rows', () => {
     const list = Array.from({ length: 9 }, (_, i) => mk(i + 1, { stageKey: 'cutting', deliveryDate: '2026-09-01' }));
     expect(todoRows(dashboardModel(list, TODAY))).toHaveLength(6);
+  });
+});
+
+describe('tile sub-lines', () => {
+  const owing = (id: string, n: number, items: OrderItem[], paid: number) =>
+    makeOrder({
+      id,
+      number: `C-000${n}`,
+      items,
+      payments: paid > 0 ? [makePayment({ id: `pay-${id}`, amount: paid, at: LATE_YESTERDAY })] : [],
+    });
+
+  it('counts the orders delivering today that still owe money', () => {
+    const list = [
+      owing('d1', 1, [makeItem({ id: 'a', price: 10000, stageKey: 'ready', deliveryDate: TODAY }), makeItem({ id: 'b', price: 5000, stageKey: 'ready', deliveryDate: TODAY })], 0),
+      owing('d2', 2, [makeItem({ id: 'p', price: 10000, stageKey: 'ready', deliveryDate: TODAY })], 10000),
+      owing('d3', 3, [makeItem({ id: 'c', price: 10000, stageKey: 'ready', deliveryDate: TODAY })], 4000),
+    ];
+    const model = dashboardModel(list, TODAY);
+    expect(model.deliveriesToday).toHaveLength(4);
+    expect(model.deliveriesOwing).toBe(2);
+  });
+
+  it('is zero when nothing is delivering today', () => {
+    expect(dashboardModel([], TODAY).deliveriesOwing).toBe(0);
+  });
+
+  it('totals what ready orders still owe', () => {
+    const list = [
+      owing('r1', 1, [makeItem({ id: 'a', price: 20000, stageKey: 'ready' })], 5000),
+      owing('r2', 2, [makeItem({ id: 'b', price: 7000, stageKey: 'ready' })], 0),
+      owing('r3', 3, [makeItem({ id: 'c', price: 9000, stageKey: 'cutting' })], 0),
+    ];
+    expect(dashboardModel(list, TODAY).readyOwed).toBe(22000);
+  });
+
+  it('is zero when nothing is ready', () => {
+    expect(dashboardModel([], TODAY).readyOwed).toBe(0);
+  });
+
+  it('gives the age in days of the oldest late garment', () => {
+    const list = [
+      makeOrder({ id: 'l1', number: 'L-0001', items: [makeItem({ id: 'a', stageKey: 'cutting', deliveryDate: '2026-10-01' })] }),
+      makeOrder({ id: 'l2', number: 'L-0002', items: [makeItem({ id: 'b', stageKey: 'cutting', deliveryDate: '2026-09-28' })] }),
+    ];
+    expect(dashboardModel(list, TODAY).oldestLateDays).toBe(5);
+  });
+
+  it('has no late age when nothing is late', () => {
+    expect(dashboardModel([], TODAY).oldestLateDays).toBeNull();
+  });
+
+  it('shows no trial time when the trial date carries none', () => {
+    expect(dashboardModel(orders, TODAY).firstTrialTime).toBeNull();
+    expect(firstTrialTime([])).toBeNull();
+  });
+
+  it('reads the time of the first trial when the date carries one', () => {
+    const at = (id: string, trialDate: string) => ({ order: orders[0]!, item: makeItem({ id, trialDate }) });
+    expect(firstTrialTime([at('a', `${TODAY}T16:00`), at('b', `${TODAY}T11:30`)])).toBe('11:30');
+  });
+});
+
+describe('today money split', () => {
+  it('counts payments and splits today by method', () => {
+    const list = [
+      makeOrder({
+        id: 'm1',
+        number: 'M-0001',
+        items: [makeItem({ id: 'a' })],
+        payments: [
+          makePayment({ id: 'a1', amount: 30000, method: 'cash', at: JUST_AFTER_MIDNIGHT }),
+          makePayment({ id: 'a2', amount: 20000, method: 'bkash', at: JUST_AFTER_MIDNIGHT }),
+          makePayment({ id: 'a3', amount: 90000, method: 'cash', at: LATE_YESTERDAY }),
+        ],
+      }),
+    ];
+    const model = dashboardModel(list, TODAY);
+    expect(model.collectedCount).toBe(2);
+    expect(model.collectedByMethod).toEqual({ cash: 30000, bkash: 20000, nagad: 0, bank: 0 });
+  });
+
+  it('is empty on a quiet day', () => {
+    const model = dashboardModel([], TODAY);
+    expect(model.collectedCount).toBe(0);
+    expect(model.collectedByMethod).toEqual({ cash: 0, bkash: 0, nagad: 0, bank: 0 });
+  });
+});
+
+describe('dayPart', () => {
+  // Dhaka is UTC+6.
+  it.each([
+    ['2026-10-03T00:00:00Z', 'morning'],
+    ['2026-10-03T06:30:00Z', 'afternoon'],
+    ['2026-10-03T11:30:00Z', 'evening'],
+    ['2026-10-03T15:00:00Z', 'night'],
+    ['2026-10-02T21:59:00Z', 'night'],
+  ])('%s is %s in Dhaka', (iso, part) => {
+    expect(dayPart(new Date(iso))).toBe(part);
   });
 });

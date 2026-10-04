@@ -7,32 +7,43 @@ import { renderApp } from '../../test/renderApp';
 import { dashboardModel } from './dashboard';
 
 const bn = (n: number) => toBanglaDigits(String(n));
-const card = (label: string) => within(screen.getByRole('list', { name: 'সারসংক্ষেপ' })).getByText(label).closest('li')!;
 const rows = (name: string) => within(screen.getByRole('region', { name })).queryAllByRole('listitem');
 const model = (store: ShopStore) => dashboardModel(Object.values(store.getSnapshot().state.orders), todayInDhaka(new Date()));
 
 describe('Dashboard', () => {
-  it('shows today’s numbers and the four lists for the owner', async () => {
+  const panelTile = (name: RegExp) => within(screen.getByRole('region', { name: 'আজকের কাজ' })).getByRole('link', { name });
+  const moneyBlock = () => within(screen.getByRole('region', { name: 'টাকা' }));
+
+  it('shows today’s panel, the money card and the four lists for the owner', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await screen.findByRole('heading', { name: 'হোম' });
     const m = model(store);
-    expect(card('চলমান অর্ডার').textContent).toContain(bn(m.openOrders));
-    expect(card('তৈরি হচ্ছে').textContent).toContain(bn(m.inProgress));
-    expect(card('রেডি পোশাক').textContent).toContain(bn(m.readyGarments));
-    expect(card('দেরির পোশাক').textContent).toContain(bn(m.overdueGarments));
-    expect(card('আজ জমা').textContent).toContain(formatTaka(m.collectedToday, 'bn'));
-    expect(card('মোট বাকি').textContent).toContain(formatTaka(m.dueTotal, 'bn'));
-    expect(rows('আজ ট্রায়াল')).toHaveLength(m.trialsToday.length);
-    expect(rows('আজ ডেলিভারি')).toHaveLength(m.deliveriesToday.length);
-    expect(rows('দেরি হয়েছে')).toHaveLength(m.overdue.length);
-    expect(rows('নেওয়ার জন্য রেডি')).toHaveLength(m.ready.length);
+    expect(panelTile(/ট্রায়াল/).textContent).toContain(bn(m.trialsToday.length));
+    expect(panelTile(/ডেলিভারি/).textContent).toContain(bn(m.deliveriesToday.length));
+    expect(panelTile(/রেডি/).textContent).toContain(bn(m.readyGarments));
+    expect(panelTile(/দেরি হয়েছে/).textContent).toContain(bn(m.overdueGarments));
+    expect(panelTile(/দেরি হয়েছে/).className).toContain('bg-warn-soft');
+    expect(moneyBlock().getByText('আজ জমা').closest('a')!.textContent).toContain(formatTaka(m.collectedToday, 'bn'));
+    expect(moneyBlock().getByText('মোট বাকি').closest('a')!.textContent).toContain(formatTaka(m.dueTotal, 'bn'));
+    expect(moneyBlock().getByText('ক্যাশ')).toBeTruthy();
+    expect(rows('আজ ট্রায়াল')).toHaveLength(Math.min(5, m.trialsToday.length));
+    expect(rows('আজ ডেলিভারি')).toHaveLength(Math.min(5, m.deliveriesToday.length));
+    expect(rows('দেরি হয়েছে')).toHaveLength(Math.min(5, m.overdue.length));
+    expect(rows('নেওয়ার জন্য রেডি')).toHaveLength(Math.min(5, m.ready.length));
+  });
+
+  it('greets the signed-in person and offers the work list print', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    await screen.findByRole('heading', { name: 'হোম' });
+    expect(screen.getByText(/^শুভ (সকাল|দুপুর|সন্ধ্যা|রাত্রি), /)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'আজকের কাজের তালিকা প্রিন্ট' }).getAttribute('href')).toBe('/print/work');
   });
 
   it('opens an order from a list', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     const late = await screen.findByRole('region', { name: 'দেরি হয়েছে' });
     const first = model(store).overdue[0]!;
-    await userEvent.click(within(late).getAllByRole('link', { name: first.order.number })[0]!);
+    await userEvent.click(within(late).getAllByRole('link', { name: new RegExp(first.order.number) })[0]!);
     expect(router.state.location.pathname).toBe(`/app/orders/${first.order.id}`);
   });
 
@@ -48,7 +59,7 @@ describe('Dashboard', () => {
         payment: { id: 'paid-today', amount: 50000, method: 'cash', reference: '', kind: 'payment', corrects: null, reason: '' },
       }),
     );
-    expect(card('আজ জমা').textContent).toContain(formatTaka(before + 50000, 'bn'));
+    expect(moneyBlock().getByText('আজ জমা').closest('a')!.textContent).toContain(formatTaka(before + 50000, 'bn'));
   });
 
   it('hides money from staff without money access and keeps to their branch', async () => {
@@ -59,11 +70,12 @@ describe('Dashboard', () => {
       as: { staffId: 'uniform-supervisor', pin: '3333' },
     });
     await screen.findByRole('heading', { name: 'হোম' });
+    expect(screen.queryByRole('region', { name: 'টাকা' })).toBeNull();
     expect(screen.queryByText('আজ জমা')).toBeNull();
     expect(screen.queryByText('মোট বাকি')).toBeNull();
     const ready = within(screen.getByRole('region', { name: 'নেওয়ার জন্য রেডি' }));
     expect(ready.getAllByRole('listitem')).toHaveLength(1);
-    expect(ready.getByRole('link', { name: 'A-0027' })).toBeTruthy();
+    expect(ready.getByRole('link', { name: /A-0027/ })).toBeTruthy();
   });
 });
 
