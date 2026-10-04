@@ -59,7 +59,7 @@ export function OrderDetail({ orderId, onClose }: Props) {
           </Link>
         )}
         <p className="text-sm text-muted">{t('order.created', { date: date(order.createdAt.slice(0, 10)) })}</p>
-        <p className="font-semibold">{isOrderClosed(order) ? t('order.statusClosed') : t('order.statusOpen')}</p>
+        <p data-tour="order-status" className="font-semibold">{isOrderClosed(order) ? t('order.statusClosed') : t('order.statusOpen')}</p>
         <p className="text-sm">{progressText(orderProgress(order), language)}</p>
       </header>
 
@@ -76,7 +76,7 @@ export function OrderDetail({ orderId, onClose }: Props) {
           {t('order.tags')}
         </Link>
         {can('orders.create') && (
-          <Link to={`/app/orders/new?repeat=${order.id}`} className={buttonClasses('secondary')}>
+          <Link to={`/app/orders/new?repeat=${order.id}`} data-tour="order-again" className={buttonClasses('secondary')}>
             {t('order.orderAgain')}
           </Link>
         )}

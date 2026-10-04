@@ -4,7 +4,8 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { visibleNav } from './nav';
-import { ConnectionBadge, SwitchUserButton, useShopHeader } from './ShellParts';
+import { SwitchUserButton, useShopHeader } from './ShellParts';
+import { SyncButton } from './SyncStatus';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-14 flex-col items-center justify-center px-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-brand ${
@@ -21,7 +22,7 @@ export function MobileShell({ role }: { role: Role }) {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
         <p className="min-w-0 flex-1 truncate font-semibold">{shopName}</p>
-        <ConnectionBadge />
+        <SyncButton />
         <SwitchUserButton compact />
       </header>
       <main className="flex-1 px-4 pt-4 pb-36">
@@ -32,6 +33,7 @@ export function MobileShell({ role }: { role: Role }) {
       {can(role, 'orders.create') && (
         <Link
           to="/app/orders/new"
+          data-tour="new-order"
           className="fixed bottom-20 left-1/2 z-10 flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-brand px-5 font-semibold text-white shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:text-surface"
         >
           + {t('nav.newOrder')}
@@ -43,7 +45,7 @@ export function MobileShell({ role }: { role: Role }) {
         style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}
       >
         {tabs.map((item) => (
-          <NavLink key={item.key} to={item.path} className={tabClass}>
+          <NavLink key={item.key} to={item.path} className={tabClass} data-tour={`nav-${item.key}`}>
             {t(item.shortLabel)}
           </NavLink>
         ))}

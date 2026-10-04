@@ -24,6 +24,13 @@ export function formatDate(value: string, language: Language, options: { year?: 
   return toScript(text, language);
 }
 
+/** An ISO timestamp as Dhaka date and 24-hour time: "৩ অক্টোবর, ১২:০৫" / "3 Oct, 12:05". */
+export function formatDateTime(value: string, language: Language): string {
+  const dhaka = new Date(new Date(value).getTime() + 6 * 60 * 60 * 1000);
+  const time = `${String(dhaka.getUTCHours()).padStart(2, '0')}:${String(dhaka.getUTCMinutes()).padStart(2, '0')}`;
+  return `${formatDate(value, language, { year: false })}, ${toScript(time, language)}`;
+}
+
 export function formatMoney(amount: Poisha, language: Language): string {
   return formatTaka(amount, language);
 }

@@ -7,7 +7,8 @@ import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { GlobalSearch } from './GlobalSearch';
 import { visibleNav } from './nav';
-import { ConnectionBadge, LanguageToggle, SwitchUserButton, useShopHeader } from './ShellParts';
+import { LanguageToggle, SwitchUserButton, useShopHeader } from './ShellParts';
+import { SyncButton } from './SyncStatus';
 import { useShortcuts } from './useShortcuts';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -44,7 +45,7 @@ export function DesktopShell({ role }: { role: Role }) {
         </div>
         <nav aria-label={t('nav.main')} className="flex flex-1 flex-col gap-1 px-3 py-2">
           {visibleNav(role).map((item) => (
-            <NavLink key={item.key} to={item.path} className={linkClass}>
+            <NavLink key={item.key} to={item.path} className={linkClass} data-tour={`nav-${item.key}`}>
               {t(item.label)}
             </NavLink>
           ))}
@@ -61,10 +62,10 @@ export function DesktopShell({ role }: { role: Role }) {
           <BranchSwitcher />
           <div className="flex-1" />
           <GlobalSearch role={role} inputRef={searchInput} />
-          <ConnectionBadge />
+          <SyncButton />
           <LanguageToggle />
           {can(role, 'orders.create') && (
-            <Link to="/app/orders/new" className={buttonClasses('primary')}>
+            <Link to="/app/orders/new" data-tour="new-order" className={buttonClasses('primary')}>
               + {t('nav.newOrder')}
             </Link>
           )}

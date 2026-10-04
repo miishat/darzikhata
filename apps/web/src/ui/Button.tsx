@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -18,6 +18,7 @@ export function buttonClasses(variant: ButtonVariant = 'primary', size: 'md' | '
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: 'md' | 'lg';
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({ variant = 'primary', size = 'md', className = '', type = 'button', ...props }: ButtonProps) {

@@ -3,7 +3,7 @@ import { labelIn } from '@darzikhata/domain';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { readSetting, writeSetting } from '../lib/safeStorage';
 import type { MessageKey } from './bn';
-import { formatDate, formatMoney, formatNumber, translate } from './format';
+import { formatDate, formatDateTime, formatMoney, formatNumber, translate } from './format';
 
 const LANGUAGE_KEY = 'dk.language';
 
@@ -14,6 +14,7 @@ export interface I18n {
   label(label: Label): string;
   money(amount: Poisha): string;
   date(value: string, options?: { year?: boolean }): string;
+  dateTime(value: string): string;
   number(value: number): string;
 }
 
@@ -44,6 +45,7 @@ export function I18nProvider({ children, fallback = 'bn' }: { children: ReactNod
       label: (l) => labelIn(l, language),
       money: (amount) => formatMoney(amount, language),
       date: (v, options) => formatDate(v, language, options),
+      dateTime: (v) => formatDateTime(v, language),
       number: (v) => formatNumber(v, language),
     }),
     [language, setLanguage],

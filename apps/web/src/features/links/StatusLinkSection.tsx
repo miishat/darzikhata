@@ -62,10 +62,10 @@ export function StatusLinkSection({ order }: { order: Order }) {
             <Button variant="secondary" onClick={() => void share(link.token)}>
               {t('print.share')}
             </Button>
-            <a href={statusPath(link.token)} className={buttonClasses('secondary')}>
+            <a href={statusPath(link.token)} data-tour="open-link" className={buttonClasses('secondary')}>
               {t('link.open')}
             </a>
-            <Button variant="secondary" onClick={() => setRevoking(true)}>
+            <Button variant="secondary" data-tour="revoke-link" onClick={() => setRevoking(true)}>
               {t('link.revoke')}
             </Button>
           </div>
@@ -74,6 +74,7 @@ export function StatusLinkSection({ order }: { order: Order }) {
       ) : (
         <div>
           <Button
+            data-tour="create-link"
             disabled={create.working}
             onClick={() => void create.save({ type: 'link.created', orderId: order.id, token: newLinkToken() })}
           >

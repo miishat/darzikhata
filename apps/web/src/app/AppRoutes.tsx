@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
 import { SignInPage } from '../features/auth/SignInPage';
+import { REVIEW_CAPABILITIES } from '../features/sync/reviewView';
 import { WelcomePage } from '../features/welcome/WelcomePage';
 import { DesktopShell } from '../shell/DesktopShell';
 import { MobileShell } from '../shell/MobileShell';
@@ -30,6 +31,7 @@ const StaffSettings = lazyPage(() => import('../features/settings/StaffSettings'
 const BranchSettings = lazyPage(() => import('../features/settings/BranchSettings'), 'BranchSettings');
 const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
 const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
+const ReviewPage = lazyPage(() => import('../features/sync/ReviewPage'), 'ReviewPage');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
 function AppShell() {
@@ -184,6 +186,14 @@ export function AppRoutes() {
             }
           />
         </Route>
+        <Route
+          path="review"
+          element={
+            <RequireCapability anyOf={REVIEW_CAPABILITIES}>
+              <ReviewPage />
+            </RequireCapability>
+          }
+        />
         <Route path="more" element={<MorePage />} />
       </Route>
       <Route

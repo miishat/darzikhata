@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface DialogProps {
   open: boolean;
@@ -53,7 +54,8 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
   }, [open]);
 
   if (!open) return null;
-  return (
+  // Portalled to the body so a header's or panel's stacking context cannot put the page's fixed bars over it.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
       onMouseDown={(e) => {
@@ -74,6 +76,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         {children && <div className="mt-2 text-muted">{children}</div>}
         {actions && <div className="mt-5 flex flex-wrap justify-end gap-2">{actions}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

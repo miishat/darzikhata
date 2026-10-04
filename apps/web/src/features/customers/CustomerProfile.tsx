@@ -105,7 +105,7 @@ export function CustomerProfile({ customerId }: { customerId: string }) {
                     )}
                   </Link>
                   {can('orders.create') && (
-                    <Link to={`/app/orders/new?repeat=${order.id}`} className={buttonClasses('secondary')}>
+                    <Link to={`/app/orders/new?repeat=${order.id}`} data-tour="order-again" className={buttonClasses('secondary')}>
                       {t('customer.orderAgain')}
                     </Link>
                   )}

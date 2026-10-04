@@ -67,14 +67,16 @@ export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: Draf
         onChange={(e) => entry.update({ discount: { ...entry.draft.discount, reason: e.target.value } })}
         autoComplete="off"
       />
-      <NumberField
-        label={t('entry.advance')}
-        kind="money"
-        initialValue={advance.amount}
-        onValueChange={(amount) => entry.update({ advance: { ...entry.draft.advance, amount } })}
-        onInvalidChange={(bad) => entry.setUnreadable('advance', bad)}
-        error={errorText('advance.amount')}
-      />
+      <div data-tour="advance">
+        <NumberField
+          label={t('entry.advance')}
+          kind="money"
+          initialValue={advance.amount}
+          onValueChange={(amount) => entry.update({ advance: { ...entry.draft.advance, amount } })}
+          onInvalidChange={(bad) => entry.setUnreadable('advance', bad)}
+          error={errorText('advance.amount')}
+        />
+      </div>
       <ChoiceGroup
         legend={t('payment.method')}
         value={advance.method}

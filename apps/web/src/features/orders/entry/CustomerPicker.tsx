@@ -115,6 +115,7 @@ export function CustomerPicker({ entry, errors }: { entry: OrderEntry; errors: D
       )}
       <Button
         variant="secondary"
+        data-tour="new-customer"
         onClick={() => entry.setCustomer({ kind: 'new', name: '', nameAlt: '', phone: '', gender: null })}
       >
         {t('customers.new')}

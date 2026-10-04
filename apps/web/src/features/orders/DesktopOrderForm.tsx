@@ -32,7 +32,9 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const title = useItemTitle(entry);
-  const [chosenKey, setChosenKey] = useState<string | null>(null);
+  const [chosenKey, setChosenKey] = useState<string | null>(
+    () => entry.draft.items.find((i) => i.measurements.kind === 'saved')?.key ?? entry.draft.items[0]?.key ?? null,
+  );
   const [showErrors, setShowErrors] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const templates = (config?.templates ?? []).filter((tpl) => tpl.active);
@@ -91,7 +93,7 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
             onChange={setTemplate}
             error={errorText('items')}
           />
-          <Button variant="secondary" disabled={!template} onClick={() => entry.addItem(template)}>
+          <Button variant="secondary" data-tour="add-garment" disabled={!template} onClick={() => entry.addItem(template)}>
             {t('entry.addGarment')}
           </Button>
           <ul className="flex flex-col gap-1">
@@ -128,7 +130,7 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
           {chosen && <ItemMoney key={chosen.key} entry={entry} item={chosen} errors={errors} />}
           <MoneyFields entry={entry} errors={errors} />
           <DraftSummary totals={entry.totals} />
-          <Button size="lg" disabled={entry.saving} onClick={() => void save()}>
+          <Button size="lg" data-tour="save-order" disabled={entry.saving} onClick={() => void save()}>
             {entry.saving ? t('entry.saving') : t('entry.save')}
           </Button>
         </Column>

@@ -5,9 +5,11 @@ import { BranchSwitcher, useBranchScope } from '../branches/BranchScopeProvider'
 import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import type { MessageKey } from '../../i18n/bn';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePresenterSetting } from '../presenter/PresenterSetting';
 import { visibleNav } from '../../shell/nav';
 import { useShell, type ShellPreference } from '../../shell/ShellPreference';
 import { Button, buttonClasses } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { Dialog } from '../../ui/Dialog';
 
@@ -23,6 +25,7 @@ export function MorePage() {
   const { session } = useSnapshot();
   const current = useCurrentStaff();
   const store = useStore();
+  const presenter = usePresenterSetting();
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState<'reset' | 'change' | null>(null);
 
@@ -52,7 +55,7 @@ export function MorePage() {
           <ul className="flex flex-col gap-2">
             {extraSections.map((item) => (
               <li key={item.key}>
-                <Link to={item.path} className={`${buttonClasses('secondary', 'lg')} w-full justify-start`}>
+                <Link to={item.path} data-tour={`nav-${item.key}`} className={`${buttonClasses('secondary', 'lg')} w-full justify-start`}>
                   {t(item.label)}
                 </Link>
               </li>
@@ -91,6 +94,10 @@ export function MorePage() {
           <Button variant="secondary" onClick={() => setConfirming('change')}>
             {t('more.changeShop')}
           </Button>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Checkbox label={t('presenter.toggle')} checked={presenter.enabled} onChange={presenter.setEnabled} />
+          <p className="text-sm text-muted">{t('presenter.toggleHint')}</p>
         </div>
       </Section>
       <Dialog

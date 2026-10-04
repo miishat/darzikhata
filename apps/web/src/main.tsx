@@ -6,7 +6,12 @@ import { DarziDb } from './data/db';
 import { ShopStore } from './data/store';
 import './index.css';
 
-const store = new ShopStore({ db: new DarziDb() });
+// A short pause makes "Syncing…" visible, and auto-sync waits for a burst of changes to finish.
+const store = new ShopStore({
+  db: new DarziDb(),
+  syncDelay: () => new Promise((resolve) => setTimeout(resolve, 600)),
+  autoSyncAfterMs: 400,
+});
 void store.load();
 
 // A data router, so screens with unsaved changes can block navigation. App keeps its own <Routes>.
