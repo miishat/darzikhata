@@ -117,41 +117,4 @@ describe('Fabric tags', () => {
     expect(tags[0]!.textContent).toContain(order.number);
     expect(tags[0]!.textContent).toContain(first.wearer!);
   });
-});    // Sample data: the first Rahman order with a measured garment (rahman-o40 may be an alteration without measurements).
-    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman' });
-    const { state, config } = store.getSnapshot();
-    const order = Object.values(state.orders).find((o) => o.items.some((i) => !i.cancelled && i.measurements))!;
-    await router.navigate(`/print/job/${order.id}`);
-    expect(await screen.findByRole('heading', { name: 'কাজের স্লিপ' })).toBeTruthy();
-
-    const index = order.items.findIndex((i) => !i.cancelled && i.measurements);
-    const item = order.items[index]!;
-    const section = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(index + 1))}` });
-    const field = config!.templates.find((t) => t.id === item.templateId)!.fields.find((f) => item.measurements!.values[f.key])!;
-    const value = item.measurements!.values[field.key]!.value;
-    const measurement = within(section).getByRole('row', { name: new RegExp(`^${field.label.bn}`) });
-    expect(within(measurement).getByText(`${formatMeasurement(value, 'bn')} ইঞ্চি`)).toBeTruthy();
-    expect(document.body.textContent).not.toContain('৳');
-  });
-
-  it('hides measurements from staff who may not see them', async () => {
-    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/print/job/nakshi-o1', as: { staffId: 'nakshi-counter', pin: '2222' } });
-    expect((await screen.findAllByText('মাপ দেখার অনুমতি নেই')).length).toBeGreaterThan(0);
-    // Measurement tables are the slip's only tables. (Fitting notes may mention inches, so text is not checked.)
-    expect(screen.queryAllByRole('table')).toHaveLength(0);
-  });
-});
-
-describe('Fabric tags', () => {
-  it('prints one tag per garment with the order number, wearer and delivery date', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/print/tags/uniform-o27' });
-    const order = store.getSnapshot().state.orders['uniform-o27']!;
-    expect(await screen.findByRole('heading', { name: 'কাপড়ের ট্যাগ' })).toBeTruthy();
-    const tags = within(screen.getByRole('list', { name: 'কাপড়ের ট্যাগ' })).getAllByRole('listitem');
-    expect(tags).toHaveLength(order.items.filter((i) => !i.cancelled).length);
-    expect(tags).toHaveLength(24);
-    const first = order.items[0]!;
-    expect(tags[0]!.textContent).toContain(order.number);
-    expect(tags[0]!.textContent).toContain(first.wearer!);
-  });
 });
