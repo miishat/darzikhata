@@ -96,7 +96,7 @@ export function ItemMeasurements({ entry, item, errors, tiles = false, onDone, o
   }
   if (tiles) {
     const previous: Record<string, number> = {};
-    const version = customerId ? latestVersion(state, customerId, template.id) : null;
+    const version = customerId && entry.canSeeMeasurements ? latestVersion(state, customerId, template.id) : null;
     for (const [key, v] of Object.entries(version?.values ?? {})) previous[key] = v.value;
     const sources = [
       { value: 'body', label: t('source.body') },

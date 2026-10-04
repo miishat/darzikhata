@@ -69,6 +69,23 @@ describe('Avatar', () => {
     expect(firstCluster('মোহাম্মদ', false)).toBe('মো');
   });
 
+  it('falls back to the first character when the engine cannot build the lookbehind pattern', () => {
+    const real = globalThis.RegExp;
+    vi.stubGlobal(
+      'RegExp',
+      function (pattern: string | RegExp, flags?: string) {
+        if (typeof pattern === 'string' && pattern.includes('(?<=')) throw new SyntaxError('Invalid regular expression');
+        return new real(pattern, flags);
+      },
+    );
+    try {
+      expect(firstCluster('স্বপন', false)).toBe('স');
+      expect(firstCluster('Rahim', false)).toBe('R');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('uses two initials for two Latin words', () => {
     expect(initialsOf('rahim khan')).toBe('RK');
   });

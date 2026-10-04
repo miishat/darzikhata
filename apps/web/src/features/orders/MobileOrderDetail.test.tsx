@@ -153,3 +153,21 @@ describe('Order detail on a phone', () => {
     expect(await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' })).toBeTruthy();
   });
 });
+
+describe('Order detail bottom bar on a phone', () => {
+  it('shows a supervisor only the hand over button, and no empty bar once nothing is ready', async () => {
+    const { store, order } = await openOrder('uniform', (o) => o.branchId === 'workshop' && readyCount(o) > 0, {
+      staffId: 'uniform-supervisor',
+      pin: '3333',
+    });
+    expect(screen.getByRole('button', { name: 'হস্তান্তর' })).toBeTruthy();
+    expect(document.body.querySelector('.fixed.border-t.z-20')).not.toBeNull();
+    for (const item of order.items.filter((i) => nextMove(i)?.stage.group === 'delivered')) {
+      await act(() => store.dispatch({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: 'delivered', reason: '' }));
+    }
+    await act(async () => undefined);
+    expect(screen.queryByRole('button', { name: 'হস্তান্তর' })).toBeNull();
+    expect(document.body.querySelector('.fixed.border-t.z-20')).toBeNull();
+    expect(document.body.querySelector('.pb-28')).toBeNull();
+  });
+});

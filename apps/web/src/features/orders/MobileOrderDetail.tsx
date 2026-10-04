@@ -40,6 +40,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
 
   const ready = order.items.filter((item) => can('work.updateStage') && nextMove(item)?.stage.group === 'delivered');
   const showTake = can('money.view') && can('payments.record') && moneySummary(order).balance > 0;
+  const hasBar = can('money.view') || ready.length > 0;
   const handing = order.items.find((item) => item.id === handingId);
 
   const startHandOver = () => {
@@ -48,7 +49,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
   };
 
   return (
-    <div className={`flex flex-col gap-3 ${BOTTOM_BAR_SPACE}`}>
+    <div className={`flex flex-col gap-3 ${hasBar ? BOTTOM_BAR_SPACE : ''}`}>
       <header className="-mx-2 flex items-center gap-1">
         <Link to={{ pathname: '/app/orders', search }} aria-label={t('orders.back')} className={`${ROUND} text-ink hover:bg-surface`}>
           <ArrowLeft aria-hidden="true" size={24} />
@@ -121,6 +122,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         );
       })}
 
+      {hasBar && (
       <BottomBar>
         {can('money.view') && (
           <Link
@@ -147,6 +149,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
           </Button>
         )}
       </BottomBar>
+      )}
 
       {money.element}
       {sharing && (
