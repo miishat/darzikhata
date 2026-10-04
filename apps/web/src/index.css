@@ -40,6 +40,18 @@
   --color-tone-cancelled-bg: var(--tone-cancelled-bg);
   --color-tone-cancelled-fg: var(--tone-cancelled-fg);
   --color-tone-cancelled-dot: var(--tone-cancelled-dot);
+  --color-avatar-1-bg: var(--avatar-1-bg);
+  --color-avatar-1-fg: var(--avatar-1-fg);
+  --color-avatar-2-bg: var(--avatar-2-bg);
+  --color-avatar-2-fg: var(--avatar-2-fg);
+  --color-avatar-3-bg: var(--avatar-3-bg);
+  --color-avatar-3-fg: var(--avatar-3-fg);
+  --color-avatar-4-bg: var(--avatar-4-bg);
+  --color-avatar-4-fg: var(--avatar-4-fg);
+  --color-avatar-5-bg: var(--avatar-5-bg);
+  --color-avatar-5-fg: var(--avatar-5-fg);
+  --color-avatar-6-bg: var(--avatar-6-bg);
+  --color-avatar-6-fg: var(--avatar-6-fg);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
@@ -94,6 +106,18 @@
   --tone-cancelled-bg: #fee2e2;
   --tone-cancelled-fg: #991b1b;
   --tone-cancelled-dot: #dc2626;
+  --avatar-1-bg: #dbeafe;
+  --avatar-1-fg: #1e40af;
+  --avatar-2-bg: #ede9fe;
+  --avatar-2-fg: #5b21b6;
+  --avatar-3-bg: #ccfbf1;
+  --avatar-3-fg: #115e59;
+  --avatar-4-bg: #fef3c7;
+  --avatar-4-fg: #92400e;
+  --avatar-5-bg: #fce7f3;
+  --avatar-5-fg: #9d174d;
+  --avatar-6-bg: #dcfce7;
+  --avatar-6-fg: #166534;
   color-scheme: light;
 }
 
@@ -139,6 +163,18 @@
     --tone-cancelled-bg: #450a0a;
     --tone-cancelled-fg: #fecaca;
     --tone-cancelled-dot: #f87171;
+    --avatar-1-bg: #1e3a8a;
+    --avatar-1-fg: #bfdbfe;
+    --avatar-2-bg: #2e1065;
+    --avatar-2-fg: #ddd6fe;
+    --avatar-3-bg: #134e4a;
+    --avatar-3-fg: #99f6e4;
+    --avatar-4-bg: #451a03;
+    --avatar-4-fg: #fde68a;
+    --avatar-5-bg: #500724;
+    --avatar-5-fg: #fbcfe8;
+    --avatar-6-bg: #14532d;
+    --avatar-6-fg: #bbf7d0;
     color-scheme: dark;
   }
 }
@@ -184,6 +220,18 @@
   --tone-cancelled-bg: #450a0a;
   --tone-cancelled-fg: #fecaca;
   --tone-cancelled-dot: #f87171;
+  --avatar-1-bg: #1e3a8a;
+  --avatar-1-fg: #bfdbfe;
+  --avatar-2-bg: #2e1065;
+  --avatar-2-fg: #ddd6fe;
+  --avatar-3-bg: #134e4a;
+  --avatar-3-fg: #99f6e4;
+  --avatar-4-bg: #451a03;
+  --avatar-4-fg: #fde68a;
+  --avatar-5-bg: #500724;
+  --avatar-5-fg: #fbcfe8;
+  --avatar-6-bg: #14532d;
+  --avatar-6-fg: #bbf7d0;
   color-scheme: dark;
 }
 
