@@ -35,14 +35,16 @@ describe('Desktop sidebar and top bar', () => {
     expect(work.textContent).toContain(toBanglaDigits(String(counts.lateGarments)) + ' দেরি');
   });
 
-  it('signs out from the person button and goes to the sign-in page', async () => {
+  it('opens the sign-in page from the person button and keeps the user signed in until another is chosen', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     const nav = await screen.findByRole('navigation', { name: 'প্রধান মেনু' });
     const side = within(nav.closest('aside')!);
     await userEvent.click(side.getByRole('button', { name: /ইউজার বদলান/ }));
     await act(async () => {});
     expect(router.state.location.pathname).toBe('/sign-in');
-    expect(store.getSnapshot().session?.staffId ?? null).toBeNull();
+    expect(store.getSnapshot().session?.staffId).toBe('rahman-owner');
+    await userEvent.click(await screen.findByRole('button', { name: 'বাতিল' }));
+    expect(router.state.location.pathname).toMatch(/^\/app/);
   });
 
   it('opens the account and more dialog from the ellipsis button', async () => {

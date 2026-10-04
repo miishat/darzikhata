@@ -1,7 +1,7 @@
 import { roleOf, type Staff } from '@darzikhata/domain';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useSnapshot, useStore } from '../../data/StoreContext';
+import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
 import { PinPad } from '../../ui/PinPad';
@@ -11,6 +11,7 @@ export function SignInPage() {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const store = useStore();
+  const current = useCurrentStaff();
   const navigate = useNavigate();
   const [chosen, setChosen] = useState<Staff | null>(null);
   const [error, setError] = useState<string | undefined>();
@@ -58,6 +59,11 @@ export function SignInPage() {
             );
           })}
         </ul>
+      )}
+      {current && !chosen && (
+        <Button variant="secondary" onClick={() => navigate('/app')}>
+          {t('common.cancel')}
+        </Button>
       )}
       <p className="text-sm text-muted">{t('auth.demoPins')}</p>
     </main>

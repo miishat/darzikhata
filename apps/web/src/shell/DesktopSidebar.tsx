@@ -2,7 +2,7 @@ import type { Role } from '@darzikhata/domain';
 import { ChevronsUpDown, Ellipsis, Scissors } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
-import { useCurrentStaff, useStore } from '../data/StoreContext';
+import { useCurrentStaff } from '../data/StoreContext';
 import { BranchSwitcher, useBranchScope, useScopedState } from '../features/branches/BranchScopeProvider';
 import { useToday } from '../features/common/hooks';
 import { useI18n } from '../i18n/I18nProvider';
@@ -68,7 +68,6 @@ function BranchButton() {
 function PersonButton() {
   const { t, label } = useI18n();
   const current = useCurrentStaff();
-  const store = useStore();
   const navigate = useNavigate();
   const [accountOpen, setAccountOpen] = useState(false);
   if (!current) return null;
@@ -80,10 +79,7 @@ function PersonButton() {
         data-tour="switch-user"
         title={who}
         aria-label={`${who} · ${t('shell.switchUser')}`}
-        onClick={async () => {
-          await store.signOut();
-          navigate('/sign-in');
-        }}
+        onClick={() => navigate('/sign-in')}
         className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-start hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Avatar id={current.staff.id} name={current.staff.name} />

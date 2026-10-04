@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { useCurrentStaff, useSnapshot, useStore } from '../data/StoreContext';
+import { useCurrentStaff, useSnapshot } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 
 export function LanguageToggle({ compact = false }: { compact?: boolean }) {
@@ -28,7 +28,6 @@ export function useShopHeader() {
 export function SwitchUserButton({ compact = false }: { compact?: boolean }) {
   const { t, label } = useI18n();
   const current = useCurrentStaff();
-  const store = useStore();
   const navigate = useNavigate();
   if (!current) return null;
   const who = t('shell.signedInAs', { name: current.staff.name, role: label(current.role.name) });
@@ -37,10 +36,7 @@ export function SwitchUserButton({ compact = false }: { compact?: boolean }) {
       type="button"
       data-tour="switch-user"
       title={who}
-      onClick={async () => {
-        await store.signOut();
-        navigate('/sign-in');
-      }}
+      onClick={() => navigate('/sign-in')}
       className="flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
     >
       <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft font-semibold text-brand-strong">
