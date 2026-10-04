@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { SEED_SHOPS } from '../../seed/shops';
 import { useShell } from '../../shell/ShellPreference';
@@ -25,10 +25,18 @@ export function PresenterPanel() {
   const [open, setOpen] = useState(true);
   const [picked, setPicked] = useState<ScenarioId | null>(null);
 
+  // Folding or unfolding swaps the button under the pointer, so focus follows to the one that replaced it.
+  const toggle = useRef<HTMLButtonElement>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (mounted.current) toggle.current?.focus();
+    mounted.current = true;
+  }, [open]);
+
   const place = PLACE[kind];
   if (!open) {
     return (
-      <Button variant="secondary" className={`fixed z-20 shadow-lg print:hidden ${place}`} onClick={() => setOpen(true)}>
+      <Button ref={toggle} variant="secondary" className={`fixed z-20 shadow-lg print:hidden ${place}`} onClick={() => setOpen(true)}>
         {t('presenter.expand')}
       </Button>
     );
@@ -50,13 +58,13 @@ export function PresenterPanel() {
       )}
       <div className="flex items-start justify-between gap-2">
         <h2 className="font-semibold">{scenario && progress ? t(scenario.title) : t('presenter.choose')}</h2>
-        <Button variant="secondary" onClick={() => setOpen(false)}>
+        <Button ref={toggle} variant="secondary" onClick={() => setOpen(false)}>
           {t('presenter.collapse')}
         </Button>
       </div>
       {scenario && progress ? (
         <>
-          <p className="text-sm text-muted">
+          <p aria-live="polite" className="text-sm text-muted">
             {t('presenter.step', { n: number(step ? marked + 1 : scenario.steps.length), total: number(scenario.steps.length) })}
           </p>
           <ol className="flex flex-col gap-1 text-sm">

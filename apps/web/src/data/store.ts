@@ -172,6 +172,7 @@ export class ShopStore {
     const review = (await this.db.serverReview.orderBy('seq').toArray()).map((r) => r.item);
     const pending = rows.filter((r) => r.pending === 1).length;
     this.publish({ status: 'ready', config, state, session, deviceId, sync: { ...saved, syncing: false, pending, review } });
+    if (pending > 0 && saved.online) this.syncSoon();
   }
 
   /** Replaces everything on this device with a fresh demo shop, signed in as its owner. */

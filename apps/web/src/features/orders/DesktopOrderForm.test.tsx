@@ -85,7 +85,6 @@ describe('Order entry on desktop', () => {
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
     const lineButtons = within(left).getAllByRole('button', { name: /^\S+ [০-৯]+$/ });
     expect(lineButtons).toHaveLength(lines.length);
-
     for (const button of lineButtons) {
       await userEvent.click(button);
       const checkbox = within(region('মাপ ও ডিজাইন')).queryByRole('checkbox', { name: CONFIRM });
@@ -97,6 +96,13 @@ describe('Order entry on desktop', () => {
     const order = Object.values(store.getSnapshot().state.orders).find((o) => o.number === 'A-0041')!;
     expect(order.customerId).toBe(previous.customerId);
     expect(order.items.map((i) => [i.templateId, i.price])).toEqual(lines.map((i) => [i.templateId, i.price]));
+  });
+
+  it('shows the measurement confirmation of a repeated order without choosing a line first', async () => {
+    // rahman-o39 is a single shirt with measurements.
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?repeat=rahman-o39' });
+    await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    expect(within(region('মাপ ও ডিজাইন')).getByRole('checkbox', { name: CONFIRM })).toBeTruthy();
   });
 
   it('does not save while the advance cannot be read', async () => {

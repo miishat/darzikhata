@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot, useStore } from '../data/StoreContext';
 import { otherDeviceEdit, otherDeviceTarget } from '../features/sync/otherDevice';
@@ -39,6 +39,9 @@ export function SyncButton() {
         <span aria-hidden="true" className={`h-2 w-2 rounded-full ${DOT[status]}`} />
         {label}
       </button>
+      <span aria-live="polite" className="sr-only">
+        {label}
+      </span>
       <SyncDialog open={open} onClose={() => setOpen(false)} />
     </>
   );
@@ -52,6 +55,10 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
   const { pathname } = useLocation();
   const [outcome, setOutcome] = useState<MessageKey | null>(null);
   const target = otherDeviceTarget(pathname, state);
+
+  useEffect(() => {
+    if (!open) setOutcome(null);
+  }, [open]);
 
   const pushOther = async () => {
     if (!target) return;

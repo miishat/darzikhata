@@ -32,7 +32,9 @@ export function DesktopOrderForm({ entry, onSaved }: Props) {
   const { t, label } = useI18n();
   const { config } = useSnapshot();
   const title = useItemTitle(entry);
-  const [chosenKey, setChosenKey] = useState<string | null>(null);
+  const [chosenKey, setChosenKey] = useState<string | null>(
+    () => entry.draft.items.find((i) => i.measurements.kind === 'saved')?.key ?? entry.draft.items[0]?.key ?? null,
+  );
   const [showErrors, setShowErrors] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const templates = (config?.templates ?? []).filter((tpl) => tpl.active);

@@ -70,6 +70,24 @@ describe('Sync status', () => {
     await waitFor(() => expect(store.getSnapshot().state.customers['rahman-c2']!.version).toBe(3));
   });
 
+  it('forgets the other-device message once the dialog is closed', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/rahman-c2' });
+    let dialog = await openSync();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'অন্য ডিভাইস থেকে বদলান' }));
+    expect(await within(dialog).findByText('অন্য ডিভাইসের পরিবর্তন এসেছে।')).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'বন্ধ করুন' }));
+    dialog = await openSync();
+    expect(within(dialog).queryByText('অন্য ডিভাইসের পরিবর্তন এসেছে।')).toBeNull();
+  });
+
+  it('announces the status through a live region without renaming the button', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
+    const button = await screen.findByRole('button', { name: /^(অনলাইন|দেখতে হবে)/ });
+    const live = document.querySelector('[aria-live="polite"].sr-only');
+    expect(live?.textContent).toBe(button.textContent);
+    expect(button.querySelector('[aria-live]')).toBeNull();
+  });
+
   it('has nothing for another device to change until a customer or order is open', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/work' });
     const dialog = await openSync();

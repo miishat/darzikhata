@@ -11,7 +11,7 @@ async function startFirstOrder() {
   expect(within(scenarios).getByRole('heading', { name: 'একটি দৃশ্য বেছে নিন' })).toBeTruthy();
   await userEvent.click(within(scenarios).getByRole('button', { name: 'নতুন কাস্টমারের প্রথম অর্ডার' }));
   const dialog = await screen.findByRole('dialog', { name: 'নতুন কাস্টমারের প্রথম অর্ডার' });
-  expect(within(dialog).getByText('রহমান টেইলার্স এর ডেমো ডেটা নতুন করে শুরু হবে, তারপর দৃশ্যটি চলবে।')).toBeTruthy();
+  expect(within(dialog).getByText('এই ডিভাইসের সব পরিবর্তন মুছে যাবে এবং নতুন করে রহমান টেইলার্স খুলবে, তারপর দৃশ্যটি চলবে।')).toBeTruthy();
   await userEvent.click(within(dialog).getByRole('button', { name: 'শুরু করুন' }));
   return within(await panel()).findByText('ধাপ ১/৬');
 }
@@ -66,10 +66,13 @@ describe('Presenter mode', () => {
     window.localStorage.setItem('dk.presenter', 'on');
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await startFirstOrder();
+    expect(within(await panel()).getByText('ধাপ ১/৬').getAttribute('aria-live')).toBe('polite');
     await userEvent.click(within(await panel()).getByRole('button', { name: 'ছোট করুন' }));
     expect(screen.queryByRole('complementary', { name: 'উপস্থাপনা' })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'উপস্থাপনা খুলুন' }));
     await userEvent.click(screen.getByRole('button', { name: 'উপস্থাপনা খুলুন' }));
     expect(within(await panel()).getByText('ধাপ ১/৬')).toBeTruthy();
+    expect(document.activeElement).toBe(within(await panel()).getByRole('button', { name: 'ছোট করুন' }));
   });
 
   it('stays off the customer’s status page', async () => {

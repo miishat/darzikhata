@@ -1,6 +1,6 @@
 import { replay, type EventBody } from '@darzikhata/domain';
 import Dexie from 'dexie';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { generateShop } from '../seed/generate';
 import { DarziDb } from './db';
 import { ShopStore, type EditBody } from './store';
@@ -84,6 +84,20 @@ describe('Sync with the demo server', () => {
     await reloaded.setOnline(true);
     expect(reloaded.getSnapshot().sync).toMatchObject({ online: true, syncing: false, pending: 0 });
     expect((await serverIds(db)).slice(-2)).toEqual(['new-1', 'new-2']);
+  });
+
+  it('sends changes still waiting on a reload when the device is online', async () => {
+    const { store, db, name } = freshStore();
+    await store.startDemo('rahman');
+    await store.setOnline(false);
+    await store.dispatch(pay('p-1'));
+    // The device came back online without sending them, such as when the tab closed mid-sync.
+    await db.meta.put({ key: 'sync', value: { online: true, lastSyncAt: null } });
+
+    const reloaded = reopen(name);
+    await reloaded.load();
+    await vi.waitFor(() => expect(reloaded.getSnapshot().sync).toMatchObject({ online: true, syncing: false, pending: 0 }));
+    expect(await serverIds(db)).toContain('new-1');
   });
 
   it('keeps taking changes while a sync is starting, and sends them in that sync', async () => {
