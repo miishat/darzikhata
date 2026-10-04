@@ -191,7 +191,9 @@ describe('Order entry on desktop', () => {
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
     await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
     await userEvent.click(within(screen.getByRole('navigation', { name: 'প্রধান মেনু' })).getByRole('link', { name: 'অর্ডার' }));
-    expect(await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' })).toBeTruthy();
+    const dialog = await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' });
+    expect(dialog.textContent).toContain('অর্ডারটি এখনো সেভ হয়নি। খসড়া এই কম্পিউটারেই থাকবে।');
+    expect(within(dialog).getByRole('button', { name: 'খসড়া রেখে যান' })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'এখানেই থাকুন' }));
     expect(region('কাস্টমার ও পোশাক')).toBeTruthy();
   });
@@ -261,6 +263,7 @@ describe('Draft autosave on desktop', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'নতুন করে শুরু' }));
     expect(screen.queryByRole('status')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'নতুন অর্ডার' }));
     expect(within(region('কাস্টমার ও পোশাক')).queryByRole('button', { name: 'শার্ট ১' })).toBeNull();
     expect(window.localStorage.getItem(KEY)).toBeNull();
   }, 30_000);
@@ -277,7 +280,8 @@ describe('Draft autosave on desktop', () => {
 
     await userEvent.click(within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'খসড়া বাতিল' }));
     await userEvent.click(await screen.findByRole('button', { name: 'হ্যাঁ, মুছে ফেলুন' }));
-    expect(window.localStorage.getItem(KEY)).toBeNull();
     expect(await screen.findByRole('heading', { name: 'অর্ডার' })).toBeTruthy();
+    // Checked after the leave has settled, so a late write from the closing form would show.
+    expect(window.localStorage.getItem(KEY)).toBeNull();
   }, 30_000);
 });

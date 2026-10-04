@@ -81,7 +81,7 @@ export function useOrderEntry(): OrderEntry {
     [config, branchId],
   );
 
-  const [start] = useState<{ base: OrderDraft; kept: OrderDraft | null }>(() => {
+  const [start] = useState<{ base: OrderDraft; kept: OrderDraft | null; plain: boolean; sanitised: boolean }>(() => {
     const snapshot = store.getSnapshot();
     const repeat = params.get('repeat');
     const order = repeat ? snapshot.state.orders[repeat] : undefined;
@@ -94,32 +94,34 @@ export function useOrderEntry(): OrderEntry {
         newKey: store.createId,
         deliveryDate: addDays(today, DELIVERY_DAYS),
       });
-      return { base, kept: null };
+      return { base, kept: null, plain: false, sanitised: false };
     }
     const customerId = params.get('customer');
     if (customerId && snapshot.state.customers[customerId]) {
-      return { base: { ...emptyDraft(), customer: { kind: 'existing', customerId } }, kept: null };
+      return { base: { ...emptyDraft(), customer: { kind: 'existing', customerId } }, kept: null, plain: false, sanitised: false };
     }
     // Plain "new order": bring back what was being typed before, if anything.
     const base = emptyDraft();
     const stored = storageKey ? readDraft(storageKey) : null;
-    if (!stored || !snapshot.config) return { base, kept: null };
+    if (!stored || !snapshot.config) return { base, kept: null, plain: true, sanitised: false };
     const kept = restoreDraft(stored, {
       config: snapshot.config,
       state: snapshot.state,
       keepMeasurements,
       workers: workers.map((w) => w.id),
     });
-    return { base, kept: JSON.stringify(kept) === JSON.stringify(base) ? null : kept };
+    return { base, kept: JSON.stringify(kept) === JSON.stringify(base) ? null : kept, plain: true, sanitised: !keepMeasurements };
   });
   const initial = start.base;
+  // Only a plain new order owns the stored draft. One started from ?repeat= or ?customer= leaves it alone.
+  const persistKey = start.plain ? storageKey : null;
   const [draft, setDraft] = useState<OrderDraft>(start.kept ?? start.base);
   const [restored, setRestored] = useState(start.kept !== null);
   const [generation, setGeneration] = useState(0);
   const firstDraft = useRef(draft);
   const stopSaving = useRef(false);
-  const latest = useRef({ draft, keepMeasurements, storageKey });
-  latest.current = { draft, keepMeasurements, storageKey };
+  const latest = useRef({ draft, keepMeasurements, storageKey: persistKey });
+  latest.current = { draft, keepMeasurements, storageKey: persistKey };
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const inFlight = useRef(false);
@@ -156,10 +158,18 @@ export function useOrderEntry(): OrderEntry {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft]);
+  // A draft restored without values this person may not see is rewritten at once, not on the next edit.
+  useEffect(() => {
+    if (!start.sanitised || !persistKey) return;
+    if (start.kept) writeDraft(persistKey, start.kept, { keepMeasurements });
+    else clearDraft(persistKey);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => persist, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const discard = () => {
-    if (storageKey) clearDraft(storageKey);
+    // The unmount write must not bring the old draft back, whatever order React commits in.
+    latest.current = { ...latest.current, draft: initial };
+    if (persistKey) clearDraft(persistKey);
     setDraft(initial);
     setAttempted(false);
     setRestored(false);
@@ -237,7 +247,7 @@ export function useOrderEntry(): OrderEntry {
       const outcome = await store.dispatchBatch(events);
       if (outcome.ok) {
         stopSaving.current = true;
-        if (storageKey) clearDraft(storageKey);
+        if (persistKey) clearDraft(persistKey);
         return { ok: true, orderId };
       }
       return { ok: false, problem: problemText(outcome.outcome, language) };

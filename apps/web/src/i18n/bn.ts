@@ -339,6 +339,8 @@ export const bn = {
   'entry.earlierOrders': 'আগের অর্ডার {n}টি',
   'entry.newDraftNote': 'অর্ডার নম্বর সেভ করার সময় দেওয়া হবে। লেখা খসড়া এই কম্পিউটারে নিজে থেকে রাখা হয়। অগ্রিম সেভ না করা পর্যন্ত জমা হয় না।',
   'entry.draftRestored': 'আগের খসড়া ফিরিয়ে আনা হয়েছে।',
+  'entry.unsavedBody': 'অর্ডারটি এখনো সেভ হয়নি। খসড়া এই কম্পিউটারেই থাকবে।',
+  'entry.unsavedLeave': 'খসড়া রেখে যান',
   'entry.startFresh': 'নতুন করে শুরু',
   'entry.discardTitle': 'খসড়া বাতিল করবেন?',
   'entry.discardBody': 'এখন পর্যন্ত যা লিখেছেন তা মুছে যাবে।',

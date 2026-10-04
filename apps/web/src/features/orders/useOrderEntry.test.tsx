@@ -255,6 +255,81 @@ describe('draft autosave', () => {
     const raw = window.localStorage.getItem('dk.draft.nakshi.main.nakshi-counter') ?? '';
     expect(raw).not.toBe('');
     expect(raw).not.toContain('গোপন');
-    expect(raw).not.toContain('34');
+    expect(raw).not.toContain('"chest"');
+    expect(raw).not.toMatch(/"values":{[^}]/);
+  });
+
+  const COUNTER_KEY = 'dk.draft.nakshi.main.nakshi-counter';
+  const restricted = {
+    v: 1,
+    draft: {
+      customer: { kind: 'new', name: 'রিনা', nameAlt: '', phone: '', gender: 'female' },
+      items: [
+        {
+          key: 'k1', templateId: 'blouse', quantity: 1, price: 20000, wearer: '',
+          measurements: { kind: 'new', values: { chest: 36 }, source: 'body', notes: 'গোপন' },
+          designNotes: '', fabricNote: '', photoIds: [], trialDate: '', deliveryDate: '2099-01-01',
+        },
+      ],
+      discount: { amount: null, reason: '' },
+      advance: { amount: null, method: 'cash', reference: '' },
+      notes: '',
+    },
+  };
+
+  it('rewrites a stored draft without restricted values as soon as it is restored, with no edit', async () => {
+    window.localStorage.setItem(COUNTER_KEY, JSON.stringify(restricted));
+    const { result } = await setup('/app/orders/new', { shop: 'nakshi', as: { staffId: 'nakshi-counter', pin: '2222' } });
+    expect(result.current.restored).toBe(true);
+    const raw = window.localStorage.getItem(COUNTER_KEY) ?? '';
+    expect(raw).not.toContain('গোপন');
+    expect(raw).not.toContain('"chest"');
+  });
+
+  it('does not write the old draft back when it is discarded and the screen is left', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const { result, unmount } = await setup();
+    act(() => result.current.update({ notes: 'আরও' }));
+    act(() => {
+      result.current.discard();
+      unmount();
+    });
+    expect(stored()).toBeNull();
+  });
+
+  it('leaves an earlier plain draft alone when a customer order is started, changed and reverted', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const before = stored();
+    expect(before).not.toBeNull();
+
+    const other = await setup('/app/orders/new?customer=rahman-c1');
+    act(() => other.result.current.addItem('shirt'));
+    await new Promise((r) => setTimeout(r, 700));
+    expect(stored()).toBe(before);
+    act(() => other.result.current.removeItem(other.result.current.draft.items[0]!.key));
+    await new Promise((r) => setTimeout(r, 700));
+    expect(stored()).toBe(before);
+    act(() => other.result.current.discard());
+    other.unmount();
+    expect(stored()).toBe(before);
+  });
+
+  it('sends no worker when the person may not assign, even if the draft carries one', async () => {
+    window.localStorage.setItem(
+      COUNTER_KEY,
+      JSON.stringify({ ...restricted, draft: { ...restricted.draft, items: [{ ...restricted.draft.items[0], templateId: 'alteration', measurements: { kind: 'none' }, assignedTo: 'nakshi-worker' }] } }),
+    );
+    const { store, result } = await setup('/app/orders/new', { shop: 'nakshi', as: { staffId: 'nakshi-counter', pin: '2222' } });
+    expect(result.current.canAssign).toBe(false);
+    let saved: SaveResult | undefined;
+    await act(async () => {
+      saved = await result.current.save();
+    });
+    if (!saved?.ok) throw new Error(JSON.stringify([saved, result.current.errors]));
+    expect(store.getSnapshot().state.orders[saved.orderId]!.items.map((i) => i.assignedTo ?? null)).toEqual([null]);
   });
 });

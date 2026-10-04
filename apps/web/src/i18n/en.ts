@@ -340,6 +340,8 @@ export const en: Messages = {
   'entry.earlierOrders': '{n} earlier orders',
   'entry.newDraftNote': 'The order number is given when you save. Your draft is kept on this computer automatically. An advance is not recorded until you save.',
   'entry.draftRestored': 'Your earlier draft was brought back.',
+  'entry.unsavedBody': 'The order is not saved yet. Your draft stays on this computer.',
+  'entry.unsavedLeave': 'Leave, keep the draft',
   'entry.startFresh': 'Start over',
   'entry.discardTitle': 'Discard this draft?',
   'entry.discardBody': 'Everything entered so far will be deleted.',

@@ -49,6 +49,11 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const [showErrors, setShowErrors] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Starting over replaces this whole form, so the button that was pressed is gone: land on the title.
+  useEffect(() => {
+    if (entry.generation > 0) heading.current?.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const templates = (config?.templates ?? []).filter((tpl) => tpl.active);
 
   const errors = showErrors ? entry.errors : {};
@@ -120,7 +125,9 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           <ArrowLeft aria-hidden="true" size={16} />
           {t('entry.backToOrders')}
         </Link>
-        <h1 className="text-xl font-semibold">{t('nav.newOrder')}</h1>
+        <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold outline-none">
+          {t('nav.newOrder')}
+        </h1>
         <p className="text-sm text-muted">{t('entry.newDraftNote')}</p>
       </header>
       {entry.restored && (

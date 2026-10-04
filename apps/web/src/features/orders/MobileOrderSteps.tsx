@@ -52,6 +52,11 @@ export function MobileOrderSteps({ entry, onSaved }: Props) {
     body.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [focusTick]);
 
+  // Starting over replaces these steps, so the button that was pressed is gone: land on the step heading.
+  useEffect(() => {
+    if (entry.generation > 0) heading.current?.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!moved.current) return;
     moved.current = false;
