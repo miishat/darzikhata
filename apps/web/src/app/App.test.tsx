@@ -16,7 +16,7 @@ describe('App', () => {
     expect(screen.getByText('রহমান টেইলার্স')).toBeTruthy();
     expect(screen.getByText('প্রধান দোকান')).toBeTruthy();
     const nav = within(mainNav());
-    for (const name of ['হোম', 'অর্ডার', 'কাস্টমার ও মাপ', 'কাজের তালিকা', 'পেমেন্ট', 'সেটিংস', 'আরও']) {
+    for (const name of ['হোম', 'অর্ডার', 'কাস্টমার ও মাপ', 'কাজের তালিকা', 'পেমেন্ট', 'সেটিংস']) {
       expect(nav.getByRole('link', { name })).toBeTruthy();
     }
     expect(screen.getByRole('link', { name: 'নতুন অর্ডার' })).toBeTruthy();
@@ -46,8 +46,10 @@ describe('App', () => {
 
     for (const digit of ['৪', '৪', '৪', '৪']) await userEvent.click(screen.getByRole('button', { name: digit }));
     expect(await screen.findByRole('heading', { name: 'কাজের তালিকা' })).toBeTruthy();
-    const links = within(mainNav()).getAllByRole('link').map((l) => l.textContent);
-    expect(links).toEqual(['কাজের তালিকা', 'আরও']);
+    const links = within(mainNav()).getAllByRole('link').map((l) => l.getAttribute('aria-label'));
+    expect(links).toEqual(['কাজের তালিকা']);
+    await userEvent.click(screen.getByRole('button', { name: 'অ্যাকাউন্ট ও আরও' }));
+    expect(within(await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' })).getByRole('button', { name: 'ইউজার বদলান' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'নতুন অর্ডার' })).toBeNull();
   });
 

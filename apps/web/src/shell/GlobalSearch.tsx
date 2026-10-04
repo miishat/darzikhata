@@ -68,7 +68,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
   };
 
   return (
-    <div className="relative w-72">
+    <div className="relative w-full max-w-md flex-1">
       <input
         ref={inputRef}
         type="text"
@@ -88,8 +88,11 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-brand"
+        className="h-10 w-full rounded-lg border border-line bg-surface ps-3 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-brand"
       />
+      <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
+        /
+      </kbd>
       {showList && (
         <ul
           id={listId}

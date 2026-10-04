@@ -22,6 +22,7 @@ describe('Branch settings', () => {
       name: { bn: 'কারখানা', en: 'Workshop' },
       kind: 'workshop',
     });
+    await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     expect(await screen.findByLabelText('শাখা')).toBeTruthy();
   });
 

@@ -84,7 +84,7 @@ describe('Sync status', () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
     const button = await screen.findByRole('button', { name: /^(অনলাইন|দেখতে হবে)/ });
     const live = document.querySelector('[aria-live="polite"].sr-only');
-    expect(live?.textContent).toBe(button.textContent);
+    expect(live?.textContent).toBe(button.getAttribute('aria-label') ?? button.textContent);
     expect(button.querySelector('[aria-live]')).toBeNull();
   });
 

@@ -11,6 +11,7 @@ describe('Branch scope', () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders' });
     const count = Object.keys(store.getSnapshot().state.orders).length;
     expect(await screen.findByText(`${toBanglaDigits(String(count))}টি অর্ডার`)).toBeTruthy();
+    await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     const branch = screen.getByLabelText('শাখা');
     expect(branch).toHaveProperty('value', 'all');
 
@@ -33,6 +34,7 @@ describe('Branch scope', () => {
 
   it('limits payments and global search to the chosen branch', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/payments' });
+    await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'কারখানা');
     const due = screen.getByRole('table', { name: 'বাকি টাকা' });
     // The header, the group order, and the total.

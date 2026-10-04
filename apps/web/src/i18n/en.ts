@@ -30,6 +30,9 @@ export const en: Messages = {
   'nav.more': 'More',
   'nav.newOrder': 'New order',
   'nav.main': 'Main menu',
+  'nav.late': '{count} late',
+  'nav.section.shop': 'Accounts & shop',
+  'nav.branchMenu': 'Shop and branch',
 
   'sync.online': 'Online',
   'sync.offline': 'Offline',
@@ -464,7 +467,7 @@ export const en: Messages = {
   'payments.credit': 'Credit due',
 
   'search.label': 'Search orders or customers',
-  'search.placeholder': 'Search (/)',
+  'search.placeholder': 'Search',
   'search.none': 'Nothing found',
   'settings.problem.shopName': 'Enter the shop name.',
   'settings.problem.noManager': 'At least one active person must be able to manage staff.',

@@ -28,11 +28,12 @@ const DOT: Record<string, string> = {
 };
 
 /** The header's sync status. It opens the sync dialog: online switch, waiting changes, review and the demo's other device. */
-export function SyncButton() {
+export function SyncButton({ block = false }: { block?: boolean }) {
   const { t, number } = useI18n();
   const { sync } = useSnapshot();
   const status = useSyncStatus();
   const [open, setOpen] = useState(false);
+  const { dateTime } = useI18n();
   const label = t(STATUS_KEY[status]!) + (sync.pending > 0 ? ` · ${t('sync.waiting', { count: number(sync.pending) })}` : '');
   return (
     <>
@@ -40,10 +41,22 @@ export function SyncButton() {
         type="button"
         data-tour="sync-status"
         onClick={() => setOpen(true)}
-        className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`}
+        aria-label={block ? label : undefined}
+        className={
+          block
+            ? `flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`
+            : `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-brand`
+        }
       >
-        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${DOT[status]}`} />
-        {label}
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[status]}`} />
+        {block ? (
+          <span className="min-w-0">
+            <span className="block truncate">{label}</span>
+            <span className="block truncate font-normal">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
+          </span>
+        ) : (
+          label
+        )}
       </button>
       <span aria-live="polite" className="sr-only">
         {label}

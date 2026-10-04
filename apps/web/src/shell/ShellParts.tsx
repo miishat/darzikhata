@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { useCurrentStaff, useSnapshot, useStore } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 
-export function LanguageToggle() {
+export function LanguageToggle({ compact = false }: { compact?: boolean }) {
   const { language, setLanguage } = useI18n();
   const next = language === 'bn' ? 'en' : 'bn';
   return (
@@ -10,9 +10,10 @@ export function LanguageToggle() {
       type="button"
       onClick={() => setLanguage(next)}
       lang={next}
+      aria-label={compact ? (next === 'en' ? 'English' : 'বাংলা') : undefined}
       className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand"
     >
-      {next === 'en' ? 'English' : 'বাংলা'}
+      {compact ? (next === 'en' ? 'EN' : 'বাং') : next === 'en' ? 'English' : 'বাংলা'}
     </button>
   );
 }
