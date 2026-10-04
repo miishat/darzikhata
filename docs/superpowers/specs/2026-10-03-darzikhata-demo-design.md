@@ -44,7 +44,7 @@ These changes to the v0.3 idea spec were reviewed and accepted. They apply to th
 - React Router for routing.
 - Vitest for unit tests, React Testing Library for component tests, Playwright for end-to-end tests.
 - npm workspaces monorepo.
-- Static hosting on Cloudflare Pages or Netlify (choice deferred to deployment).
+- Static hosting on GitHub Pages for now; proper hosting and a backend come later.
 
 ## 4. Architecture
 
@@ -274,7 +274,7 @@ The header shows "DarziKhata (ডেমো)" so the demo is never mistaken for a
 
 ## 9. Deployment
 
-Static build deployed to Cloudflare Pages or Netlify from git. The PWA is installable and works offline after first load.
+Static build deployed to GitHub Pages from git by a workflow. The PWA is installable and works offline after first load.
 
 ## 10. Out of scope for the demo
 
