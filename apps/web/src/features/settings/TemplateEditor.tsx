@@ -88,7 +88,7 @@ function EditorForm({ initial, isNew }: { initial: TemplateForm; isNew: boolean 
     }
     setDone(true);
     allowNextNavigation();
-    navigate(LIST);
+    navigate(LIST, { state: { saved: true } });
   }
 
   const groupOptions = (current: string) => [...new Set([...FIELD_GROUPS, current])];

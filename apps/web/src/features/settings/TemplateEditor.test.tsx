@@ -20,6 +20,7 @@ describe('Template editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
 
     const list = await screen.findByRole('table', { name: 'পোশাকের ধরন' });
+    expect((await screen.findByText('সেভ হয়েছে')).getAttribute('role')).toBe('status');
     expect(within(within(list).getByRole('row', { name: /শার্ট/ })).getByText('৳৮০০')).toBeTruthy();
     const shirt = store.getSnapshot().config!.templates.find((t) => t.id === 'shirt')!;
     expect(shirt.defaultPrice).toBe(80000);

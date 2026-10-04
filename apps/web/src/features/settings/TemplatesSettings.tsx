@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { buttonClasses } from '../../ui/Button';
@@ -7,6 +7,7 @@ import { buttonClasses } from '../../ui/Button';
 export function TemplatesSettings() {
   const { t, language, money } = useI18n();
   const { config } = useSnapshot();
+  const saved = (useLocation().state as { saved?: boolean } | null)?.saved === true;
   const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   return (
     <div className="flex max-w-3xl flex-col gap-4">
@@ -16,6 +17,11 @@ export function TemplatesSettings() {
           {t('settings.templates.new')}
         </Link>
       </div>
+      {saved && (
+        <p role="status" className="text-brand-strong">
+          {t('settings.saved')}
+        </p>
+      )}
       <div className="overflow-x-auto rounded-xl border border-line bg-panel">
         <table aria-label={t('settings.templates.list')} className="w-full border-collapse">
           <thead>
