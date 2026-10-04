@@ -73,20 +73,23 @@ const pair = (fg: string, bgs: string[], min: number): Pair[] => bgs.map((bg) =>
 
 const pairs: Pair[] = [
   ...pair('ink', ['surface', 'panel', 'panel-raised'], 4.5),
-  ...pair('muted', ['surface', 'panel'], 4.5),
+  ...pair('muted', ['surface', 'panel', 'panel-raised'], 4.5),
   ...pair('on-brand', ['brand', 'brand-hover'], 4.5),
-  ...pair('brand-strong', ['panel'], 4.5),
+  ...pair('brand-strong', ['panel', 'panel-raised'], 4.5),
   ...pair('on-navy', ['navy', 'navy-raised'], 4.5),
   ...pair('on-navy-muted', ['navy', 'navy-raised'], 4.5),
   ...pair('on-chip-selected', ['chip-selected'], 4.5),
+  ...pair('on-chip-selected-muted', ['chip-selected'], 4.5),
   ...pair('warn', ['panel'], 4.5),
-  ...pair('warn-ink', ['panel', 'warn-soft'], 4.5),
+  ...pair('warn-ink', ['panel', 'panel-raised', 'warn-soft'], 4.5),
   ...pair('ok', ['panel'], 4.5),
-  ...pair('danger', ['panel'], 4.5),
+  ...pair('danger', ['panel', 'panel-raised'], 4.5),
   ...stages.flatMap((s) => pair(`tone-${s}-fg`, [`tone-${s}-bg`], 4.5)),
   ...avatars.flatMap((n) => pair(`avatar-${n}-fg`, [`avatar-${n}-bg`], 4.5)),
   ...pair('focus', ['surface', 'panel'], 3),
   ...pair('brand', ['panel'], 3),
+  // The welcome title is large text (24px semibold), so 3:1 applies.
+  ...pair('brand', ['surface'], 3),
   ...pair('ok', ['paid-track'], 3),
   // Controller additions: selected rows and active nav, and the danger button.
   ...pair('brand-strong', ['brand-soft'], 4.5),
@@ -94,19 +97,22 @@ const pairs: Pair[] = [
   ...pair('on-danger', ['danger'], 4.5),
 ];
 
-/** Pairs that only apply in one theme (none today; the brief lists every pair for both). */
-const skipped = new Set<string>();
-
 describe('theme blocks', () => {
   it('keeps the two dark blocks identical', () => {
     expect(Object.keys(darkMedia).sort()).toEqual(Object.keys(darkAttr).sort());
     expect(darkMedia).toEqual(darkAttr);
     expect(Object.keys(darkAttr).length).toBeGreaterThan(40);
   });
+
+  it('defines every light token in both dark blocks (no silent fallback to light values)', () => {
+    const names = Object.keys(light).sort();
+    expect(Object.keys(darkAttr).sort()).toEqual(names);
+    expect(Object.keys(darkMedia).sort()).toEqual(names);
+  });
 });
 
 describe.each(['light', 'dark'] as const)('contrast in %s', (theme) => {
-  it.each(pairs.filter((p) => !skipped.has(`${theme}:${p.fg}/${p.bg}`)))(
+  it.each(pairs)(
     '$fg on $bg is at least $min:1',
     ({ fg, bg, min }) => {
       expect(ratio(fg, bg, theme)).toBeGreaterThanOrEqual(min);

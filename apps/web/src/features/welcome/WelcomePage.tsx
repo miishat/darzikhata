@@ -23,7 +23,7 @@ export function WelcomePage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-brand-strong">{t('welcome.title')}</h1>
+          <h1 className="text-2xl font-semibold text-brand">{t('welcome.title')}</h1>
           <p className="mt-2 text-muted">{t('welcome.subtitle')}</p>
         </div>
         <LanguageToggle />
