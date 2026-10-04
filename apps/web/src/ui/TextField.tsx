@@ -6,9 +6,11 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string | undefined;
   /** Shown inside the field on the right, e.g. a unit such as "ইঞ্চি". */
   suffix?: ReactNode;
+  /** 'warn' outlines the field and colours the hint, for a value that deserves a second look. */
+  tone?: 'warn' | undefined;
 }
 
-export function TextField({ label, error, hint, suffix, id, className = '', ...input }: TextFieldProps) {
+export function TextField({ label, error, hint, suffix, tone, id, className = '', ...input }: TextFieldProps) {
   const autoId = useId();
   const inputId = id ?? autoId;
   const messageId = `${inputId}-message`;
@@ -19,7 +21,7 @@ export function TextField({ label, error, hint, suffix, id, className = '', ...i
         {label}
       </label>
       <div
-        className={`flex min-h-12 items-center rounded-lg border bg-panel focus-within:outline-2 focus-within:outline-brand ${error ? 'border-danger' : 'border-line'}`}
+        className={`flex min-h-12 items-center rounded-lg border bg-panel focus-within:outline-2 focus-within:outline-brand ${error ? 'border-danger' : tone === 'warn' ? 'border-warn ring-1 ring-warn' : 'border-line'}`}
       >
         <input
           id={inputId}
@@ -31,7 +33,7 @@ export function TextField({ label, error, hint, suffix, id, className = '', ...i
         {suffix && <span className="pr-3 text-sm text-muted">{suffix}</span>}
       </div>
       {message && (
-        <p id={messageId} className={`text-sm ${error ? 'text-danger' : 'text-muted'}`}>
+        <p id={messageId} className={`text-sm ${error ? 'text-danger' : tone === 'warn' ? 'font-semibold text-warn-ink' : 'text-muted'}`}>
           {message}
         </p>
       )}

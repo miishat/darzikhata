@@ -1,11 +1,11 @@
-import { profileKey } from '@darzikhata/domain';
+import { currentVersion, formatMeasurement, profileKey } from '@darzikhata/domain';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 
 const region = (name: string) => screen.getByRole('region', { name });
-const save = () => userEvent.click(within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'অর্ডার সেভ করুন' }));
+const save = () => userEvent.click(within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }));
 const CONFIRM = 'মাপ এখনো ঠিক আছে, কাস্টমার নিশ্চিত করেছেন';
 
 describe('Order entry on desktop', () => {
@@ -19,8 +19,7 @@ describe('Order entry on desktop', () => {
     expect(region('মাপ ও ডিজাইন')).toBeTruthy();
     await userEvent.type(within(left).getByLabelText('কাস্টমার খুঁজুন'), customer.name);
     await userEvent.click(within(left).getByRole('button', { name: new RegExp(`^${customer.name}`) }));
-    await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'শার্ট');
-    await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
     expect(within(left).getByRole('button', { name: 'শার্ট ১' }).getAttribute('aria-pressed')).toBe('true');
 
     await save();
@@ -42,8 +41,7 @@ describe('Order entry on desktop', () => {
     await userEvent.click(within(left).getByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(within(left).getByLabelText('নাম'), 'জসিম উদ্দিন');
     const addShirt = async () => {
-      await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'শার্ট');
-      await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+      await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
     };
     const middle = () => region('মাপ ও ডিজাইন');
     const fillAll = async (values: Record<string, string>) => {
@@ -60,12 +58,12 @@ describe('Order entry on desktop', () => {
     for (const label of ['বুক', 'ঝুল', 'পেট']) expect(within(middle()).getByLabelText(label)).toHaveProperty('value', '');
     await userEvent.type(within(middle()).getByLabelText('ঝুল'), '28');
     await fillAll({ 'বুক': '36', 'পেট': '32', 'কাঁধ (পুট)': '16', 'হাতা': '22', 'গলা': '14' });
-    await userEvent.type(within(region('অর্ডারের হিসাব')).getByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(within(middle()).getByLabelText('দাম (প্রতিটি)'), '500');
 
     await userEvent.click(within(left).getByRole('button', { name: 'শার্ট ১' }));
     expect(within(middle()).getByLabelText('বুক')).toHaveProperty('value', '৪০');
     await fillAll({ 'কাঁধ (পুট)': '17', 'হাতা': '23', 'গলা': '15' });
-    await userEvent.type(within(region('অর্ডারের হিসাব')).getByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(within(middle()).getByLabelText('দাম (প্রতিটি)'), '500');
     await save();
 
     expect(await screen.findByRole('heading', { name: 'রসিদ' })).toBeTruthy();
@@ -108,11 +106,10 @@ describe('Order entry on desktop', () => {
   it('does not save while the advance cannot be read', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'অল্টারেশন');
-    await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ অল্টারেশন' }));
     const before = Object.keys(store.getSnapshot().state.orders).length;
     const summary = region('অর্ডারের হিসাব');
-    await userEvent.type(within(summary).getByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(within(region('মাপ ও ডিজাইন')).getByLabelText('দাম (প্রতিটি)'), '500');
     await userEvent.type(within(summary).getByLabelText('অগ্রিম'), '500 tk');
     await save();
 
@@ -125,14 +122,13 @@ describe('Order entry on desktop', () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
     expect(within(left).getByText(store.getSnapshot().state.customers['rahman-c1']!.name)).toBeTruthy();
-    expect(within(left).getByRole('button', { name: 'অন্য কাস্টমার' })).toBeTruthy();
+    expect(within(left).getByRole('button', { name: 'বদলান' })).toBeTruthy();
   });
 
   it('never saves when Enter is pressed in a field', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'অল্টারেশন');
-    await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ অল্টারেশন' }));
     const before = Object.keys(store.getSnapshot().state.orders).length;
 
     await userEvent.type(within(region('অর্ডারের হিসাব')).getByLabelText('অগ্রিম'), '100{Enter}');
@@ -141,11 +137,59 @@ describe('Order entry on desktop', () => {
     expect(screen.getByRole('region', { name: 'অর্ডারের হিসাব' })).toBeTruthy();
   });
 
+  it('marks a value that differs from the last version, in words as well as outline', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const { state } = store.getSnapshot();
+    const profile = Object.values(state.profiles).find((p) => p.templateId === 'shirt')!;
+    const chest = currentVersion(profile)!.values['chest']!.value;
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    await userEvent.type(within(left).getByLabelText('কাস্টমার খুঁজুন'), state.customers[profile.customerId]!.name);
+    await userEvent.click(within(left).getByRole('button', { name: new RegExp(`^${state.customers[profile.customerId]!.name}`) }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
+    await userEvent.click(within(region('মাপ ও ডিজাইন')).getByRole('button', { name: 'নতুন মাপ নিন' }));
+
+    const field = within(region('মাপ ও ডিজাইন')).getByLabelText('বুক');
+    expect(screen.queryByText(/^আগে /)).toBeNull();
+    await userEvent.clear(field);
+    await userEvent.type(field, String(chest + 2));
+    expect(screen.getByText(`আগে ${formatMeasurement(chest, 'bn')}`)).toBeTruthy();
+    expect(field.parentElement!.className).toContain('border-warn');
+    await userEvent.clear(field);
+    await userEvent.type(field, String(chest));
+    expect(screen.queryByText(/^আগে /)).toBeNull();
+  });
+
+  it('lists the garments with missing required measurements in one alert that matches the field errors', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    await userEvent.click(within(left).getByRole('button', { name: 'নতুন কাস্টমার' }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
+    expect(within(left).getByText(/টি মাপ বাকি$/)).toBeTruthy();
+    await save();
+
+    const alert = screen.getByRole('alert');
+    const fields = within(region('মাপ ও ডিজাইন'))
+      .getAllByText('এই মাপটি লাগবে')
+      .filter((el) => el.closest('fieldset'));
+    expect(fields.length).toBeGreaterThan(0);
+    const toBn = (n: number) => String(n).replace(/[0-9]/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)]!);
+    expect(alert.textContent).toContain(`শার্ট ১: ${toBn(fields.length)}টি মাপ বাকি`);
+  });
+
+  it('keeps the tab order left column, centre, then summary, and never offers a save shortcut', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    const order = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(order(left, region('মাপ ও ডিজাইন'))).toBe(true);
+    expect(order(region('মাপ ও ডিজাইন'), region('অর্ডারের হিসাব'))).toBe(true);
+    const button = within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' });
+    expect(button.getAttribute('aria-keyshortcuts')).toBeNull();
+  });
+
   it('asks before leaving with unsaved changes', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    await userEvent.selectOptions(within(left).getByLabelText('পোশাক'), 'শার্ট');
-    await userEvent.click(within(left).getByRole('button', { name: 'পোশাক যোগ করুন' }));
+    await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
     await userEvent.click(within(screen.getByRole('navigation', { name: 'প্রধান মেনু' })).getByRole('link', { name: 'অর্ডার' }));
     expect(await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' })).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'এখানেই থাকুন' }));

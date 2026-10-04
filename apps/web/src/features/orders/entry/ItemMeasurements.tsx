@@ -3,9 +3,9 @@ import { useSnapshot } from '../../../data/StoreContext';
 import { useI18n } from '../../../i18n/I18nProvider';
 import { Button } from '../../../ui/Button';
 import { Checkbox } from '../../../ui/Checkbox';
-import { ChoiceGroup } from '../../../ui/ChoiceGroup';
 import { MeasureTiles } from './MeasureTiles';
-import { MeasurementInputs } from '../../customers/MeasurementForm';
+import { DesktopMeasureFields } from './DesktopMeasureFields';
+import { previousValues } from './measureStatus';
 import { MeasurementTable } from '../../customers/MeasurementTable';
 import { latestVersion, type DraftErrors, type DraftItem } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
@@ -131,23 +131,14 @@ export function ItemMeasurements({ entry, item, errors, tiles = false, onDone, o
       </div>
     );
   }
+  // Desktop: the source switch lives in the item's header; values from the last version are marked when they change.
+  const last = customerId && entry.canSeeMeasurements ? latestVersion(state, customerId, template.id) : null;
+  const previous = previousValues(template, last);
+  const onValues = (values: Record<string, number>) => entry.updateItem(item.key, { measurements: { ...m, values } });
   return (
     <div className="flex flex-col gap-3">
-      <MeasurementInputs
-        template={template}
-        values={m.values}
-        errors={fieldErrors}
-        onChange={(values) => entry.updateItem(item.key, { measurements: { ...m, values } })}
-      />
-      <ChoiceGroup
-        legend={t('measure.source')}
-        value={m.source}
-        options={[
-          { value: 'body', label: t('source.body') },
-          { value: 'sample', label: t('source.sample') },
-        ]}
-        onChange={(source) => entry.updateItem(item.key, { measurements: { ...m, source } })}
-      />
+      <p className="text-sm text-muted">{Object.keys(previous).length > 0 ? t('entry.prefillNote') : t('entry.fractionNote')}</p>
+      <DesktopMeasureFields template={template} values={m.values} previous={previous} errors={fieldErrors} onChange={onValues} />
     </div>
   );
 }

@@ -40,6 +40,38 @@ export function ItemMoney({ entry, item, errors }: { entry: OrderEntry; item: Dr
   );
 }
 
+/** Desktop: trial date, delivery date and price in one row. */
+export function ItemSchedule({ entry, item, errors }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors }) {
+  const { t } = useI18n();
+  const errorText = useErrorText(errors);
+  const at = `items.${item.key}`;
+  return (
+    <div className="grid items-start gap-3 sm:grid-cols-3">
+      <TextField
+        label={t('entry.trialDate')}
+        type="date"
+        value={item.trialDate}
+        onChange={(e) => entry.updateItem(item.key, { trialDate: e.target.value })}
+        error={errorText(`${at}.trialDate`)}
+      />
+      <TextField
+        label={t('entry.deliveryDate')}
+        type="date"
+        value={item.deliveryDate}
+        onChange={(e) => entry.updateItem(item.key, { deliveryDate: e.target.value })}
+        error={errorText(`${at}.deliveryDate`)}
+      />
+      <NumberField
+        label={t('entry.price')}
+        kind="money"
+        initialValue={item.price}
+        onValueChange={(price) => entry.updateItem(item.key, { price })}
+        error={errorText(`${at}.price`)}
+      />
+    </div>
+  );
+}
+
 /** The order-wide discount, advance and notes. */
 export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: DraftErrors }) {
   const { t } = useI18n();

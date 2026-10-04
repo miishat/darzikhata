@@ -15,7 +15,7 @@ afterEach(async () => {
   for (const db of dbs.splice(0)) await db.delete();
 });
 
-describe('ItemMeasurements tiles', () => {
+describe.each([{ tiles: true }, { tiles: false }])('ItemMeasurements (tiles: $tiles)', ({ tiles }) => {
   it('does not show a restricted customer’s saved values as "before" to staff who may not see them', async () => {
     const db = new DarziDb(`item-meas-${dbs.length}`);
     dbs.push(db);
@@ -53,7 +53,7 @@ describe('ItemMeasurements tiles', () => {
         <I18nProvider>{children}</I18nProvider>
       </StoreProvider>
     );
-    render(<ItemMeasurements entry={entry} item={item} errors={{}} tiles />, { wrapper });
+    render(<ItemMeasurements entry={entry} item={item} errors={{}} tiles={tiles} />, { wrapper });
     expect(await screen.findAllByRole('textbox')).not.toHaveLength(0);
     expect(screen.queryByText(/^আগে /)).toBeNull();
   });

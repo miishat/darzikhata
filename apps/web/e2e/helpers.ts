@@ -55,18 +55,16 @@ export async function takeFirstOrder(page: Page) {
     await left.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
     await left.getByLabel('ফোন', { exact: true }).fill('01799887766');
 
-    await left.getByLabel('পোশাক', { exact: true }).selectOption({ label: 'শার্ট' });
-    await left.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
+    await left.getByRole('button', { name: '+ শার্ট' }).click();
     await middle.getByLabel('সংখ্যা').fill('২');
     await fill(middle, SHIRT);
-    await left.getByLabel('পোশাক', { exact: true }).selectOption({ label: 'পাঞ্জাবি' });
-    await left.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
+    await left.getByRole('button', { name: '+ পাঞ্জাবি' }).click();
     await fill(middle, { ...SHIRT, 'ঝুল': '42' });
 
     await right.getByLabel('অগ্রিম').fill('১০০০');
     await expect(right.getByRole('row', { name: /^মোট/ })).toContainText('৳২,৪০০');
     await expect(right.getByRole('row', { name: /^বাকি/ })).toContainText('৳১,৪০০');
-    await right.getByRole('button', { name: 'অর্ডার সেভ করুন' }).click();
+    await right.getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }).click();
   }
 
 }

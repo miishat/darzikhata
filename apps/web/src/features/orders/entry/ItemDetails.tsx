@@ -6,8 +6,29 @@ import { PhotoPicker } from '../PhotoPicker';
 import type { OrderEntry } from '../useOrderEntry';
 
 /** One line's wearer, design and fabric notes, and photos. */
-export function ItemDetails({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
+export function ItemDetails({ entry, item, desktop = false }: { entry: OrderEntry; item: DraftItem; desktop?: boolean }) {
   const { t } = useI18n();
+  if (desktop) {
+    // The wearer sits in the item's header on desktop; notes and photos go side by side.
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="flex flex-col gap-3">
+          <TextAreaField
+            label={t('entry.designNotes')}
+            value={item.designNotes}
+            onChange={(e) => entry.updateItem(item.key, { designNotes: e.target.value })}
+          />
+          <TextField
+            label={t('entry.fabricNote')}
+            value={item.fabricNote}
+            onChange={(e) => entry.updateItem(item.key, { fabricNote: e.target.value })}
+            autoComplete="off"
+          />
+        </div>
+        <PhotoPicker photoIds={item.photoIds} onChange={(photoIds) => entry.updateItem(item.key, { photoIds })} />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-3">
       <TextField

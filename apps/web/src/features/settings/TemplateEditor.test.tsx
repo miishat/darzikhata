@@ -81,8 +81,8 @@ describe('Template editor', () => {
 
     await act(() => router.navigate('/app/orders/new'));
     const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    const garments = within(within(left).getByLabelText('পোশাক')).getAllByRole('option').map((o) => o.textContent);
-    expect(garments).toContain('কোট');
-    expect(garments).not.toContain('প্যান্ট');
+    const garments = within(within(left).getByRole('group', { name: 'পোশাক যোগ করুন' })).getAllByRole('button').map((b) => b.textContent);
+    expect(garments).toContain('+ কোট');
+    expect(garments).not.toContain('+ প্যান্ট');
   });
 });
