@@ -10,7 +10,7 @@ export function NewOrderPage() {
   const entry = useOrderEntry();
   const navigate = useNavigate();
   const { kind } = useShell();
-  const { dialog, allowNextNavigation } = useUnsavedGuard(entry.dirty, { body: 'entry.unsavedBody', leave: 'entry.unsavedLeave' });
+  const { dialog, allowNextNavigation } = useUnsavedGuard(entry.dirty, entry.persists ? { body: 'entry.unsavedBody', leave: 'entry.unsavedLeave' } : undefined);
 
   const onSaved = (orderId: string) => {
     allowNextNavigation();

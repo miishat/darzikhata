@@ -128,7 +128,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
         <h1 ref={heading} tabIndex={-1} className="text-xl font-semibold outline-none">
           {t('nav.newOrder')}
         </h1>
-        <p className="text-sm text-muted">{t('entry.newDraftNote')}</p>
+        <p className="text-sm text-muted">{t(entry.persists ? 'entry.newDraftNote' : 'entry.newOrderNote')}</p>
       </header>
       {entry.restored && (
         <p role="status" className="flex flex-wrap items-center gap-x-3 text-sm text-muted">

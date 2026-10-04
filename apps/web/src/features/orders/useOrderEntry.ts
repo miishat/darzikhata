@@ -42,6 +42,8 @@ export interface OrderEntry {
   /** Whether the signed-in person may give garments to a worker. */
   canAssign: boolean;
   /** The draft was brought back from an earlier visit rather than started now. */
+  /** Whether this entry owns the stored draft. False for ?repeat= and ?customer= starts. */
+  persists: boolean;
   restored: boolean;
   /** Changes when the draft is replaced wholesale, so fields that keep their own text start over. */
   generation: number;
@@ -257,5 +259,5 @@ export function useOrderEntry(): OrderEntry {
     }
   };
 
-  return { draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, workers, canAssign, restored, generation, discard, setCustomer, addItem, updateItem, removeItem, update, setUnreadable, save };
+  return { persists: persistKey !== null, draft, errors, attempted, totals, dirty, canSeeMeasurements, saving, workers, canAssign, restored, generation, discard, setCustomer, addItem, updateItem, removeItem, update, setUnreadable, save };
 }

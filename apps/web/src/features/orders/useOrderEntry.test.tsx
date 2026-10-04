@@ -318,6 +318,28 @@ describe('draft autosave', () => {
     expect(stored()).toBe(before);
   });
 
+  it('reports that a plain start keeps a draft and a customer or repeat start does not', async () => {
+    expect((await setup()).result.current.persists).toBe(true);
+    expect((await setup('/app/orders/new?customer=rahman-c1')).result.current.persists).toBe(false);
+    expect((await setup('/app/orders/new?repeat=rahman-o40')).result.current.persists).toBe(false);
+  });
+
+  it('leaves an earlier plain draft alone when a repeat order is started and changed', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    first.unmount();
+    const before = stored();
+    expect(before).not.toBeNull();
+
+    const other = await setup('/app/orders/new?repeat=rahman-o40');
+    act(() => other.result.current.addItem('shirt'));
+    await new Promise((r) => setTimeout(r, 700));
+    expect(stored()).toBe(before);
+    act(() => other.result.current.discard());
+    other.unmount();
+    expect(stored()).toBe(before);
+  });
+
   it('sends no worker when the person may not assign, even if the draft carries one', async () => {
     window.localStorage.setItem(
       COUNTER_KEY,

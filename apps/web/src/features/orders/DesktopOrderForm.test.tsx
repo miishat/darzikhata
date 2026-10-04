@@ -197,6 +197,19 @@ describe('Order entry on desktop', () => {
     await userEvent.click(screen.getByRole('button', { name: 'এখানেই থাকুন' }));
     expect(region('কাস্টমার ও পোশাক')).toBeTruthy();
   });
+
+  it('uses the default leave wording, and no draft-kept claim, when the start does not keep a draft', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
+    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    expect(screen.queryByText(/নিজে থেকে রাখা হয়/)).toBeNull();
+    await userEvent.click(within(left).getByRole('button', { name: '+ শার্ট' }));
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'প্রধান মেনু' })).getByRole('link', { name: 'অর্ডার' }));
+    const dialog = await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' });
+    expect(dialog.textContent).toContain('এই পাতায় যা লিখেছেন তা সেভ হয়নি।');
+    expect(dialog.textContent).not.toContain('খসড়া এই কম্পিউটারেই থাকবে');
+    expect(within(dialog).getByRole('button', { name: 'সেভ না করে যান' })).toBeTruthy();
+    expect(within(dialog).queryByRole('button', { name: 'খসড়া রেখে যান' })).toBeNull();
+  });
 });
 
 describe('Worker field on desktop', () => {
