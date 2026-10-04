@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { linkShareText, newLinkToken, statusPath, statusUrl } from './statusLink';
 
 describe('status links', () => {
@@ -12,6 +12,13 @@ describe('status links', () => {
   it('builds the public address', () => {
     expect(statusPath('abc')).toBe('/s/abc');
     expect(statusUrl('https://darzikhata.example', 'abc')).toBe('https://darzikhata.example/s/abc');
+  });
+
+  it('keeps the deploy base path, as on a GitHub Pages project site', () => {
+    vi.stubEnv('BASE_URL', '/darzikhata/');
+    expect(statusPath('abc')).toBe('/darzikhata/s/abc');
+    expect(statusUrl('https://miishat.github.io', 'abc')).toBe('https://miishat.github.io/darzikhata/s/abc');
+    vi.unstubAllEnvs();
   });
 
   it('writes the message sent to the customer', () => {

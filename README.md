@@ -43,3 +43,5 @@ npm run e2e
 ## Deploy
 
 The site is static. On Netlify, add the repository as a new site; `netlify.toml` sets the build command, the publish folder and the single-page fallback, so no settings need typing. Every push to `main` then deploys. The app is installable from the deployed address and works offline after the first visit.
+
+On GitHub Pages, set Settings > Pages > Source to "GitHub Actions" once. `.github/workflows/pages.yml` then builds the app on every push to `main` with `VITE_BASE=/<repo>/` and publishes it at `https://<user>.github.io/<repo>/`. The data lives in each visitor's own browser, so a shared link shows the demo, not anyone's real data.

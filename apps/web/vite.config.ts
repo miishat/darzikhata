@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
+// Served from the site root by default. GitHub Pages serves a project site from /<repo>/, so that deploy sets VITE_BASE.
+const BASE = (process.env.VITE_BASE ?? '/').replace(/\/?$/, '/');
+
 export default defineConfig(({ mode }) => ({
+  base: BASE,
   plugins: [
     react(),
     tailwindcss(),
@@ -17,7 +21,8 @@ export default defineConfig(({ mode }) => ({
           short_name: 'DarziKhata',
           description: 'দর্জির মাপ, অর্ডার আর হিসাব এক জায়গায়',
           lang: 'bn',
-          start_url: '/',
+          start_url: BASE,
+          scope: BASE,
           display: 'standalone',
           theme_color: '#2563eb',
           background_color: '#f8fafc',
@@ -29,7 +34,7 @@ export default defineConfig(({ mode }) => ({
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-          navigateFallback: '/index.html',
+          navigateFallback: `${BASE}index.html`,
         },
       }),
   ],

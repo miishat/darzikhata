@@ -18,7 +18,9 @@ const store = new ShopStore({
 void store.load();
 
 // A data router, so screens with unsaved changes can block navigation. App keeps its own <Routes>.
-const router = createBrowserRouter([{ path: '*', element: <App store={store} /> }]);
+const router = createBrowserRouter([{ path: '*', element: <App store={store} /> }], {
+  basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

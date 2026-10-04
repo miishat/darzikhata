@@ -8,8 +8,9 @@ export function newLinkToken(fill: (bytes: Uint8Array<ArrayBuffer>) => Uint8Arra
   return tokenFromBytes(fill(new Uint8Array(TOKEN_BYTES)));
 }
 
+/** Includes the deploy base path, because the link is also used as a plain `href`. */
 export function statusPath(token: string): string {
-  return `/s/${token}`;
+  return `${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${token}`;
 }
 
 export function statusUrl(origin: string, token: string): string {
