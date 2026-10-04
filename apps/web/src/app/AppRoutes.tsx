@@ -1,4 +1,3 @@
-import type { Capability } from '@darzikhata/domain';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
@@ -7,8 +6,6 @@ import { WelcomePage } from '../features/welcome/WelcomePage';
 import { DesktopShell } from '../shell/DesktopShell';
 import { MobileShell } from '../shell/MobileShell';
 import { navItem } from '../shell/nav';
-import type { MessageKey } from '../i18n/bn';
-import { useI18n } from '../i18n/I18nProvider';
 import { useShell } from '../shell/ShellPreference';
 import { lazyPage } from './lazy';
 import { Entry, HomeRedirect, Loading, RequireCapability, RequireShop, RequireStaff } from './guards';
@@ -30,6 +27,7 @@ const SettingsPage = lazyPage(() => import('../features/settings/SettingsPage'),
 const SettingsHome = lazyPage(() => import('../features/settings/SettingsHome'), 'SettingsHome');
 const ShopSettings = lazyPage(() => import('../features/settings/ShopSettings'), 'ShopSettings');
 const StaffSettings = lazyPage(() => import('../features/settings/StaffSettings'), 'StaffSettings');
+const BranchSettings = lazyPage(() => import('../features/settings/BranchSettings'), 'BranchSettings');
 const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
 const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
@@ -39,16 +37,6 @@ function AppShell() {
   const current = useCurrentStaff();
   if (!current) return null;
   return kind === 'desktop' ? <DesktopShell role={current.role} /> : <MobileShell role={current.role} />;
-}
-
-/** Stands in for a settings section until its screen is built. */
-function SectionHeading({ label, anyOf }: { label: MessageKey; anyOf: Capability[] }) {
-  const { t } = useI18n();
-  return (
-    <RequireCapability anyOf={anyOf}>
-      <h2 className="text-lg font-semibold">{t(label)}</h2>
-    </RequireCapability>
-  );
 }
 
 export function AppRoutes() {
@@ -187,7 +175,14 @@ export function AppRoutes() {
               </RequireCapability>
             }
           />
-          <Route path="branches" element={<SectionHeading label="settings.branches" anyOf={['settings.edit']} />} />
+          <Route
+            path="branches"
+            element={
+              <RequireCapability anyOf={['settings.edit']}>
+                <BranchSettings />
+              </RequireCapability>
+            }
+          />
         </Route>
         <Route path="more" element={<MorePage />} />
       </Route>
