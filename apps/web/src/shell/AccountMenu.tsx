@@ -22,7 +22,7 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
         </Button>
       }
     >
-      <div className="flex max-h-[65dvh] flex-col gap-4 overflow-y-auto text-ink">
+      <div className="flex flex-col gap-4 text-ink">
         {current && (
           <div className="flex items-center justify-between gap-3">
             <p className="min-w-0 truncate text-sm">{t('shell.signedInAs', { name: current.staff.name, role: label(current.role.name) })}</p>

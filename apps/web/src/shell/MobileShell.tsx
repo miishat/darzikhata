@@ -55,6 +55,7 @@ export function MobileShell({ role }: { role: Role }) {
             type="button"
             data-tour="switch-user"
             aria-label={t('shell.account')}
+            aria-haspopup="dialog"
             onClick={() => setAccountOpen(true)}
             className="inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >

@@ -130,3 +130,12 @@ describe('Orders list', () => {
     expect(router.state.location.search).toBe('?status=ready');
   });
 });
+
+describe('Orders on a phone: filters the chips cannot show', () => {
+  it('lists status and money due together when both are in the address', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders?status=ready&due=1' });
+    const active = await screen.findByRole('list', { name: 'চালু ফিল্টার' });
+    expect(within(active).getByText('অবস্থা: রেডি আছে')).toBeTruthy();
+    expect(within(active).getByText('শুধু বাকি আছে এমন')).toBeTruthy();
+  });
+});

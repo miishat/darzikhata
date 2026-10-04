@@ -11,6 +11,9 @@ export interface DialogProps {
 
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
+/** Open dialogs, oldest first; only the last one answers Escape. */
+const openStack: symbol[] = [];
+
 /** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
 export function Dialog({ open, title, onClose, children, actions }: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
@@ -20,10 +23,13 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
 
   useEffect(() => {
     if (!open) return;
+    const id = Symbol('dialog');
+    openStack.push(id);
     const previous = document.activeElement as HTMLElement | null;
     panel.current?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (openStack[openStack.length - 1] !== id) return;
         e.stopPropagation();
         onCloseRef.current();
         return;
@@ -49,6 +55,8 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
+      const at = openStack.indexOf(id);
+      if (at >= 0) openStack.splice(at, 1);
       previous?.focus();
     };
   }, [open]);

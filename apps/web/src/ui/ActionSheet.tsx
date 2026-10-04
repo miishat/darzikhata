@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { useI18n } from '../i18n/I18nProvider';
+import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { IconButton } from './IconButton';
 
@@ -15,12 +17,22 @@ export interface ActionSheetProps {
 
 /** An overflow menu: an icon button that opens a sheet holding a list of actions. */
 export function ActionSheet({ label, icon, title, children }: ActionSheetProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
     <>
       <IconButton label={label} icon={icon} aria-haspopup="dialog" onClick={() => setOpen(true)} />
-      <Dialog open={open} title={title} onClose={close}>
+      <Dialog
+        open={open}
+        title={title}
+        onClose={close}
+        actions={
+          <Button variant="secondary" onClick={close}>
+            {t('common.close')}
+          </Button>
+        }
+      >
         <ul className="m-0 flex list-none flex-col p-0 text-ink">{children(close)}</ul>
       </Dialog>
     </>

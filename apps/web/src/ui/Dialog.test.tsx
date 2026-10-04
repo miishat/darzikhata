@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
@@ -12,5 +13,21 @@ describe('Dialog', () => {
     const dialog = screen.getByRole('dialog', { name: 'সিঙ্ক' });
     expect(screen.getByTestId('header').contains(dialog)).toBe(false);
     expect(document.body.contains(dialog)).toBe(true);
+  });
+});
+
+describe('Dialog Escape', () => {
+  it('closes only the top-most of nested dialogs', async () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    render(
+      <>
+        <Dialog open title="বাইরে" onClose={outer} />
+        <Dialog open title="ভেতরে" onClose={inner} />
+      </>,
+    );
+    await userEvent.keyboard('{Escape}');
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
   });
 });

@@ -132,6 +132,8 @@ describe('Order detail on a phone', () => {
     for (const name of ['রসিদ প্রিন্ট', 'কাজের স্লিপ', 'কাপড়ের ট্যাগ', 'আবার অর্ডার']) {
       expect(within(menu).getByRole('link', { name })).toBeTruthy();
     }
+    await userEvent.click(within(menu).getByRole('button', { name: 'বন্ধ করুন' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('moves a garment on with one outlined button named from its stages', async () => {
