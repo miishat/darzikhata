@@ -12,6 +12,7 @@ import { OrderDetail } from './OrderDetail';
 import { OrderFilters, SortButton } from './OrderFilters';
 import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
+import { PrototypeSwitcher } from './PROTOTYPE_Switcher';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
@@ -163,6 +164,7 @@ export function OrdersPage() {
           </section>
         )}
       </div>
+      {import.meta.env.DEV && <PrototypeSwitcher />}
     </div>
   );
 }

@@ -11,6 +11,8 @@ import { stageTone } from '../../ui/stageTone';
 import { useCan } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
 import type { OrderRow } from './orderList';
+import { CELL_VARIANTS } from './PROTOTYPE_StageCellVariants';
+import { useCellVariant } from './PROTOTYPE_Switcher';
 
 /** "৳১,৪০০", or "ফেরত পাওনা ৳৩০০" when the shop owes the customer. */
 export function useBalanceText(): (balance: number) => string {
@@ -51,6 +53,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const navigate = useNavigate();
   const balanceText = useBalanceText();
   const workerNames = useWorkerNames();
+  const variant = useCellVariant(); // PROTOTYPE
   const body = useRef<HTMLTableSectionElement>(null);
   const showMoney = can('money.view');
   // With the side panel open the table is narrow: the workers column gives way (the panel shows them), then the balance and the date on smaller screens (the panel shows those too).
@@ -134,19 +137,10 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
-                    {live.slice(0, MAX_PILLS).map((item) => {
-                      const index = item.stages.findIndex((s) => s.key === item.stageKey);
-                      const stage = item.stages[index];
-                      return (
-                        <li key={item.id} className="flex items-center gap-1.5 text-sm">
-                          <span className="text-muted">{itemTitle(order, item, language)}</span>
-                          <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, itemSummaryGroup(item), Math.max(index, 0))} />
-                        </li>
-                      );
-                    })}
-                    {live.length > MAX_PILLS && <li className="text-sm text-muted">{t('orders.moreGarments', { n: number(live.length - MAX_PILLS) })}</li>}
-                  </ul>
+                  {(() => {
+                    const Cell = CELL_VARIANTS[variant].Cell;
+                    return <Cell order={order} live={live} />;
+                  })()}
                 </td>
                 <td className={`whitespace-nowrap px-3 py-2 text-sm ${deliveryCol}`}>
                   {row.nextDelivery ? (
