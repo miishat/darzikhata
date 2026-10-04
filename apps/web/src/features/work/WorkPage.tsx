@@ -1,18 +1,22 @@
 import type { ItemRef } from '@darzikhata/domain';
 import { useMemo, useState } from 'react';
+import { Printer } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
 import { SelectField } from '../../ui/SelectField';
+import { SelectionBar } from '../../ui/SelectionBar';
+import { ViewTabs, viewTabId } from '../../ui/ViewTabs';
 import { useBranchScope } from '../branches/BranchScopeProvider';
-import { useCan } from '../common/hooks';
+import { useCan, useToday } from '../common/hooks';
 import { useShell } from '../../shell/ShellPreference';
 import { BatchAssignDialog, BatchStageDialog } from './batchDialogs';
 import { MobileWorkPage } from './MobileWorkPage';
 import { useWorkList } from './useWorkList';
+import { WorkBoard, WorkerChips } from './BoardView';
 import { WorkGroupTable } from './WorkGroupTable';
-import { assignees, stageOptions } from './workList';
+import { assignees, filterWork, stageOptions } from './workList';
 
 type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
 
@@ -22,7 +26,7 @@ function DesktopWorkPage() {
   const can = useCan();
   const { config } = useSnapshot();
   const { branchIds } = useBranchScope();
-  const { viewer, query, setQuery, all, shown, groups } = useWorkList();
+  const { view, setView, viewer, query, setQuery, all, shown, groups } = useWorkList();
   const [params] = useSearchParams();
   const search = params.toString();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -61,69 +65,92 @@ function DesktopWorkPage() {
     if (finished) setSelected(new Set());
   };
 
+  const today = useToday();
+  const lateCount = all.filter((r) => r.item.deliveryDate !== null && r.item.deliveryDate < today).length;
+  const chipCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: all.length, none: 0 };
+    for (const { item } of all) {
+      const key = item.assignedTo ?? 'none';
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [all]);
+  const boardRows = useMemo(() => filterWork(all, { ...query, stage: 'all' }), [all, query]);
+  const panelId = 'work-view';
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t('nav.work')}</h1>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h1 className="text-xl font-semibold">{t('nav.work')}</h1>
+          <p className="flex items-center gap-3 text-sm text-muted">
+            <span>{t('work.inProgress', { n: number(all.length) })}</span>
+            {lateCount > 0 && <span className="font-semibold text-warn-ink">{t('work.lateCount', { n: number(lateCount) })}</span>}
+          </p>
+        </div>
         <Link to={`/print/work${search ? `?${search}` : ''}`} className={buttonClasses('secondary')}>
+          <Printer aria-hidden="true" size={16} />
           {t('work.print')}
         </Link>
       </div>
-      {selected.size > 0 && selectable && (
-        <div className="sticky top-14 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-brand-soft p-3 md:top-0">
-          <span className="font-semibold">{t('work.selected', { n: number(selected.size) })}</span>
-          {canAssign && <Button onClick={() => openDialog('assign')}>{t('work.assign')}</Button>}
-          {canMove && <Button onClick={() => openDialog('stage')}>{t('item.changeStage')}</Button>}
-          <Button variant="ghost" onClick={() => setSelected(new Set())}>
-            {t('work.clearSelection')}
-          </Button>
+      <ViewTabs
+        label={t('work.view')}
+        views={[
+          { value: 'board', label: t('work.view.board') },
+          { value: 'list', label: t('work.view.list') },
+        ]}
+        value={view}
+        onChange={(next) => setView(next === 'list' ? 'list' : 'board')}
+        panelId={panelId}
+      />
+      {viewer.seesAll && (
+        <WorkerChips workers={workers} counts={chipCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
+      )}
+      {view === 'list' && (
+        <div className="flex flex-wrap items-end gap-3">
+          {viewer.seesAll && (
+            <SelectField
+              label={t('work.groupBy')}
+              value={query.by}
+              options={[
+                { value: 'worker', label: t('work.byWorker') },
+                { value: 'stage', label: t('work.byStage') },
+              ]}
+              onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
+            />
+          )}
+          <SelectField
+            label={t('work.stage')}
+            value={query.stage}
+            options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
+            onChange={(stage) => setQuery({ ...query, stage })}
+          />
         </div>
       )}
-      <div className="flex flex-wrap items-end gap-3">
-        {viewer.seesAll && (
-          <SelectField
-            label={t('work.groupBy')}
-            value={query.by}
-            options={[
-              { value: 'worker', label: t('work.byWorker') },
-              { value: 'stage', label: t('work.byStage') },
-            ]}
-            onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
-          />
+      <div role="tabpanel" id={panelId} aria-labelledby={viewTabId(panelId, view)} className="flex flex-col gap-3">
+        {view === 'list' && <p className="text-sm text-muted">{t('work.count', { n: number(shown.length) })}</p>}
+        {(view === 'board' ? boardRows.length === 0 : groups.length === 0) ? (
+          <p className="text-muted">{t('work.empty')}</p>
+        ) : view === 'board' ? (
+          <WorkBoard rows={boardRows} selected={selectable ? selected : null} onToggle={toggle} />
+        ) : (
+          groups.map((group) => (
+            <WorkGroupTable
+              key={group.key}
+              title={query.by === 'worker' ? (group.staff?.name ?? t('work.unassigned')) : group.stage ? label(group.stage.label) : group.key}
+              refs={group.refs}
+              by={query.by}
+              selected={selectable ? selected : null}
+              onToggle={toggle}
+            />
+          ))
         )}
-        {viewer.seesAll && (
-          <SelectField
-            label={t('work.worker')}
-            value={query.worker}
-            options={[
-              { value: 'all', label: t('work.everyone') },
-              ...workers.map((w) => ({ value: w.id, label: w.name })),
-              { value: 'none', label: t('work.unassigned') },
-            ]}
-            onChange={(worker) => setQuery({ ...query, worker })}
-          />
-        )}
-        <SelectField
-          label={t('work.stage')}
-          value={query.stage}
-          options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
-          onChange={(stage) => setQuery({ ...query, stage })}
-        />
       </div>
-      <p className="text-sm text-muted">{t('work.count', { n: number(shown.length) })}</p>
-      {groups.length === 0 ? (
-        <p className="text-muted">{t('work.empty')}</p>
-      ) : (
-        groups.map((group) => (
-          <WorkGroupTable
-            key={group.key}
-            title={query.by === 'worker' ? (group.staff?.name ?? t('work.unassigned')) : group.stage ? label(group.stage.label) : group.key}
-            refs={group.refs}
-            by={query.by}
-            selected={selectable ? selected : null}
-            onToggle={toggle}
-          />
-        ))
+      {selectable && (
+        <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+          {canAssign && <Button onClick={() => openDialog('assign')}>{t('work.assign')}</Button>}
+          {canMove && <Button onClick={() => openDialog('stage')}>{t('item.changeStage')}</Button>}
+        </SelectionBar>
       )}
       {open?.kind === 'assign' && <BatchAssignDialog refs={open.refs} onClose={closeDialog} />}
       {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}

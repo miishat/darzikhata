@@ -96,6 +96,14 @@ describe('workBoard', () => {
     expect(workBoard([], {})).toEqual([]);
   });
 
+  it('keeps ready stages after every unfinished stage even when a shorter template has them earlier', () => {
+    const board = workBoard(
+      rows(makeItem({ id: 'a', stages: STANDARD_STAGES, stageKey: 'trial' }), makeItem({ id: 'b', templateId: 'alteration', stages: ALTERATION_STAGES, stageKey: 'working' })),
+      { shirt: STANDARD_STAGES, alteration: ALTERATION_STAGES },
+    );
+    expect(keys(board)).toEqual(['booked', 'cutting', 'working', 'stitching', 'trial', 'ready']);
+  });
+
   it('still shows a column for a garment whose template is unknown', () => {
     const board = workBoard(rows(makeItem({ id: 'a', templateId: 'gone', stages: ALTERATION_STAGES, stageKey: 'working' })), {});
     expect(keys(board)).toEqual(['booked', 'working', 'ready']);

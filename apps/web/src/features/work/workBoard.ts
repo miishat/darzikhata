@@ -1,6 +1,8 @@
 import type { ItemRef, Stage } from '@darzikhata/domain';
 import { itemSummaryGroup } from '@darzikhata/domain';
 
+const GROUP_RANK: Record<Stage['group'], number> = { unfinished: 0, ready: 1, delivered: 2 };
+
 export interface BoardColumn {
   key: string;
   stage: Stage;
@@ -10,7 +12,7 @@ export interface BoardColumn {
 /**
  * Groups garments into one column per stage. Templates have different stage lists, so the columns
  * are the union of every template's stages merged by key and ordered by their first position
- * (ties keep the order they were first seen). Delivered stages have no column, and optional stages
+ * within their group, so ready stages always come after the unfinished ones (ties keep the order they were first seen). Delivered stages have no column, and optional stages
  * only get one while a garment is in them. Delivered and cancelled garments are left out.
  * Garments of a template missing from the map use their own stage list.
  */
@@ -39,6 +41,6 @@ export function workBoard(rows: ItemRef[], stagesByTemplate: Readonly<Record<str
 
   return [...columns.values()]
     .filter((c) => !c.stage.optional || c.refs.length > 0)
-    .sort((a, b) => a.position - b.position || a.order - b.order)
+    .sort((a, b) => GROUP_RANK[a.stage.group] - GROUP_RANK[b.stage.group] || a.position - b.position || a.order - b.order)
     .map(({ stage, refs }) => ({ key: stage.key, stage, refs }));
 }

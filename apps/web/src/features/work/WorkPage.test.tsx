@@ -11,13 +11,13 @@ const region = (name: string) => screen.getByRole('region', { name });
 
 describe('Work lists', () => {
   it('lists every unfinished garment for the owner, by worker or by stage', async () => {
-    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work' });
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work?view=list' });
     const refs = workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'rahman-owner', seesAll: true });
     expect(await screen.findByText(`${bn(refs.length)}টি পোশাক`)).toBeTruthy();
     expect(within(region('কারিগর ঠিক হয়নি')).getAllByRole('row')).toHaveLength(refs.length + 1);
 
     await userEvent.selectOptions(screen.getByLabelText('ভাগ করুন'), 'ধাপ অনুযায়ী');
-    expect(router.state.location.search).toBe('?by=stage');
+    expect(router.state.location.search).toBe('?by=stage&view=list');
     const stitching = refs.filter((r) => r.item.stageKey === 'stitching').length;
     expect(within(await screen.findByRole('region', { name: 'সেলাই' })).getAllByRole('row')).toHaveLength(stitching + 1);
   });
@@ -26,7 +26,7 @@ describe('Work lists', () => {
     const { store } = await renderApp({
       layout: 'desktop',
       shop: 'nakshi',
-      path: '/app/work',
+      path: '/app/work?view=list',
       as: { staffId: 'nakshi-tailor', pin: '4444' },
     });
     const mine = itemsForWorker(Object.values(store.getSnapshot().state.orders), 'nakshi-tailor');
@@ -37,10 +37,10 @@ describe('Work lists', () => {
   });
 
   it('gives several garments to one worker after a preview, skipping ones they already have', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?view=list', as: supervisor });
     await userEvent.click(await screen.findByRole('checkbox', { name: 'সব বেছে নিন: রফিক মিয়া' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'সব বেছে নিন: সেলিম শেখ' }));
-    expect(screen.getByText('৬টি বাছাই করা হয়েছে')).toBeTruthy();
+    expect(screen.getByText('৬টি পোশাক বাছাই করা')).toBeTruthy();
 
     await userEvent.click(screen.getByRole('button', { name: 'কারিগর ঠিক করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' });
@@ -59,11 +59,11 @@ describe('Work lists', () => {
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'বন্ধ করুন' }));
     expect(screen.queryByRole('region', { name: 'রফিক মিয়া' })).toBeNull();
-    expect(screen.queryByText('৬টি বাছাই করা হয়েছে')).toBeNull();
+    expect(screen.queryByText('৬টি পোশাক বাছাই করা')).toBeNull();
   });
 
   it('moves garments forward together, with a result for each', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?by=stage', as: supervisor });
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?view=list&by=stage', as: supervisor });
     await userEvent.click(await screen.findByRole('checkbox', { name: 'সব বেছে নিন: কাটিং' }));
     await userEvent.click(screen.getByRole('button', { name: 'ধাপ বদলান' }));
     const dialog = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
@@ -80,7 +80,7 @@ describe('Work lists', () => {
   });
 
   it('reports a garment someone changed after the preview opened, and keeps their change', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?view=list', as: supervisor });
     const order = store.getSnapshot().state.orders['uniform-o27']!;
     const item = order.items.find((i) => i.assignedTo === 'uniform-tailor-1' && itemSummaryGroup(i) === 'unfinished')!;
     const title = `${order.number} ${item.garmentName.bn} ${bn(order.items.indexOf(item) + 1)}`;

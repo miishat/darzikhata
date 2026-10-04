@@ -1,9 +1,11 @@
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { itemTitle } from '../common/orderText';
-import { useToday } from '../common/hooks';
+import { DueLabel } from '../../ui/DueLabel';
+import { StagePill } from '../../ui/StagePill';
+import { stageTone } from '../../ui/stageTone';
 import { useSnapshot } from '../../data/StoreContext';
-import type { ItemRef } from '@darzikhata/domain';
+import { itemSummaryGroup, type ItemRef } from '@darzikhata/domain';
 import type { WorkGrouping } from './workList';
 
 interface Props {
@@ -19,14 +21,14 @@ interface Props {
 export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
   const { t, language, date, label } = useI18n();
   const { config } = useSnapshot();
-  const today = useToday();
   const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   const ids = refs.map((r) => r.item.id);
   const allOn = selected !== null && ids.every((id) => selected.has(id));
   const staffName = (id: string | null) => (id === null ? t('work.unassigned') : (config?.staff.find((s) => s.id === id)?.name ?? id));
-  const stageLabel = (r: ItemRef) => {
-    const stage = r.item.stages.find((s) => s.key === r.item.stageKey);
-    return stage ? label(stage.label) : r.item.stageKey;
+  const stagePill = (r: ItemRef) => {
+    const index = r.item.stages.findIndex((s) => s.key === r.item.stageKey);
+    const stage = r.item.stages[index];
+    return <StagePill label={stage ? label(stage.label) : r.item.stageKey} tone={stageTone(stage, itemSummaryGroup(r.item), Math.max(index, 0))} />;
   };
 
   return (
@@ -58,7 +60,6 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
             {refs.map((r) => {
               const name = itemTitle(r.order, r.item, language);
               const due = r.item.deliveryDate;
-              const late = due !== null && due < today;
               return (
                 <tr key={r.item.id} className="border-b border-line last:border-b-0">
                   {selected && (
@@ -79,10 +80,14 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
                   </td>
                   <td className="px-3 py-2">{name}</td>
                   <td className="px-3 py-2">{r.item.wearer}</td>
-                  <td className="px-3 py-2 text-sm">{by === 'worker' ? stageLabel(r) : staffName(r.item.assignedTo)}</td>
+                  <td className="px-3 py-2 text-sm">{by === 'worker' ? stagePill(r) : staffName(r.item.assignedTo)}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-sm">
-                    {due && <span className={late ? 'font-semibold text-danger' : ''}>{date(due)}</span>}
-                    {late && <span className="ms-2 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">{t('work.late')}</span>}
+                    {due && (
+                      <span className="inline-flex items-center gap-2">
+                        {date(due)}
+                        <DueLabel date={due} />
+                      </span>
+                    )}
                   </td>
                 </tr>
               );

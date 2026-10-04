@@ -18,7 +18,12 @@ import {
 const NO_REFS: ItemRef[] = [];
 const NO_GROUPS: WorkGroup[] = [];
 
+export type WorkView = 'board' | 'list';
+
 export interface WorkList {
+  /** Board or list, kept in the address; the board is the default. */
+  view: WorkView;
+  setView(view: WorkView): void;
   viewer: Viewer;
   query: WorkQuery;
   setQuery(query: WorkQuery): void;
@@ -49,9 +54,23 @@ export function useWorkList(): WorkList {
   const { stage } = parsed;
   const query = useMemo<WorkQuery>(() => ({ by, worker, stage }), [by, worker, stage]);
 
+  const view: WorkView = params.get('view') === 'list' ? 'list' : 'board';
   const setQuery = useCallback(
-    (next: WorkQuery) => setParams(writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' }), { replace: true }),
-    [setParams, seesAll],
+    (next: WorkQuery) => {
+      const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
+      if (view === 'list') written.set('view', 'list');
+      setParams(written, { replace: true });
+    },
+    [setParams, seesAll, view],
+  );
+  const setView = useCallback(
+    (next: WorkView) => {
+      const written = new URLSearchParams(params);
+      if (next === 'list') written.set('view', 'list');
+      else written.delete('view');
+      setParams(written, { replace: true });
+    },
+    [setParams, params],
   );
 
   const orders = state.orders;
@@ -59,5 +78,5 @@ export function useWorkList(): WorkList {
   const shown = useMemo(() => filterWork(all, query), [all, query]);
   const groups = useMemo(() => (config ? groupWork(shown, query.by, config) : NO_GROUPS), [shown, query.by, config]);
 
-  return { viewer, query, setQuery, all, shown, groups };
+  return { view, setView, viewer, query, setQuery, all, shown, groups };
 }
