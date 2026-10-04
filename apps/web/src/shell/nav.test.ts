@@ -1,4 +1,4 @@
-import { DEFAULT_ROLES } from '@darzikhata/domain';
+import { DEFAULT_ROLES, type Capability } from '@darzikhata/domain';
 import { describe, expect, it } from 'vitest';
 import { homePath, visibleNav } from './nav';
 
@@ -22,6 +22,12 @@ describe('navigation by role', () => {
   it('lands accounts staff on the dashboard', () => {
     expect(keys('accounts')).toEqual(['dashboard', 'orders', 'customers', 'payments']);
     expect(homePath(role('accounts'))).toBe('/app/dashboard');
+  });
+
+  it('shows Settings to anyone who can manage staff or edit settings', () => {
+    const only = (capability: Capability) => ({ id: 'x', name: { bn: '', en: '' }, capabilities: [capability] });
+    expect(visibleNav(only('staff.manage')).map((i) => i.key)).toEqual(['settings']);
+    expect(visibleNav(only('settings.edit')).map((i) => i.key)).toEqual(['settings']);
   });
 
   it('falls back to More when nothing is visible', () => {
