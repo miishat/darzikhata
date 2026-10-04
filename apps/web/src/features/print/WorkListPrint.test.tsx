@@ -39,9 +39,9 @@ describe('Work-list print', () => {
   });
 
   it('is linked from the work page with the same filters', async () => {
-    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work?by=stage&stage=cutting' });
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work?by=stage&stage=cutting&view=list' });
     const link = await screen.findByRole('link', { name: 'তালিকা প্রিন্ট করুন' });
-    expect(link.getAttribute('href')).toBe('/print/work?by=stage&stage=cutting');
+    expect(link.getAttribute('href')).toBe('/print/work?by=stage&stage=cutting&view=list');
   });
 
   it('prints a tailor’s own garments only', async () => {

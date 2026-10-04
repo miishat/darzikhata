@@ -1,5 +1,5 @@
 import type { ItemRef } from '@darzikhata/domain';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -28,7 +28,6 @@ function DesktopWorkPage() {
   const { branchIds } = useBranchScope();
   const { view, setView, viewer, query, setQuery, all, shown, groups } = useWorkList();
   const [params] = useSearchParams();
-  const search = params.toString();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [open, setOpen] = useState<Open>(null);
 
@@ -78,6 +77,18 @@ function DesktopWorkPage() {
   const boardRows = useMemo(() => filterWork(all, { ...query, stage: 'all' }), [all, query]);
   const panelId = 'work-view';
 
+  // A garment a filter or the view has hidden must not stay selected, or the batch and the bar's count
+  // would not match what is on screen.
+  const visible = view === 'board' ? boardRows : shown;
+  useEffect(() => {
+    const ids = new Set(visible.map((r) => r.item.id));
+    setSelected((prev) => (prev.size > 0 && [...prev].some((id) => !ids.has(id)) ? new Set([...prev].filter((id) => ids.has(id))) : prev));
+  }, [visible]);
+  // The board shows every stage, so its printout must not carry the list's stage filter.
+  const printParams = new URLSearchParams(params);
+  if (view === 'board') printParams.delete('stage');
+  const printSearch = printParams.toString();
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -88,7 +99,7 @@ function DesktopWorkPage() {
             {lateCount > 0 && <span className="font-semibold text-warn-ink">{t('work.lateCount', { n: number(lateCount) })}</span>}
           </p>
         </div>
-        <Link to={`/print/work${search ? `?${search}` : ''}`} className={buttonClasses('secondary')}>
+        <Link to={`/print/work${printSearch ? `?${printSearch}` : ''}`} className={buttonClasses('secondary')}>
           <Printer aria-hidden="true" size={16} />
           {t('work.print')}
         </Link>

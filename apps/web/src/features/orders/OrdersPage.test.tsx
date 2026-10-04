@@ -1,5 +1,5 @@
-import { itemSummaryGroup, toBanglaDigits, todayInDhaka } from '@darzikhata/domain';
-import { act, screen, within } from '@testing-library/react';
+import { itemSummaryGroup, moneySummary, toBanglaDigits, todayInDhaka, type Order } from '@darzikhata/domain';
+import { act, cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -205,6 +205,15 @@ describe('Orders list', () => {
     expect(screen.queryByRole('list', { name: 'চালু ফিল্টার' })).toBeNull();
   });
 
+  it('lists the desktop-only worker and date filters on a phone, with a way to clear them', async () => {
+    const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders?worker=nobody&from=2020-01-01' });
+    const list = within(await screen.findByRole('list', { name: 'চালু ফিল্টার' }));
+    expect(list.getByText('কারিগর: nobody')).toBeTruthy();
+    expect(list.getAllByRole('listitem')).toHaveLength(2);
+    await userEvent.click(screen.getByRole('button', { name: 'সব ফিল্টার মুছুন' }));
+    expect(router.state.location.search).toBe('');
+  });
+
   it('sorts from a sheet opened by the header button on a phone', async () => {
     const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
     await userEvent.click(await screen.findByRole('button', { name: 'সাজান: নতুন আগে' }));
@@ -236,6 +245,29 @@ describe('Orders list', () => {
     expect(screen.queryByRole('region', { name: 'অর্ডারের বিস্তারিত' })).toBeNull();
     expect(router.state.location.pathname).toBe('/app/orders');
     expect(screen.getByRole('tab', { name: /^চলমান/ }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('shows the panel money block and take-payment button to staff with money access, and hides them from others', async () => {
+    const owed = (store: { getSnapshot(): { state: { orders: Record<string, Order> } } }) =>
+      Object.values(store.getSnapshot().state.orders).find((o) => moneySummary(o).balance > 0)!;
+
+    const withMoney = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders' });
+    await act(() => withMoney.router.navigate(`/app/orders/${owed(withMoney.store).id}`));
+    const panel = within(await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' }));
+    expect(panel.getByRole('region', { name: 'টাকার হিসাব' })).toBeTruthy();
+    expect(panel.getByRole('button', { name: 'টাকা নিন' })).toBeTruthy();
+    cleanup();
+
+    const without = await renderApp({
+      layout: 'desktop',
+      shop: 'uniform',
+      path: '/app/orders',
+      as: { staffId: 'uniform-supervisor', pin: '3333' },
+    });
+    await act(() => without.router.navigate(`/app/orders/${owed(without.store).id}`));
+    const hidden = within(await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' }));
+    expect(hidden.queryByRole('region', { name: 'টাকার হিসাব' })).toBeNull();
+    expect(hidden.queryByRole('button', { name: 'টাকা নিন' })).toBeNull();
   });
 
   it('hides money columns and filters from staff without money access', async () => {

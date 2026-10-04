@@ -43,6 +43,24 @@ describe('Work board', () => {
     expect(within(board).getAllByRole('checkbox')).toHaveLength(4);
   });
 
+  it('drops a selection that a worker chip hides, so the count matches what is shown', async () => {
+    await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    const board = await screen.findByRole('region', { name: 'কাজের বোর্ড' });
+    await userEvent.click(within(board).getAllByRole('checkbox')[0]!);
+    expect(await screen.findByText('১টি পোশাক বাছাই করা')).toBeTruthy();
+    const group = screen.getByRole('group', { name: 'কারিগর অনুযায়ী দেখুন' });
+    await userEvent.click(within(group).getByRole('button', { name: 'কারিগর ঠিক হয়নি ০' }));
+    expect(screen.queryByRole('region', { name: 'বাছাই করা পোশাক' })).toBeNull();
+  });
+
+  it('leaves the stage filter out of the print link on the board, and keeps it in the list', async () => {
+    const { router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?stage=cutting', as: supervisor });
+    const print = await screen.findByRole('link', { name: 'তালিকা প্রিন্ট করুন' });
+    expect(print.getAttribute('href')).toBe('/print/work');
+    await act(() => router.navigate('/app/work?stage=cutting&view=list'));
+    expect((await screen.findByRole('link', { name: 'তালিকা প্রিন্ট করুন' })).getAttribute('href')).toContain('stage=cutting');
+  });
+
   it('shows ten cards in a column, then a button for the rest', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work' });
     const board = await screen.findByRole('region', { name: 'কাজের বোর্ড' });

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { addDays } from '../../lib/dates';
 import { useCan, useMeasurementAccess, useToday } from '../common/hooks';
 import { problemText } from '../common/problemText';
@@ -72,7 +73,9 @@ export function useOrderEntry(): OrderEntry {
   const mayView = useMeasurementAccess();
   const can = useCan();
   const [params] = useSearchParams();
-  const canAssign = can('work.assign');
+  const { kind } = useShell();
+  // The phone's order form has no worker field, so it must not carry or save one from a desktop draft.
+  const canAssign = can('work.assign') && kind !== 'mobile';
   const keepMeasurements = can('measurements.view.female');
   const session = store.getSnapshot().session;
   const device = config?.devices.find((d) => d.id === store.getSnapshot().deviceId);
@@ -110,7 +113,7 @@ export function useOrderEntry(): OrderEntry {
       config: snapshot.config,
       state: snapshot.state,
       keepMeasurements,
-      workers: workers.map((w) => w.id),
+      workers: canAssign ? workers.map((w) => w.id) : [],
     });
     return { base, kept: JSON.stringify(kept) === JSON.stringify(base) ? null : kept, plain: true, sanitised: !keepMeasurements };
   });
@@ -167,6 +170,19 @@ export function useOrderEntry(): OrderEntry {
     else clearDraft(persistKey);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => persist, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Closing the tab runs no unmount, so write what is pending when the page is hidden or leaves.
+  useEffect(() => {
+    const onHide = () => persist();
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') persist();
+    };
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const discard = () => {
     // The unmount write must not bring the old draft back, whatever order React commits in.

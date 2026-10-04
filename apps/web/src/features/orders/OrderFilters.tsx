@@ -83,9 +83,10 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
 
 /** Search, status, money and sort controls, and the chips for whatever is switched on. */
 export function OrderFilters({ query, onChange, onClear, counts }: Props) {
-  const { t, number } = useI18n();
+  const { t, number, date } = useI18n();
   const { kind } = useShell();
   const can = useCan();
+  const { config } = useSnapshot();
   const money = can('money.view');
 
 
@@ -115,6 +116,13 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
       hidden.push(t('orders.filterStatus', { status: t(`orders.status.${status}`) }));
       if (query.dueOnly && money) hidden.push(t('orders.dueOnly'));
     }
+    // The worker and delivery date filters have no phone controls but still shape the list.
+    if (query.worker) {
+      const name = config?.staff.find((s) => s.id === query.worker)?.name ?? query.worker;
+      hidden.push(t('orders.chipWorker', { name }));
+    }
+    if (query.from) hidden.push(t('orders.chipFrom', { date: date(query.from) }));
+    if (query.to) hidden.push(t('orders.chipTo', { date: date(query.to) }));
     return (
       <div className="flex flex-col gap-2">
         <label className="flex min-h-12 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">

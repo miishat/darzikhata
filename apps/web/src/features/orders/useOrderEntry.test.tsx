@@ -8,6 +8,7 @@ import { DarziDb } from '../../data/db';
 import { StoreProvider } from '../../data/StoreContext';
 import { ShopStore } from '../../data/store';
 import { I18nProvider } from '../../i18n/I18nProvider';
+import { ShellProvider } from '../../shell/ShellPreference';
 import { useOrderEntry, type SaveResult } from './useOrderEntry';
 
 let count = 0;
@@ -16,7 +17,8 @@ afterEach(async () => {
   for (const db of dbs.splice(0)) await db.delete();
 });
 
-async function setup(path = '/app/orders/new', who: { shop?: 'rahman' | 'nakshi'; as?: { staffId: string; pin: string } } = {}) {
+async function setup(path = '/app/orders/new', who: { shop?: 'rahman' | 'nakshi'; as?: { staffId: string; pin: string }; layout?: 'mobile' | 'desktop' } = {}) {
+  window.localStorage.setItem('dk.layout', who.layout ?? 'desktop');
   const db = new DarziDb(`entry-${++count}`);
   dbs.push(db);
   const store = new ShopStore({ db });
@@ -28,7 +30,9 @@ async function setup(path = '/app/orders/new', who: { shop?: 'rahman' | 'nakshi'
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StoreProvider store={store}>
       <I18nProvider>
-        <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+        <ShellProvider>
+          <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+        </ShellProvider>
       </I18nProvider>
     </StoreProvider>
   );
@@ -190,6 +194,21 @@ describe('draft autosave', () => {
     expect(stored()).not.toBeNull();
   });
 
+  it('writes at once when the page is hidden or closed, without waiting for the pause', async () => {
+    const first = await setup();
+    typeSomething(first.result);
+    expect(stored()).toBeNull();
+    window.dispatchEvent(new Event('pagehide'));
+    expect(stored()).not.toBeNull();
+    window.localStorage.removeItem(KEY);
+    act(() => first.result.current.update({ notes: 'আরও' }));
+    expect(stored()).toBeNull();
+    const hidden = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    hidden.mockRestore();
+    expect(stored()).toContain('আরও');
+  });
+
   it('never records the advance: restoring only refills the field', async () => {
     const first = await setup();
     typeSomething(first.result);
@@ -338,6 +357,30 @@ describe('draft autosave', () => {
     act(() => other.result.current.discard());
     other.unmount();
     expect(stored()).toBe(before);
+  });
+
+  it('drops the worker from a draft restored on a phone, and saves none, since the phone has no worker field', async () => {
+    const KEY = 'dk.draft.rahman.main.rahman-owner';
+    const desktop = await setup();
+    act(() => desktop.result.current.setCustomer({ kind: 'new', name: 'জসিম', nameAlt: '', phone: '', gender: 'male' }));
+    act(() => desktop.result.current.addItem('shirt'));
+    const key = desktop.result.current.draft.items[0]!.key;
+    act(() => desktop.result.current.updateItem(key, { assignedTo: desktop.result.current.workers[0]!.id }));
+    desktop.unmount();
+    expect(window.localStorage.getItem(KEY)).toContain('assignedTo');
+
+    const phone = await setup('/app/orders/new', { layout: 'mobile' });
+    expect(phone.result.current.restored).toBe(true);
+    expect(phone.result.current.draft.items[0]!.assignedTo ?? null).toBeNull();
+    act(() => phone.result.current.updateItem(key, { price: 1000 }));
+    const key2 = phone.result.current.draft.items[0]!.key;
+    act(() => phone.result.current.updateItem(key2, { measurements: { kind: 'new', values: shirtValues, source: 'body', notes: '' } }));
+    let saved: SaveResult | undefined;
+    await act(async () => {
+      saved = await phone.result.current.save();
+    });
+    if (!saved?.ok) throw new Error(JSON.stringify([saved, phone.result.current.errors]));
+    expect(phone.store.getSnapshot().state.orders[saved.orderId]!.items.map((i) => i.assignedTo ?? null)).toEqual([null]);
   });
 
   it('sends no worker when the person may not assign, even if the draft carries one', async () => {
