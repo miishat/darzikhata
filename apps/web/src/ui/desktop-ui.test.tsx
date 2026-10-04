@@ -52,6 +52,14 @@ describe('ViewTabs', () => {
     expect(screen.getAllByRole('tab').map((t) => t.tabIndex)).toEqual([0, -1, -1]);
   });
 
+  it('moves to the second tab on ArrowRight when no tab is selected', async () => {
+    const onChange = vi.fn();
+    inBangla(<ViewTabs label="ভিউ" views={VIEWS} value="" onChange={onChange} />);
+    screen.getAllByRole('tab')[0]!.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(onChange).toHaveBeenCalledWith('late');
+  });
+
   it('shows a count badge in each tab', () => {
     inBangla(<Tabs />);
     expect(screen.getByRole('tab', { name: /দেরি/ }).textContent).toContain('৩');
@@ -84,6 +92,24 @@ describe('FilterButton', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByText('রহিম')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe('FilterButton focus', () => {
+  it('closes when focus leaves it, and stays open on focus moves inside', async () => {
+    inBangla(
+      <>
+        <FilterButton label="কারিগর">
+          <button type="button">রহিম</button>
+        </FilterButton>
+        <button type="button">বাইরে</button>
+      </>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'কারিগর' }));
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'রহিম' })).toBeTruthy();
+    await userEvent.tab();
+    expect(screen.queryByRole('button', { name: 'রহিম' })).toBeNull();
   });
 });
 

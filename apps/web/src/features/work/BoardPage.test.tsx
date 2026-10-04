@@ -56,6 +56,12 @@ describe('Work board', () => {
 
   it('assigns three garments to a worker from the board with a preview and a confirmation', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    const assignments = () =>
+      Object.values(store.getSnapshot().state.orders)
+        .flatMap((o) => o.items)
+        .map((i) => i.assignedTo)
+        .join(',');
+    const before = assignments();
     const board = await screen.findByRole('region', { name: 'কাজের বোর্ড' });
     const boxes = within(board).getAllByRole('checkbox');
     for (const box of boxes.slice(0, 3)) await userEvent.click(box);
@@ -64,12 +70,16 @@ describe('Work board', () => {
     await userEvent.click(screen.getByRole('button', { name: 'কারিগর ঠিক করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' });
     await userEvent.selectOptions(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
-    expect(within(within(dialog).getByRole('list', { name: 'যা হবে' })).getAllByRole('listitem')).toHaveLength(3);
+    const preview = within(within(dialog).getByRole('list', { name: 'যা হবে' })).getAllByRole('listitem');
+    expect(preview).toHaveLength(3);
+    const changing = preview.filter((li) => !li.textContent?.includes('আগে থেকেই')).length;
+    expect(changing).toBeGreaterThan(0);
     // nothing is saved until the person confirms
-    const before = JSON.stringify(store.getSnapshot().state.orders);
-    expect(JSON.stringify(store.getSnapshot().state.orders)).toBe(before);
+    expect(assignments()).toBe(before);
     await userEvent.click(within(dialog).getByRole('button', { name: 'নিশ্চিত করুন' }));
     await within(dialog).findByRole('list', { name: 'ফলাফল' });
+    expect(assignments()).not.toBe(before);
+    expect(assignments().split('uniform-tailor-2').length - before.split('uniform-tailor-2').length).toBe(changing);
     await userEvent.click(within(dialog).getByRole('button', { name: 'বন্ধ করুন' }));
     expect(screen.queryByText('৩টি পোশাক বাছাই করা')).toBeNull();
   });

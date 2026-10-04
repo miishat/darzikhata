@@ -34,7 +34,7 @@ export function ViewTabs({ label, views, value, onChange, panelId }: ViewTabsPro
     <div
       role="tablist"
       aria-label={label}
-      onKeyDown={rovingTabsKeyDown(keys, value, onChange, idOf)}
+      onKeyDown={rovingTabsKeyDown(keys, anySelected ? value : (keys[0] ?? value), onChange, idOf)}
       className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line"
     >
       {views.map((view) => {

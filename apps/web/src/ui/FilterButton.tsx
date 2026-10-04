@@ -28,6 +28,9 @@ export function FilterButton({ label, children }: FilterButtonProps) {
     <div
       ref={wrap}
       className="relative inline-block"
+      onBlur={(e) => {
+        if (open && !e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && open) {
           e.stopPropagation();
@@ -52,8 +55,9 @@ export function FilterButton({ label, children }: FilterButtonProps) {
         <div
           id={popId}
           role="group"
+          tabIndex={-1}
           aria-label={t('desk.filter.options', { label })}
-          className="absolute left-0 top-full z-30 mt-1 flex min-w-48 flex-col gap-1 rounded-xl border border-line bg-panel p-2 shadow-xl"
+          className="absolute left-0 top-full z-30 mt-1 flex min-w-48 flex-col gap-1 rounded-xl border border-line bg-panel p-2 shadow-xl outline-none"
         >
           {children}
         </div>
