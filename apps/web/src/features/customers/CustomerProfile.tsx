@@ -9,7 +9,6 @@ import { buttonClasses } from '../../ui/Button';
 import { StagePill } from '../../ui/StagePill';
 import type { Tone } from '../../ui/stageTone';
 import { useScopedState } from '../branches/BranchScopeProvider';
-import { customerName } from '../common/customerName';
 import { useCan } from '../common/hooks';
 import { garmentSummary } from '../common/orderText';
 import { useShell } from '../../shell/ShellPreference';
@@ -66,7 +65,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
     );
   }
 
-  const name = customerName(customer, language);
+  const name = customer.name;
   const household = customer.householdId ? state.households[customer.householdId] : undefined;
   const members = household
     ? Object.values(state.customers).filter((c) => c.householdId === household.id && c.id !== customer.id)
@@ -142,7 +141,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
                 {members.map((member) => (
                   <li key={member.id}>
                     <Link to={`/app/customers/${member.id}`} className="text-brand-strong underline">
-                      {customerName(member, language)}
+                      {member.name}
                     </Link>
                   </li>
                 ))}
