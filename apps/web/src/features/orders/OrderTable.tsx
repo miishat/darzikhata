@@ -62,12 +62,10 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const workerNames = useWorkerNames();
   const body = useRef<HTMLTableSectionElement>(null);
   const showMoney = can('money.view');
-  // With the side panel open the table is narrow: the workers column gives way (the panel shows them), then the balance and the date on smaller screens (the panel shows those too).
+  // With the side panel open the table is narrow: the delivery and workers columns give way (the panel
+  // shows both) and the time left moves under the order number. The header stays put while the card scrolls.
   const panelOpen = activeId !== undefined;
-  const workersCol = panelOpen ? 'hidden' : '';
-  const deliveryCol = panelOpen ? 'hidden xl:table-cell' : '';
-  const balanceCol = panelOpen ? 'hidden min-[1440px]:table-cell' : '';
-  const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
+  const head = 'sticky top-0 z-10 whitespace-nowrap border-b border-line bg-panel px-3 py-2 text-start text-sm font-semibold text-muted';
   const target = (id: string) => ({ pathname: `/app/orders/${id}`, search });
   // One tab stop for the whole table: the open order, or the first row.
   const stop = rows.some((row) => row.order.id === activeId) ? activeId : rows[0]?.order.id;
@@ -97,66 +95,71 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-      <table aria-label={t('orders.list')} aria-keyshortcuts="ArrowUp ArrowDown Enter Escape" onKeyDown={onKeyDown} className="w-full border-collapse">
-        <thead>
-          <tr className="border-b border-line">
-            <th scope="col" className={head}>{t('orders.col.customer')}</th>
-            <th scope="col" className={head}>{t('orders.col.garmentsStage')}</th>
-            <th scope="col" className={`${head} ${deliveryCol}`}>{t('orders.col.delivery')}</th>
-            <th scope="col" className={`${head} ${workersCol}`}>{t('orders.col.workers')}</th>
-            {showMoney && <th scope="col" className={`${head} text-end ${balanceCol}`}>{t('orders.col.balance')}</th>}
-          </tr>
-        </thead>
-        <tbody ref={body}>
-          {rows.map((row) => {
-            const { order } = row;
-            const selected = order.id === activeId;
-            const live = order.items.filter((item) => !item.cancelled);
-            const hasUnassigned = live.some(needsWorker);
-            return (
-              <tr
-                key={order.id}
-                data-order-id={order.id}
-                aria-selected={selected}
-                tabIndex={order.id === stop ? 0 : -1}
-                onClick={() => navigate(target(order.id), { replace: true })}
-                className={`cursor-pointer border-b border-line last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
-                  selected ? 'bg-brand-soft' : 'hover:bg-surface'
-                }`}
-              >
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-2.5">
-                    {row.customer && <Avatar id={row.customer.id} name={row.customer.name} />}
-                    <div className="flex min-w-0 flex-col">
-                      <Link
-                        to={target(order.id)}
-                        replace
-                        aria-current={selected ? 'page' : undefined}
-                        onClick={(event) => event.stopPropagation()}
-                        className="truncate font-semibold text-ink focus-visible:outline-2 focus-visible:outline-focus"
-                      >
-                        {row.customer?.name ?? order.number}
-                      </Link>
-                      <span className="text-sm text-muted">{order.number}</span>
-                    </div>
+    <table aria-label={t('orders.list')} aria-keyshortcuts="ArrowUp ArrowDown Enter Escape" onKeyDown={onKeyDown} className="w-full border-collapse">
+      <thead>
+        <tr>
+          <th scope="col" className={head}>{t('orders.col.customer')}</th>
+          <th scope="col" className={head}>{t('orders.col.garmentsStage')}</th>
+          {!panelOpen && <th scope="col" className={head}>{t('orders.col.delivery')}</th>}
+          {!panelOpen && <th scope="col" className={head}>{t('orders.col.workers')}</th>}
+          {showMoney && <th scope="col" className={`${head} text-end`}>{t('orders.col.balance')}</th>}
+        </tr>
+      </thead>
+      <tbody ref={body}>
+        {rows.map((row) => {
+          const { order } = row;
+          const selected = order.id === activeId;
+          const live = order.items.filter((item) => !item.cancelled);
+          const hasUnassigned = live.some(needsWorker);
+          return (
+            <tr
+              key={order.id}
+              data-order-id={order.id}
+              aria-selected={selected}
+              tabIndex={order.id === stop ? 0 : -1}
+              onClick={() => navigate(target(order.id), { replace: true })}
+              className={`cursor-pointer border-b border-line focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+                selected ? 'bg-brand-soft' : 'hover:bg-surface'
+              }`}
+            >
+              <td className="px-3 py-2">
+                <div className="flex items-center gap-2.5">
+                  {row.customer && <Avatar id={row.customer.id} name={row.customer.name} />}
+                  <div className="flex min-w-0 flex-col">
+                    <Link
+                      to={target(order.id)}
+                      replace
+                      aria-current={selected ? 'page' : undefined}
+                      onClick={(event) => event.stopPropagation()}
+                      className="truncate font-semibold text-ink focus-visible:outline-2 focus-visible:outline-focus"
+                    >
+                      {row.customer?.name ?? order.number}
+                    </Link>
+                    <span className="text-sm text-muted">{order.number}</span>
+                    {panelOpen && row.nextDelivery && (
+                      <span className="w-fit">
+                        <DueLabel date={row.nextDelivery} />
+                      </span>
+                    )}
                   </div>
-                </td>
-                <td className="px-3 py-2">
-                  <ul className="m-0 flex list-none flex-col items-start gap-1 p-0">
-                    {groupByStage(order, live, language).map(({ item, titles }) => {
-                      const index = item.stages.findIndex((s) => s.key === item.stageKey);
-                      const stage = item.stages[index];
-                      return (
-                        <li key={item.stageKey} className="flex items-baseline gap-2 text-sm">
-                          <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, itemSummaryGroup(item), Math.max(index, 0))} />
-                          <span className="text-muted">{titles.join(', ')}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </td>
-                <td className={`whitespace-nowrap px-3 py-2 text-sm ${deliveryCol}`}>
+                </div>
+              </td>
+              <td className={`px-3 py-2 ${panelOpen ? 'w-full max-w-0' : ''}`}>
+                <ul className="m-0 flex list-none flex-col items-start gap-1 p-0">
+                  {groupByStage(order, live, language).map(({ item, titles }) => {
+                    const index = item.stages.findIndex((s) => s.key === item.stageKey);
+                    const stage = item.stages[index];
+                    return (
+                      <li key={item.stageKey} className="flex max-w-full items-baseline gap-2 text-sm">
+                        <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, itemSummaryGroup(item), Math.max(index, 0))} />
+                        <span className={`text-muted ${panelOpen ? 'truncate' : ''}`}>{titles.join(', ')}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </td>
+              {!panelOpen && (
+                <td className="whitespace-nowrap px-3 py-2 text-sm">
                   {row.nextDelivery ? (
                     <div className="flex flex-col items-start gap-0.5">
                       <span>{date(row.nextDelivery)}</span>
@@ -166,7 +169,9 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     <span className="text-muted">-</span>
                   )}
                 </td>
-                <td className={`px-3 py-2 text-sm ${workersCol}`}>
+              )}
+              {!panelOpen && (
+                <td className="px-3 py-2 text-sm">
                   <div className="flex flex-col gap-0.5">
                     {row.workers.length > 0 && <span>{workerNames(row.workers)}</span>}
                     {hasUnassigned && (
@@ -177,20 +182,20 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     )}
                   </div>
                 </td>
-                {showMoney && (
-                  <td className={`whitespace-nowrap px-3 py-2 text-end ${balanceCol}`}>
-                    {row.balance > 0 ? (
-                      <span className="font-semibold text-warn">{money(row.balance)}</span>
-                    ) : (
-                      <span className="text-sm font-semibold text-ok">{row.balance < 0 ? balanceText(row.balance) : t('orders.card.paid')}</span>
-                    )}
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+              )}
+              {showMoney && (
+                <td className="whitespace-nowrap px-3 py-2 text-end">
+                  {row.balance > 0 ? (
+                    <span className="font-semibold text-warn">{money(row.balance)}</span>
+                  ) : (
+                    <span className="text-sm font-semibold text-ok">{row.balance < 0 ? balanceText(row.balance) : t('orders.card.paid')}</span>
+                  )}
+                </td>
+              )}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

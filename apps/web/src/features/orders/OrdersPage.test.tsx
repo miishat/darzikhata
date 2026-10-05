@@ -1,4 +1,4 @@
-import { itemSummaryGroup, moneySummary, toBanglaDigits, todayInDhaka, type Order } from '@darzikhata/domain';
+import { balanceDue, formatTaka, itemSummaryGroup, moneySummary, toBanglaDigits, todayInDhaka, type Order } from '@darzikhata/domain';
 import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -31,7 +31,10 @@ describe('Orders list', () => {
     expect(overdue.total).toBeGreaterThan(0);
 
     const tabs = within(await screen.findByRole('tablist', { name: 'অর্ডারের ভিউ' }));
-    expect(tabs.getAllByRole('tab').map((t) => t.textContent!.replace(/[০-৯]+$/, ''))).toEqual(['সব', 'চলমান', 'ট্রায়াল', 'রেডি', 'দেরি', 'বাকি আছে']);
+    // Each tile is named by its label first; the count shows above it.
+    expect(tabs.getAllByRole('tab').map((t) => t.textContent!.replace(/( · .*)?[০-৯]+$/, ''))).toEqual(['সব', 'চলমান', 'ট্রায়াল', 'রেডি', 'দেরি', 'বাকি আছে']);
+    const owedTotal = Object.values(state.orders).reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0);
+    expect(tabs.getByRole('tab', { name: /^বাকি আছে/ }).textContent).toContain(formatTaka(owedTotal, 'bn'));
     expect(tabs.getByRole('tab', { name: /^সব/ }).getAttribute('aria-selected')).toBe('true');
     expect(tabs.getByRole('tab', { name: /^দেরি/ }).textContent).toContain(bn(counts.late));
 
@@ -116,6 +119,15 @@ describe('Orders list', () => {
 
     await userEvent.click(row);
     expect(row.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('drops the delivery and worker columns beside an open order and shows the time left under the number', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
+    await screen.findByRole('table', { name: 'অর্ডার তালিকা' });
+    await userEvent.click(bodyRows()[0]!);
+    await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' });
+    expect(screen.getAllByRole('columnheader').map((c) => c.textContent)).toEqual(['কাস্টমার', 'পোশাক ও ধাপ', 'বাকি']);
+    expect(bodyRows().some((r) => within(r).queryByText(/দিন বাকি|দিন দেরি|^আজ$|^কাল$/))).toBe(true);
   });
 
   it('moves the selection with Up and Down, opens the full page with Enter, and closes with Escape', async () => {
