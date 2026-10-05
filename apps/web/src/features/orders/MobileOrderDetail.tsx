@@ -6,10 +6,10 @@ import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
 import { Avatar } from '../../ui/Avatar';
-import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { IconButton } from '../../ui/IconButton';
+import { PAYMENT_DOCK_SPACE, PaymentDock } from '../../ui/PaymentDock';
 import { useCan } from '../common/hooks';
 import { itemTitle, progressText } from '../common/orderText';
 import { StatusLinkSection } from '../links/StatusLinkSection';
@@ -46,7 +46,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
   const hasBar = showTake;
 
   return (
-    <div className={`flex flex-col gap-3 ${hasBar ? BOTTOM_BAR_SPACE : ''}`}>
+    <div className={`flex flex-col gap-3 ${hasBar ? PAYMENT_DOCK_SPACE : ''}`}>
       <header className="-mx-2 flex items-center gap-1">
         <Link to={{ pathname: '/app/orders', search }} aria-label={t('orders.back')} className={`${ROUND} text-ink hover:bg-surface`}>
           <ArrowLeft aria-hidden="true" size={24} />
@@ -130,28 +130,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         );
       })}
 
-      {hasBar && (
-      <BottomBar>
-        {can('money.view') && (
-          <Link
-            to={`/print/receipt/${order.id}`}
-            aria-label={t('order.printReceipt')}
-            className="flex size-[54px] shrink-0 items-center justify-center rounded-2xl border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            <Printer aria-hidden="true" size={22} />
-          </Link>
-        )}
-        {showTake && (
-          <button
-            type="button"
-            onClick={() => money.open({ kind: 'take' })}
-            className="flex min-h-[54px] flex-[1.4] items-center justify-center rounded-2xl bg-brand-soft px-3 text-base font-bold text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            {t('payments.take')} · {formatMoney(moneySummary(order).balance)}
-          </button>
-        )}
-      </BottomBar>
-      )}
+      {hasBar && <PaymentDock order={order} canPrint={can('money.view')} onTake={() => money.open({ kind: 'take' })} />}
 
       {money.element}
       {sharing && (

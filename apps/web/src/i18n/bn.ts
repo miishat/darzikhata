@@ -496,6 +496,8 @@ export const bn = {
   'payments.section': 'টাকার হিসাব',
   'payments.creditNote': 'ফেরত দিন, অথবা কাস্টমারের ক্রেডিট হিসেবে রেখে দিন। নিজে থেকে কিছু হবে না।',
   'payments.take': 'টাকা নিন',
+  'payments.dockHide': 'পেমেন্ট বার লুকান',
+  'payments.dockShow': 'পেমেন্ট বার দেখান',
   'payments.refund': 'টাকা ফেরত দিন',
   'payments.correct': 'ভুল ঠিক করুন',
   'payments.discount': 'ছাড় বদলান',
