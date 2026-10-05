@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE: Numeric display font mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700&family=Tiro+Bangla&display=swap" rel="stylesheet">
+<style>
+  :root { --brand:#1f4fd8; --brand-strong:#163ba6; --navy:#13235b; --navy-raised:#1e3375; --on-navy:#fff; --on-navy-muted:#b9c6f0;
+          --surface:#f4f6fb; --muted:#5a6478; --line:#e3e7f0; --warn:#b4380b; --ok:#0f6b5f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#dde2ee; font-family:'Noto Sans Bengali',system-ui,sans-serif; color:#14192b; padding:16px; }
+  h1 { font:600 16px system-ui; margin:0 0 4px; }
+  .note { font:13px system-ui; color:var(--muted); margin:0 0 16px; }
+  .wrap { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .col { flex:1 1 380px; max-width:460px; }
+  .label { font:700 12px system-ui; text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px; display:flex; justify-content:space-between; }
+  .label i { font-style:normal; color:var(--brand-strong); }
+  .phone { background:var(--surface); border-radius:22px; padding:14px; display:flex; flex-direction:column; gap:12px; border:1px solid var(--line); }
+  /* the only difference between columns: this var */
+  .d { font-family:var(--fd); }
+  .num { font-family:var(--fd); }
+  .greet small { display:block; font-size:13px; color:var(--muted); }
+  .greet b { font-size:24px; font-weight:700; }
+  .panel { background:var(--navy); color:var(--on-navy); border-radius:22px; padding:14px; }
+  .panel h2 { margin:0 0 10px; font-size:18px; font-weight:600; display:flex; justify-content:space-between; align-items:baseline; }
+  .panel h2 span { font:400 13px 'Noto Sans Bengali'; color:var(--on-navy-muted); }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tile { background:var(--navy-raised); border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:4px; }
+  .tile .k { font-size:13px; color:var(--on-navy-muted); }
+  .tile .v { font-size:30px; font-weight:700; line-height:1; }
+  .tile .s { font-size:13px; color:var(--on-navy-muted); }
+  .tile .s.late { color:#ffb68f; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:18px; padding:14px; }
+  .card .k { font-size:13px; color:var(--muted); }
+  .money { font-size:30px; font-weight:700; display:block; line-height:1.3; }
+  .rows { margin-top:6px; }
+  .r { display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-top:1px solid var(--line); font-size:15px; }
+  .r .num { font-size:19px; font-weight:700; }
+  .r .num.warn { color:var(--warn); }
+  .ord { display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+  .av { width:42px; height:42px; border-radius:50%; background:#dfe7ff; color:var(--brand-strong); display:grid; place-items:center; font-weight:600; font-size:17px; flex:none; }
+  .ord .n { flex:1; font-size:15px; }
+  .ord .n small { display:block; color:var(--muted); font-size:13px; }
+  .pill { background:#e3f4ee; color:var(--ok); border-radius:999px; padding:3px 10px; font-size:13px; }
+  .kp { background:#fff; border:1px solid var(--line); border-radius:18px; padding:12px; }
+  .kp .out { font-size:30px; font-weight:600; min-height:42px; }
+  .kp .keys { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:6px; }
+  .kp .keys b { height:50px; border-radius:12px; background:var(--surface); display:grid; place-items:center; font-size:22px; font-weight:600; }
+  .kp .keys b.op { background:#e6ecff; color:var(--brand-strong); font-family:'Noto Sans Bengali'; }
+</style>
+</head>
+<body>
+<h1>PROTOTYPE: numeric display font, in context (throwaway)</h1>
+<p class="note">Same dashboard slice, three renderings. Only <code>--font-display</code> changes (the face behind <code>font-display</code> in the app). Left is today's Anek Bangla for reference. Tiro Bangla ships one weight, so bold is browser-synthesised here. Needs internet.</p>
+
+<div class="wrap" id="wrap"></div>
+
+<template id="tpl">
+  <div class="col" style="--fd: FD">
+    <div class="label"><span>NAME</span><i>TAG</i></div>
+    <div class="phone">
+      <div class="greet d"><small>৪ অক্টোবর</small><b>শুভ সকাল, রফিক ভাই</b></div>
+
+      <div class="panel">
+        <h2 class="d">আজকের কাজ <span>৪ অক্টোবর</span></h2>
+        <div class="tiles">
+          <div class="tile"><span class="k">ডেলিভারি আজ</span><span class="v num">১২</span><span class="s">৩টি দেরি</span></div>
+          <div class="tile"><span class="k">কাটা বাকি</span><span class="v num">৪৭</span><span class="s late">৯টি দেরি</span></div>
+          <div class="tile"><span class="k">ট্রায়াল</span><span class="v num">৮</span><span class="s">&nbsp;</span></div>
+          <div class="tile"><span class="k">তৈরি</span><span class="v num">১০৬</span><span class="s">৫টি পড়ে আছে</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="k">আজ আদায়</span>
+        <span class="money num">৳ ৮৮,১৬,৯৮০</span>
+        <span class="k">১৪২টি পেমেন্ট</span>
+        <div class="rows">
+          <div class="r"><span>মোট বাকি</span><span class="num warn">৳ ১২,৫০,৩৪০</span></div>
+          <div class="r"><span>এই মাসে বিক্রি</span><span class="num">৳ ২৩,০৭,৮৯০</span></div>
+          <div class="r"><span>গড় অর্ডার</span><span class="num">৳ ৪,৫৭৫</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="d" style="font-size:16px;font-weight:600;margin-bottom:6px">সাম্প্রতিক অর্ডার</div>
+        <div class="ord"><div class="av d">র</div><div class="n">রহিম উদ্দিন<small>অর্ডার #১০৪২ · ৩টি পোশাক</small></div><span class="pill">তৈরি</span></div>
+        <div class="ord"><div class="av d">ক</div><div class="n">করিম মিয়া<small>অর্ডার #১০৪১ · ২টি পোশাক</small></div><span class="pill">৳ ৩,৮৫০ বাকি</span></div>
+      </div>
+
+      <div class="kp">
+        <div style="font-size:13px;color:var(--muted)">বুক (ইঞ্চি)</div>
+        <div class="out num">৩৮½</div>
+        <div class="keys">
+          <b class="num">১</b><b class="num">২</b><b class="num">৩</b><b class="op">½</b>
+          <b class="num">৪</b><b class="num">৫</b><b class="num">৬</b><b class="op">¼</b>
+          <b class="num">৭</b><b class="num">৮</b><b class="num">৯</b><b class="op">⌫</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+const variants = [
+  ['Anek Bangla', 'current', "'Anek Bangla','Noto Sans Bengali',sans-serif"],
+  ['Noto Serif Bengali', 'option 1', "'Noto Serif Bengali','Noto Sans Bengali',serif"],
+  ['Tiro Bangla', 'option 2', "'Tiro Bangla','Noto Sans Bengali',serif"],
+];
+const tpl = document.getElementById('tpl').innerHTML, wrap = document.getElementById('wrap');
+for (const [n, t, f] of variants)
+  wrap.insertAdjacentHTML('beforeend', tpl.replace('FD', f).replace('NAME', n).replace('TAG', t));
+</script>
+</body>
+</html>

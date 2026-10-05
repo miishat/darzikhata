@@ -1,5 +1,5 @@
 import { balanceDue, searchCustomers, type Customer } from '@darzikhata/domain';
-import { Plus, TriangleAlert } from 'lucide-react';
+import { Plus, Search, TriangleAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -14,7 +14,7 @@ interface Props {
   query: string;
   onQueryChange(query: string): void;
   activeId: string | undefined;
-  /** The desktop column shows avatars and what each customer owes; the phone keeps its plain rows. */
+  /** The desktop column is a compact sidebar list; the phone gets a search bar with an add button and one card per customer. */
   desktop?: boolean;
 }
 
@@ -40,6 +40,46 @@ export function CustomerList({ query, onQueryChange, activeId, desktop = false }
   }, [scoped.orders]);
   const showOwed = desktop && can('money.view');
 
+  if (!desktop) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <label className="flex min-h-12 flex-1 items-center gap-2 rounded-2xl border border-line bg-panel px-3 focus-within:outline-2 focus-within:outline-focus">
+            <Search size={18} aria-hidden="true" className="shrink-0 text-muted" />
+            <span className="sr-only">{t('customers.search')}</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder={t('customers.search')}
+              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted"
+            />
+          </label>
+          {can('customers.edit') && (
+            <Link
+              to="/app/customers/new"
+              aria-label={t('customers.new')}
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <Plus size={22} aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+        {shown.length === 0 ? (
+          <p className="text-muted">{t('customers.none')}</p>
+        ) : (
+          <ul aria-label={t('customers.list')} className="flex flex-col gap-2.5">
+            {shown.map((customer) => (
+              <li key={customer.id}>
+                <CustomerCard customer={customer} owed={can('money.view') ? (owedBy.get(customer.id) ?? 0) : 0} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-col gap-3">
       <TextField
@@ -60,11 +100,7 @@ export function CustomerList({ query, onQueryChange, activeId, desktop = false }
         <ul aria-label={t('customers.list')} className="-m-1 flex min-h-0 flex-col gap-1 overflow-auto p-1">
           {shown.map((customer) => (
             <li key={customer.id}>
-              {desktop ? (
-                <DesktopRow customer={customer} active={customer.id === activeId} owed={showOwed ? (owedBy.get(customer.id) ?? 0) : 0} money={money} />
-              ) : (
-                <CustomerLink customer={customer} active={customer.id === activeId} />
-              )}
+              <DesktopRow customer={customer} active={customer.id === activeId} owed={showOwed ? (owedBy.get(customer.id) ?? 0) : 0} money={money} />
             </li>
           ))}
         </ul>
@@ -73,18 +109,25 @@ export function CustomerList({ query, onQueryChange, activeId, desktop = false }
   );
 }
 
-function CustomerLink({ customer, active }: { customer: Customer; active: boolean }) {
+function CustomerCard({ customer, owed }: { customer: Customer; owed: number }) {
+  const { t, money } = useI18n();
+  const detail = [customer.nameAlt, customer.phone].filter(Boolean).join(' · ');
   return (
     <Link
       to={`/app/customers/${customer.id}`}
-      aria-current={active ? 'page' : undefined}
-      className={`flex flex-col rounded-lg border px-3 py-2 focus-visible:outline-2 focus-visible:outline-focus ${
-        active ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel hover:bg-surface'
-      }`}
+      className="flex min-h-11 items-center gap-3 rounded-2xl border border-line bg-panel p-3.5 focus-visible:outline-2 focus-visible:outline-focus"
     >
-      <span className="font-semibold">{customer.name}</span>
-      {customer.nameAlt && <span className="text-sm text-muted">{customer.nameAlt}</span>}
-      {customer.phone && <span className="text-sm text-muted">{customer.phone}</span>}
+      <Avatar id={customer.id} name={customer.name} />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-semibold">{customer.name}</span>
+        <span className="truncate text-sm text-muted">{detail || t('customer.noPhone')}</span>
+      </span>
+      {owed > 0 && (
+        <span className="flex flex-col items-end">
+          <span className="font-display text-lg font-bold text-warn">{money(owed)}</span>
+          <span className="text-xs text-muted">{t('orders.card.owed')}</span>
+        </span>
+      )}
     </Link>
   );
 }

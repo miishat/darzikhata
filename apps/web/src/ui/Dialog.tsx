@@ -80,9 +80,11 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="dialog-panel max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-panel-raised px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl outline-1 -outline-offset-1 outline-raised-line sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:rounded-xl sm:p-5"
+        className="dialog-panel max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-panel-raised px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl outline-1 -outline-offset-1 outline-raised-line sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:rounded-xl sm:p-5"
       >
-        <div aria-hidden="true" className="mx-auto mb-3 h-1 w-9 rounded-full bg-muted/40 sm:hidden" />
+        <div aria-hidden="true" className="sticky top-0 z-10 -mx-5 mb-1 bg-panel-raised pb-2 pt-2 sm:hidden">
+          <div className="mx-auto h-1 w-9 rounded-full bg-muted/40" />
+        </div>
         <h2 id={titleId} className={`text-lg font-semibold ${hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
           {title}
         </h2>

@@ -498,6 +498,8 @@ export const bn = {
   'payments.take': 'টাকা নিন',
   'payments.dockHide': 'পেমেন্ট বার লুকান',
   'payments.dockShow': 'পেমেন্ট বার দেখান',
+  'customer.dockHide': 'বার লুকান',
+  'customer.dockShow': 'বার দেখান',
   'payments.refund': 'টাকা ফেরত দিন',
   'payments.correct': 'ভুল ঠিক করুন',
   'payments.discount': 'ছাড় বদলান',

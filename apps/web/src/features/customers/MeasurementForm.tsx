@@ -7,10 +7,11 @@ import {
   type MeasurementSource,
   type MeasurementValue,
 } from '@darzikhata/domain';
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { Button, buttonClasses } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { NumberField } from '../../ui/NumberField';
@@ -18,6 +19,7 @@ import { TextAreaField } from '../../ui/TextAreaField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { useMeasurementAccess } from '../common/hooks';
 import { problemText } from '../common/problemText';
+import { MeasureTiles } from '../orders/entry/MeasureTiles';
 import { fieldGroups, groupLabel } from './measurementView';
 
 export interface MeasurementInputsProps {
@@ -92,6 +94,9 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
   const { state } = useSnapshot();
   const current = useCurrentStaff();
   const navigate = useNavigate();
+  const { kind } = useShell();
+  const [keypadSpace, setKeypadSpace] = useState(0);
+  const onKeypadSpace = useCallback((h: number) => setKeypadSpace(h), []);
 
   const [previous] = useState(() => {
     const profile = state.profiles[profileKey(customerId, template.id)];
@@ -151,7 +156,19 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
   return (
     <form onSubmit={save} noValidate className="flex max-w-xl flex-col gap-4">
       <h1 className="text-xl font-semibold">{t('measure.title', { garment: label(template.name) })}</h1>
-      <MeasurementInputs template={template} values={previous} errors={errors} onChange={setValues} />
+      {kind === 'mobile' ? (
+        <MeasureTiles
+          template={template}
+          values={previous}
+          previous={previous}
+          errors={errors}
+          onChange={setValues}
+          onDone={() => {}}
+          onKeypadSpace={onKeypadSpace}
+        />
+      ) : (
+        <MeasurementInputs template={template} values={previous} errors={errors} onChange={setValues} />
+      )}
       <ChoiceGroup
         legend={t('measure.source')}
         value={source}
@@ -175,6 +192,7 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
           {t('common.cancel')}
         </Link>
       </div>
+      {keypadSpace > 0 && <div aria-hidden="true" style={{ height: keypadSpace }} />}
       {dialog}
     </form>
   );

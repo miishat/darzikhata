@@ -40,7 +40,8 @@ describe('Order detail on a phone', () => {
 
   it('fills Take payment in the bar when money is owed', async () => {
     const owing = await openOrder('rahman', (o) => owes(o) && readyCount(o) > 0);
-    expect(screen.getByRole('button', { name: /^টাকা নিন/ }).className).toContain('bg-brand');
+    await userEvent.click(await screen.findByRole('button', { name: 'পেমেন্ট বার দেখান' }));
+    expect(screen.getByRole('button', { name: /^টাকা নিন/ }).className).toContain('bg-brand-soft');
     expect(owing.order.id).toBeTruthy();
   });
 
@@ -70,6 +71,7 @@ describe('Order detail on a phone', () => {
 
   it('never records money from one tap: Take payment opens the existing dialog', async () => {
     const { order, store } = await openOrder('rahman', (o) => owes(o));
+    await userEvent.click(await screen.findByRole('button', { name: 'পেমেন্ট বার দেখান' }));
     await userEvent.click(screen.getByRole('button', { name: /^টাকা নিন/ }));
     expect(await screen.findByRole('dialog', { name: 'টাকা জমা' })).toBeTruthy();
     expect(store.getSnapshot().state.orders[order.id]!.payments).toEqual(order.payments);

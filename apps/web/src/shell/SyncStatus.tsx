@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
+import { ChevronRight, ClipboardCheck, RefreshCw, Smartphone, Wifi, WifiOff } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot, useStore } from '../data/StoreContext';
 import { otherDeviceEdit, otherDeviceTarget } from '../features/sync/otherDevice';
 import { useSyncStatus, useVisibleReview } from '../features/sync/useSync';
 import type { MessageKey } from '../i18n/bn';
 import { useI18n } from '../i18n/I18nProvider';
-import { Button, buttonClasses } from '../ui/Button';
+import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
+import { Switch } from '../ui/Switch';
 
 const STATUS_KEY: Record<string, MessageKey> = {
   online: 'sync.online',
@@ -65,11 +67,16 @@ export function SyncButton({ block = false }: { block?: boolean }) {
   );
 }
 
+const ROW = 'flex min-h-14 w-full items-center gap-3 px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50';
+const TILE = 'flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong';
+
+/** The sync sheet: online switch, sync now, changes to review, and the demo's other device, as settings-style rows. */
 function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
   const { t, number, dateTime } = useI18n();
   const store = useStore();
   const { sync, state } = useSnapshot();
   const review = useVisibleReview();
+  const status = useSyncStatus();
   const { pathname } = useLocation();
   const [outcome, setOutcome] = useState<MessageKey | null>(null);
   const target = otherDeviceTarget(pathname, state);
@@ -93,6 +100,8 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
       open={open}
       title={t('sync.title')}
       onClose={onClose}
+      hideTitleOnPhone
+      actionsDesktopOnly
       actions={
         <Button variant="secondary" onClick={onClose}>
           {t('common.close')}
@@ -100,35 +109,52 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
       }
     >
       <div className="space-y-3 text-ink">
-        <p>{sync.pending > 0 ? t('sync.pending', { count: number(sync.pending) }) : t('sync.allSent')}</p>
-        <p className="text-muted">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</p>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => void store.setOnline(!sync.online)}>
-            {t(sync.online ? 'sync.goOffline' : 'sync.goOnline')}
-          </Button>
-          <Button variant="secondary" disabled={!sync.online || sync.syncing} onClick={() => void store.syncNow()}>
-            {t('sync.now')}
-          </Button>
-        </div>
-        {review.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p>{t('sync.reviewCount', { count: number(review.length) })}</p>
-            <Link to="/app/review" data-tour="review-link" onClick={onClose} className={buttonClasses('primary')}>
-              {t('sync.openReview')}
-            </Link>
+        <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
+          <div className={ROW}>
+            <span className={TILE}>{sync.online ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t(STATUS_KEY[status]!)}</span>
+              <span className="block text-sm text-muted">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
+            </span>
+            <Switch on={sync.online} onChange={(on) => void store.setOnline(on)} label={t(sync.online ? 'sync.goOffline' : 'sync.goOnline')} />
           </div>
-        )}
-        <section className="space-y-2 border-t border-line pt-3">
-          <h3 className="font-semibold">{t('more.demo')}</h3>
-          <p className="text-sm text-muted">{t('sync.demoNote')}</p>
-          <Button variant="secondary" disabled={!target} onClick={() => void pushOther()}>
-            {t('sync.other')}
-          </Button>
-          <p className="text-sm text-muted">{t(target ? 'sync.otherHint' : 'sync.otherNone')}</p>
-          <p role="status" className="text-sm">
-            {outcome ? t(outcome) : null}
-          </p>
-        </section>
+          <button type="button" disabled={!sync.online || sync.syncing} onClick={() => void store.syncNow()} className={ROW}>
+            <span className={TILE}>
+              <RefreshCw size={20} aria-hidden="true" className={sync.syncing ? 'animate-spin' : ''} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t('sync.now')}</span>
+              <span className="block text-sm text-muted">{sync.pending > 0 ? t('sync.pending', { count: number(sync.pending) }) : t('sync.allSent')}</span>
+            </span>
+            <ChevronRight size={18} aria-hidden="true" className="text-muted" />
+          </button>
+          {review.length > 0 && (
+            <Link to="/app/review" data-tour="review-link" onClick={onClose} className={ROW}>
+              <span className={`${TILE} bg-warn-soft text-warn-ink`}>
+                <ClipboardCheck size={20} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">{t('sync.openReview')}</span>
+                <span className="block text-sm text-muted">{t('sync.reviewCount', { count: number(review.length) })}</span>
+              </span>
+              <ChevronRight size={18} aria-hidden="true" className="text-muted" />
+            </Link>
+          )}
+        </div>
+        <div className="overflow-hidden rounded-2xl bg-surface">
+          <button type="button" disabled={!target} onClick={() => void pushOther()} className={ROW}>
+            <span className={TILE}>
+              <Smartphone size={20} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t('sync.other')}</span>
+              <span className="block text-sm text-muted">{t(target ? 'sync.otherHint' : 'sync.otherNone')}</span>
+            </span>
+          </button>
+        </div>
+        <p role="status" className="px-1 text-sm">
+          {outcome ? t(outcome) : null}
+        </p>
       </div>
     </Dialog>
   );

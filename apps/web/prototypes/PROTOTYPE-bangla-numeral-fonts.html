@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE: Bangla numeral fonts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;600;700&family=Atma:wght@400;600;700&family=Baloo+Da+2:wght@400;600;700&family=Hind+Siliguri:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700&family=Tiro+Bangla&family=Mina:wght@400;700&family=Galada&family=Bahiana&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1c1b19; --mute:#6b675f; --line:#e4dfd5; --bg:#faf8f3; --card:#fff; --accent:#0f6b5c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,sans-serif; padding:16px 16px 90px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .note { color:var(--mute); font-size:13px; margin:0 0 14px; }
+  .bar { position:sticky; top:0; background:var(--bg); padding:8px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:center; z-index:2; border-bottom:1px solid var(--line); margin-bottom:14px; font-size:13px; }
+  .bar button { border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:999px; cursor:pointer; font:inherit; }
+  .bar button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .card.current { border-color:var(--accent); box-shadow:0 0 0 2px #0f6b5c22; }
+  .name { font:600 12px system-ui; color:var(--mute); text-transform:uppercase; letter-spacing:.04em; display:flex; justify-content:space-between; }
+  .tag { color:var(--accent); }
+  .sample { font-weight:var(--w,600); font-feature-settings:var(--tab,normal); }
+  .big { font-size:34px; line-height:1.3; margin:6px 0 2px; }
+  .row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; border-top:1px dashed var(--line); padding:6px 0; font-size:16px; }
+  .row span:first-child { color:var(--mute); font-weight:400; font-size:13px; font-family:system-ui; }
+  .digits { font-size:22px; letter-spacing:.02em; }
+  .keys { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:8px; }
+  .keys b { border:1px solid var(--line); border-radius:8px; text-align:center; padding:6px 0; font-size:20px; font-weight:var(--w,600); }
+  .small { font-size:12px; }
+</style>
+</head>
+<body>
+<h1>PROTOTYPE: Bangla numeral fonts (throwaway)</h1>
+<p class="note">Question: which face should render ০১২৩৪৫৬৭৮৯ in DarziKhata? Current: <b>Noto Sans Bengali</b> (body) and <b>Anek Bangla</b> (display headings and big figures, see <code>index.css</code> lines 12-13). Needs internet for Google Fonts.</p>
+<div class="bar">
+  Weight:
+  <button data-w="400">400</button><button data-w="600" class="on">600</button><button data-w="700">700</button>
+  <span style="margin-left:8px">Tabular figures:</span>
+  <button data-t="'tnum'">on</button><button data-t="normal" class="on">off</button>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const fonts = [
+  ['Noto Sans Bengali', 'current body', "'Noto Sans Bengali'"],
+  ['Anek Bangla', 'current display', "'Anek Bangla'"],
+  ['Hind Siliguri', 'in deps, latin only loaded', "'Hind Siliguri'"],
+  ['Baloo Da 2', 'rounded, friendly', "'Baloo Da 2'"],
+  ['Atma', 'rounded, playful', "'Atma'"],
+  ['Mina', 'humanist, slightly formal', "'Mina'"],
+  ['Noto Serif Bengali', 'serif, ledger feel', "'Noto Serif Bengali'"],
+  ['Tiro Bangla', 'classic print serif', "'Tiro Bangla'"],
+  ['Galada', 'brush script, decorative', "'Galada'"],
+  ['Bahiana', 'bold display, poster', "'Bahiana'"],
+  ['Nirmala UI', 'Windows system font', "'Nirmala UI'"],
+  ['Vrinda', 'old Windows system font', "'Vrinda'"],
+  ['Shonar Bangla', 'Windows system font', "'Shonar Bangla'"],
+  ['system-ui', 'device default', "system-ui"],
+];
+const g = document.getElementById('grid');
+for (const [n, t, f] of fonts) {
+  const cur = t.startsWith('current');
+  g.insertAdjacentHTML('beforeend', `
+  <div class="card ${cur ? 'current' : ''}">
+    <div class="name"><span>${n}</span><span class="tag">${t}</span></div>
+    <div class="sample" style="font-family:${f},sans-serif">
+      <div class="big">৳ ৮৮,১৬,৯৮০</div>
+      <div class="digits">০১২৩৪৫৬৭৮৯</div>
+      <div class="row"><span>Measurement</span><span>বুক ৩৮½ · কোমর ৩২¼ · লম্বা ৪৫</span></div>
+      <div class="row"><span>Order</span><span>অর্ডার #১০৪২ · ৩টি পোশাক</span></div>
+      <div class="row"><span>Phone</span><span>০১৭১১-৩৪৫৬৭৮</span></div>
+      <div class="row"><span>Date</span><span>৪ অক্টোবর ২০২৬ · বাকি ৩,৮৫০</span></div>
+      <div class="keys"><b>১</b><b>২</b><b>৩</b><b>৪</b><b>৫</b><b>৬</b><b>৭</b><b>৮</b><b>৯</b><b>০</b></div>
+      <div class="row small"><span>Confusables</span><span>৩ ৪ ৫ ৭ ৯ ১১ ৮০ ৬৯</span></div>
+    </div>
+  </div>`);
+}
+const root = document.documentElement;
+document.querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+  root.style.setProperty('--w', b.dataset.w);
+  document.querySelectorAll('[data-w]').forEach(x => x.classList.toggle('on', x === b));
+});
+document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+  root.style.setProperty('--tab', b.dataset.t);
+  document.querySelectorAll('[data-t]').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>
+</body>
+</html>

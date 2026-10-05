@@ -17,11 +17,11 @@ const NAV_TOP = 'bottom-[calc(3.875rem+1px+max(0.875rem,env(safe-area-inset-bott
 
 /**
  * Phone payment bar attached to the top of the tab bar: what is left to pay, receipt print and "take payment".
- * The chevron hides the whole bar, leaving a small tab with the balance on the nav bar's edge.
+ * It starts hidden; the chevron hides the whole bar, leaving a small tab with the balance on the nav bar's edge.
  */
 export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrint: boolean; onTake(): void }) {
   const { t, money } = useI18n();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const { paid, balance } = moneySummary(order);
 
   useEffect(() => {

@@ -33,6 +33,7 @@ describe('Phone customer profile', () => {
     expect(within(tabs).getByRole('tab', { name: 'মাপ' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tabpanel')).toBeTruthy();
 
+    await userEvent.click(screen.getByRole('button', { name: 'বার দেখান' }));
     expect(screen.getByRole('link', { name: 'নতুন মাপ' }).getAttribute('href')).toBe(`/app/customers/${customerId}/measure/shirt`);
     const repeat = screen.getByRole('link', { name: 'আবার অর্ডার' });
     expect(repeat.getAttribute('href')).toMatch(/^\/app\/orders\/new\?repeat=/);
@@ -80,6 +81,7 @@ describe('Phone customer profile', () => {
     expect(screen.queryByText('বাকি', { selector: 'dt' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'আবার অর্ডার' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'তথ্য বদলান' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'বার দেখান' }));
     expect(screen.getByRole('link', { name: 'নতুন মাপ' })).toBeTruthy();
   });
 });
