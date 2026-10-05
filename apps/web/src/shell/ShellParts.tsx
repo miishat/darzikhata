@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router';
 import { useCurrentStaff, useSnapshot } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 
-export function LanguageToggle({ compact = false }: { compact?: boolean }) {
+/** `onDark` is for navy backgrounds, where the light hover wash would sit under white text. */
+export function LanguageToggle({ compact = false, onDark = false }: { compact?: boolean; onDark?: boolean }) {
   const { t, language, setLanguage } = useI18n();
   const next = language === 'bn' ? 'en' : 'bn';
   return (
@@ -11,7 +12,9 @@ export function LanguageToggle({ compact = false }: { compact?: boolean }) {
       onClick={() => setLanguage(next)}
       lang={next}
       aria-label={compact ? t(next === 'en' ? 'more.language.english' : 'more.language.bangla') : undefined}
-      className="min-h-10 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+      className={`min-h-10 rounded-lg border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-focus ${
+        onDark ? 'border-white/30 hover:bg-white/15' : 'border-line hover:bg-surface'
+      }`}
     >
       {compact ? (next === 'en' ? 'EN' : 'বাংলা') : next === 'en' ? 'English' : 'বাংলা'}
     </button>
