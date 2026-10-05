@@ -15,6 +15,7 @@ import { itemTitle, progressText } from '../common/orderText';
 import { StatusLinkSection } from '../links/StatusLinkSection';
 import { MoneyCard, useMoneyDialogs } from '../payments/OrderMoney';
 import { MobileItemCard } from './MobileItemCard';
+import { PrototypePaymentBar } from './PROTOTYPE-payment-bar';
 import { wearerGroups } from './wearers';
 
 const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
@@ -130,7 +131,8 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         );
       })}
 
-      {hasBar && (
+      {hasBar && <PrototypePaymentBar order={order} canPrint={can('money.view')} onTake={() => money.open({ kind: 'take' })} />}
+      {false && (
       <BottomBar>
         {can('money.view') && (
           <Link

@@ -81,9 +81,9 @@ export function MobileShell({ role }: { role: Role }) {
           <Link
             to="/app/orders/new"
             data-tour="new-order"
-            className="-mt-[22px] flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
+            className="-mt-[22px] [html[data-compact-fab]_&]:mt-0 [html[data-compact-fab]_&]:min-h-14 [html[data-compact-fab]_&]:justify-center [html[data-compact-fab]_&]:px-1 [html[data-compact-fab]_&]:font-medium flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
           >
-            <span className="flex size-[58px] items-center justify-center rounded-[20px] border-4 border-panel bg-brand text-on-brand shadow-lg">
+            <span className="flex size-[58px] items-center justify-center rounded-[20px] border-4 border-panel bg-brand text-on-brand shadow-lg [html[data-compact-fab]_&]:h-[30px] [html[data-compact-fab]_&]:w-14 [html[data-compact-fab]_&]:rounded-full [html[data-compact-fab]_&]:border-0 [html[data-compact-fab]_&]:shadow-none">
               <Plus aria-hidden="true" size={26} strokeWidth={2.4} />
             </span>
             {t('nav.newOrder')}
