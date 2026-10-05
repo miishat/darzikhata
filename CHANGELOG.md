@@ -21,6 +21,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Headings, big figures, money and the keypad use Noto Serif Bengali instead of Anek Bangla. Body text stays in Noto Sans Bengali.
 - Bangla measurements are written as decimals (৩৮.৫) instead of ½ ¼ ¾, which no Bangla font has, so they looked English beside Bangla digits. The keypad's fraction keys type .২৫, .৫ and .৭৫ in Bangla, and English keeps the fraction signs. Typed fractions such as ৩৮ ১/২ are still understood.
 - The phone payment bar shows only while there is a balance to take. A fully paid order has no bar, and receipt printing stays in the more menu.
+- The phone payment bar is attached to the tab bar, with no gap, showing the balance, a tinted print button and a tinted "take payment" button. A chevron hides the whole bar, leaving a small balance tab on the tab bar's edge. While it is open, New order is a regular-sized tab; when hidden or absent it is raised as before.
 - The status link popup has one heading instead of two.
 - The more menu sheet on a phone has no title and no Close button; tapping outside closes it.
 - A cancelled garment on the phone shows just the reason, without the "Cancelled:" prefix.

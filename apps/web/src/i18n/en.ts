@@ -497,6 +497,8 @@ export const en: Messages = {
   'payments.section': 'Money',
   'payments.creditNote': 'Refund it, or keep it as the customer’s credit. Nothing happens automatically.',
   'payments.take': 'Take payment',
+  'payments.dockHide': 'Hide payment bar',
+  'payments.dockShow': 'Show payment bar',
   'payments.refund': 'Refund',
   'payments.correct': 'Correct a mistake',
   'payments.discount': 'Change discount',

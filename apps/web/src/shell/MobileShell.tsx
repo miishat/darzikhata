@@ -19,7 +19,10 @@ const tabClass = ({ isActive }: { isActive: boolean }) =>
 const pillClass = (isActive: boolean) =>
   `flex h-[30px] w-14 items-center justify-center rounded-full ${isActive ? 'bg-brand-soft text-brand-strong' : ''}`;
 
-/** Header, a bottom tab bar with a raised New Order button in the centre, and the account sheet for phones. */
+/**
+ * Header, a bottom tab bar with a raised New Order button in the centre, and the account sheet for phones.
+ * While a PaymentDock is open (it sets data-dock-open on <html>) New Order shrinks to a regular tab so the dock can sit flush on the bar.
+ */
 export function MobileShell({ role }: { role: Role }) {
   const { t } = useI18n();
   const { shopName } = useShopHeader();
@@ -81,9 +84,9 @@ export function MobileShell({ role }: { role: Role }) {
           <Link
             to="/app/orders/new"
             data-tour="new-order"
-            className="-mt-[22px] flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
+            className="-mt-[22px] [html[data-dock-open]_&]:mt-0 [html[data-dock-open]_&]:min-h-14 [html[data-dock-open]_&]:justify-center [html[data-dock-open]_&]:px-1 [html[data-dock-open]_&]:font-medium flex min-w-11 flex-col items-center gap-1 text-xs font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
           >
-            <span className="flex size-[58px] items-center justify-center rounded-[20px] border-4 border-panel bg-brand text-on-brand shadow-lg">
+            <span className="flex size-[58px] items-center justify-center rounded-[20px] border-4 border-panel bg-brand text-on-brand shadow-lg [html[data-dock-open]_&]:h-[30px] [html[data-dock-open]_&]:w-14 [html[data-dock-open]_&]:rounded-full [html[data-dock-open]_&]:border-0 [html[data-dock-open]_&]:shadow-none">
               <Plus aria-hidden="true" size={26} strokeWidth={2.4} />
             </span>
             {t('nav.newOrder')}
