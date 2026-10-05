@@ -4,6 +4,8 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { CustomerList } from './CustomerList';
 import { CustomerProfile } from './CustomerProfile';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { CUSTOMER_VARIANTS, VariantB, VariantC, VariantD } from './CustomersDesktopPrototype';
 
 /** Desktop: list beside profile. Mobile: one at a time, with a way back. */
 export function CustomersPage() {
@@ -11,12 +13,29 @@ export function CustomersPage() {
   const { kind } = useShell();
   const { customerId } = useParams();
   const [query, setQuery] = useState('');
+  const variant = useVariant(Object.keys(CUSTOMER_VARIANTS));
   const list = <CustomerList query={query} onQueryChange={setQuery} activeId={customerId} desktop={kind !== 'mobile'} />;
 
   if (kind === 'mobile') {
     return customerId ? <CustomerProfile customerId={customerId} /> : list;
   }
 
+  // PROTOTYPE: desktop layout variants via ?variant=
+  const desktopA = <CurrentDesktop list={list} customerId={customerId} />;
+
+  return (
+    <>
+      <PrototypeSwitcher variants={CUSTOMER_VARIANTS} />
+      {variant === 'B' && <VariantB activeId={customerId} />}
+      {variant === 'C' && <VariantC activeId={customerId} />}
+      {variant === 'D' && <VariantD activeId={customerId} />}
+      {variant === 'A' && desktopA}
+    </>
+  );
+}
+
+function CurrentDesktop({ list, customerId }: { list: React.ReactNode; customerId: string | undefined }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start gap-6">
       <div className="sticky top-0 flex max-h-[calc(100dvh-8.5rem)] w-[300px] shrink-0 flex-col rounded-2xl border border-line bg-panel p-3">{list}</div>
