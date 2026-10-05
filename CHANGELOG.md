@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Phone payments page shows one card per unpaid order (customer, order number, amount due, paid bar) under a total, so nothing scrolls sideways; the page title is dropped on phones.
 - The customer screen on a phone has the same kind of bar: what they owe, tinted "new measurement" and "order again" buttons and a chevron. It starts hidden as a small "new measurement" tab on the tab bar's edge.
 - The sync sheet on a phone is a settings-style list: an online switch with the last sync time, "sync now" with the waiting count, and a review row when something needs checking. It has no title, no demo heading and no Close button on a phone.
 - The account sheet on a phone shows the signed-in person with an avatar, payments and settings as icon rows, language, theme and layout as rows that expand in place, and switches for the measurement keypad and presenter mode. It has no title and no Close button.

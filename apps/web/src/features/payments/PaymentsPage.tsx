@@ -6,6 +6,8 @@ import { TextField } from '../../ui/TextField';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useToday } from '../common/hooks';
 import { matchesText, orderRow } from '../orders/orderList';
+import { useShell } from '../../shell/ShellPreference';
+import { MobilePayments } from './MobilePayments';
 
 const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
 const cell = 'whitespace-nowrap px-3 py-2';
@@ -16,6 +18,7 @@ export function PaymentsPage() {
   const state = useScopedState();
   const today = useToday();
   const [text, setText] = useState('');
+  const { kind } = useShell();
 
   const { due, credit } = useMemo(() => {
     const orders = Object.values(state.orders).filter((order: Order) => matchesText(orderRow(order, state, today), text));
@@ -34,6 +37,24 @@ export function PaymentsPage() {
     </Link>
   );
   const total = due.reduce((sum, r) => sum + r.balance, 0);
+
+  if (kind === 'mobile') {
+    return (
+      <section className="flex flex-col gap-4 pb-4">
+        <h1 className="sr-only">{t('payments.title')}</h1>
+        <MobilePayments
+          query={text}
+          onQueryChange={setText}
+          total={total}
+          rows={due.map(({ order, balance }) => {
+            const orderTotal = orderRow(order, state, today).total;
+            return { order, customer: customerName(order.customerId), total: orderTotal, paid: orderTotal - balance, balance };
+          })}
+          credit={credit.map((c) => ({ order: c.order, customer: customerName(c.order.customerId), amount: c.credit }))}
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-4">
