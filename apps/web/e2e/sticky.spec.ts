@@ -25,15 +25,17 @@ test('the selection bar is on screen as soon as a garment is selected on a long 
   await expect.poll(async () => (await bar.boundingBox())!.y + box.height).toBeLessThanOrEqual(height);
 });
 
-test('the orders panel stays in view while the table scrolls', async ({ page }) => {
+test('the orders table scrolls inside its card while the page and the panel stay put', async ({ page }) => {
   await openShop(page, 'রহমান টেইলার্স');
   await page.goto('/app/orders');
   await page.getByRole('table', { name: 'অর্ডার তালিকা' }).getByRole('row').nth(1).click();
   const panel = page.getByRole('region', { name: 'অর্ডারের বিস্তারিত' });
   await expect(panel).toBeVisible();
-  await page.mouse.move(300, 400);
+  const list = page.getByRole('tabpanel');
+  await list.hover();
   await page.mouse.wheel(0, 700);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
   const box = (await panel.boundingBox())!;
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y).toBeLessThan(120);
