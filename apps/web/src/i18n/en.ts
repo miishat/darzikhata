@@ -499,6 +499,8 @@ export const en: Messages = {
   'payments.take': 'Take payment',
   'payments.dockHide': 'Hide payment bar',
   'payments.dockShow': 'Show payment bar',
+  'customer.dockHide': 'Hide action bar',
+  'customer.dockShow': 'Show action bar',
   'payments.refund': 'Refund',
   'payments.correct': 'Correct a mistake',
   'payments.discount': 'Change discount',

@@ -1,0 +1,202 @@
+<!doctype html>
+<!-- PROTOTYPE: throwaway logo alternatives for DarziKhata. Double-click to open. Delete when decided. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DarziKhata logo options (prototype)</title>
+<style>
+  :root { --bg:#f6f7fb; --card:#fff; --ink:#111827; --muted:#6b7280; --line:#e5e7eb; }
+  body.dark { --bg:#0b1020; --card:#141b30; --ink:#f3f4f6; --muted:#9ca3af; --line:#26304d; }
+  * { box-sizing:border-box }
+  body { margin:0; font:15px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+  header { position:sticky; top:0; z-index:5; display:flex; gap:12px; align-items:center; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0; flex:1 }
+  button { font:inherit; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer }
+  h2.group { max-width:1300px; margin:24px auto 0; padding:0 20px; font-size:18px }
+  main { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; padding:12px 20px; max-width:1300px; margin:auto }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px }
+  .card h3 { margin:0; font-size:15px }
+  .card p { margin:0; color:var(--muted); font-size:13px }
+  .stage { display:flex; align-items:center; justify-content:center; gap:14px; padding:18px; border-radius:12px; background:var(--bg); border:1px solid var(--line) }
+  .icon { width:96px; height:96px; flex:none }
+  .small { display:flex; align-items:center; gap:10px; }
+  .small svg { width:32px; height:32px } .small svg.t { width:16px; height:16px }
+  .lockup { display:flex; align-items:center; gap:10px; font-weight:700; font-size:22px; letter-spacing:-.02em }
+  .lockup svg { width:40px; height:40px } .lockup small { display:block; font-weight:500; font-size:11px; color:var(--muted); letter-spacing:.04em }
+</style>
+</head>
+<body>
+<header>
+  <h1>DarziKhata logo options <span style="color:var(--muted);font-weight:400">(prototype)</span></h1>
+  <button onclick="document.body.classList.toggle('dark')">Toggle dark</button>
+</header>
+<div id="root"></div>
+
+<script>
+const BLUE='#1f4fd8', DEEP='#163ba6', TEAL='#0f766e', AMBER='#b45309', GOLD='#f5c04a', INK='#0f172a', CREAM='#fff7e6';
+const tile = (c, rx=112) => `<rect width="512" height="512" rx="${rx}" fill="${c}"/>`;
+const ticks = (n, x0, step, y, long, short, w, c) =>
+  Array.from({length:n},(_,i)=>`<rect x="${x0+i*step}" y="${y}" width="${w}" height="${i%5===0?long:i%2?short:(short+long)/2}" fill="${c}"/>`).join('');
+const button = (cx, cy, r, face, hole, thread, rim=true) => `
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="${face}"/>
+  ${rim ? `<circle cx="${cx}" cy="${cy}" r="${r*.74}" fill="none" stroke="${hole}" stroke-width="${r*.06}" opacity=".4"/>` : ''}
+  ${[[-1,-1],[1,-1],[-1,1],[1,1]].map(([a,b])=>`<circle cx="${cx+a*r*.23}" cy="${cy+b*r*.23}" r="${r*.1}" fill="${hole}"/>`).join('')}
+  ${thread ? `<path d="M${cx-r*.23} ${cy-r*.23} L${cx+r*.23} ${cy+r*.23} M${cx+r*.23} ${cy-r*.23} L${cx-r*.23} ${cy+r*.23}" stroke="${thread}" stroke-width="${r*.07}" stroke-linecap="round"/>` : ''}`;
+const shears = (c, hole, rot=0) => `<g transform="rotate(${rot} 256 256)">
+  <circle cx="170" cy="368" r="48" fill="none" stroke="${c}" stroke-width="30"/>
+  <circle cx="342" cy="368" r="48" fill="none" stroke="${c}" stroke-width="30"/>
+  <path d="M196 328 L330 110 M316 328 L182 110" stroke="${c}" stroke-width="32" stroke-linecap="round"/>
+  <circle cx="256" cy="232" r="12" fill="${hole}"/></g>`;
+
+const groups = [
+{ title: 'Ruler / tape', items: [
+  { name: 'R1. Diagonal tape', note: 'White tape across a blue tile with graduated ticks.',
+    svg: tile(BLUE)+`<g transform="rotate(-35 256 256)"><rect x="46" y="196" width="420" height="120" rx="20" fill="#fff"/>${ticks(11,76,36,196,60,34,8,BLUE)}</g>` },
+  { name: 'R2. Yellow tailor tape', note: 'Classic flexible tape in tailor yellow with numbers, curled end.',
+    svg: tile(INK)+`<g transform="rotate(-30 256 256)"><rect x="40" y="206" width="430" height="100" rx="14" fill="${GOLD}"/>${ticks(14,70,29,206,48,26,6,INK)}
+      <text x="106" y="290" font-size="26" font-weight="700" font-family="system-ui" fill="${INK}">1</text><text x="222" y="290" font-size="26" font-weight="700" font-family="system-ui" fill="${INK}">5</text><text x="338" y="290" font-size="26" font-weight="700" font-family="system-ui" fill="${INK}">9</text></g>` },
+  { name: 'R3. Ruler corner', note: 'Right-angle try-square ruler, a drafting tool tailors use for patterns.',
+    svg: tile(TEAL)+`<path d="M110 90 H230 V330 H420 V422 H110 Z" fill="#fff"/>
+      <g fill="${TEAL}">${[0,1,2,3,4,5].map(i=>`<rect x="110" y="${130+i*44}" width="${i%2?34:60}" height="8"/>`).join('')}${[0,1,2,3,4].map(i=>`<rect x="${270+i*40}" y="${422-(i%2?34:60)}" width="8" height="${i%2?34:60}"/>`).join('')}</g>` },
+  { name: 'R4. Tape ring', note: 'Tape wound into a spiral roll, the measuring tape in its case.',
+    svg: tile(BLUE)+`<circle cx="256" cy="256" r="150" fill="#fff"/><circle cx="256" cy="256" r="100" fill="none" stroke="${BLUE}" stroke-width="14" stroke-dasharray="10 12"/><circle cx="256" cy="256" r="48" fill="${BLUE}"/><rect x="256" y="224" width="170" height="64" fill="#fff"/><rect x="256" y="224" width="170" height="64" fill="none"/>${ticks(5,290,26,224,40,24,6,BLUE)}<circle cx="256" cy="256" r="16" fill="#fff"/>` },
+]},
+{ title: 'Buttons', items: [
+  { name: 'B1. Button on amber', note: 'Four-hole button with a cross stitch.',
+    svg: tile(AMBER)+button(256,256,150,'#fff',AMBER,BLUE) },
+  { name: 'B2. Button on blue', note: 'Same button in brand blue, gold thread.',
+    svg: tile(BLUE)+button(256,256,150,'#fff',BLUE,GOLD) },
+  { name: 'B3. Two buttons', note: 'A big and a small button overlapping, like a stitched row.',
+    svg: tile(INK)+button(206,236,120,CREAM,INK,AMBER)+button(352,340,76,GOLD,INK,INK,false) },
+  { name: 'B4. Button as D', note: 'Button with two holes and a thread arc, hinting at the letter D.',
+    svg: tile(TEAL)+`<circle cx="256" cy="256" r="150" fill="#fff"/><circle cx="216" cy="216" r="16" fill="${TEAL}"/><circle cx="296" cy="216" r="16" fill="${TEAL}"/><circle cx="216" cy="296" r="16" fill="${TEAL}"/><circle cx="296" cy="296" r="16" fill="${TEAL}"/><path d="M216 216 V296 M216 216 H260 C330 216 330 296 260 296 H216" fill="none" stroke="${GOLD}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>` },
+]},
+{ title: 'Scissors', items: [
+  { name: 'S1. Teal shears', note: 'Upright shears, white on teal (the original idea, cleaned up).',
+    svg: tile(TEAL)+shears('#fff',TEAL) },
+  { name: 'S2. Shears on blue, tilted', note: 'Brand blue, tilted 35 degrees for energy.',
+    svg: tile(BLUE)+shears('#fff',BLUE,-35) },
+  { name: 'S3. Shears + stitch line', note: 'Shears opening along a dashed cutting line.',
+    svg: tile(INK)+`<line x1="256" y1="40" x2="256" y2="150" stroke="${GOLD}" stroke-width="12" stroke-dasharray="16 14" stroke-linecap="round"/><g transform="translate(0 40) scale(1 .9) translate(0 20)">${shears('#fff',INK)}</g>` },
+  { name: 'S4. Shears in a button', note: 'Scissors cut out of a button face. Combines two of your three.',
+    svg: tile(AMBER)+`<circle cx="256" cy="256" r="170" fill="#fff"/><g transform="translate(256 262) scale(.62) translate(-256 -256)">${shears(AMBER,'#fff')}</g>` },
+]},
+{ title: 'Combos', items: [
+  { name: 'C1. Shears + tape', note: 'Scissors over a tape strip along the base.',
+    svg: tile(BLUE)+`<g transform="translate(256 220) scale(.7) translate(-256 -256)">${shears('#fff',BLUE)}</g><rect x="70" y="400" width="372" height="56" rx="10" fill="${GOLD}"/>${ticks(12,92,30,400,30,16,5,INK)}` },
+  { name: 'C2. Tape through button', note: 'A button with a tape threaded across the front.',
+    svg: tile(INK)+button(256,256,150,CREAM,INK,null)+`<g transform="rotate(-30 256 256)"><rect x="30" y="226" width="452" height="60" fill="${GOLD}"/>${ticks(15,56,29,226,28,16,5,INK)}</g>` },
+  { name: 'C3. Ledger + button', note: 'Khata book with a button as the clasp.',
+    svg: tile(BLUE)+`<rect x="106" y="110" width="300" height="292" rx="26" fill="#fff"/><path d="M106 150 H406" stroke="${BLUE}" stroke-width="10" opacity=".25"/>${[190,240,290].map(y=>`<line x1="150" y1="${y}" x2="290" y2="${y}" stroke="${BLUE}" stroke-width="12" stroke-linecap="round" opacity=".35"/>`).join('')}${button(372,372,64,AMBER,'#fff',null,false)}` },
+  { name: 'C4. Monogram DK', note: 'Type-only fallback, bold D and K with a stitched dash.',
+    svg: tile(BLUE)+`<path d="M120 120 V392" stroke="#fff" stroke-width="44" stroke-linecap="round"/><path d="M120 120 H200 C330 120 330 392 200 392 H120" fill="none" stroke="#fff" stroke-width="44" stroke-linejoin="round"/><path d="M392 120 L296 256 L400 392" fill="none" stroke="${GOLD}" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><line x1="156" y1="256" x2="290" y2="256" stroke="${BLUE}" stroke-width="12" stroke-dasharray="18 14" stroke-linecap="round"/>` },
+]},
+];
+
+const byId = {}; groups.forEach(g => g.items.forEach(o => byId[o.name.split('.')[0]] = o));
+const pick = id => byId[id];
+const ledger = (x, y, w, h, c, line) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="${c}"/>${[0,1,2].map(i=>`<line x1="${x+34}" y1="${y+60+i*46}" x2="${x+w-34-(i===2?50:0)}" y2="${y+60+i*46}" stroke="${line}" stroke-width="12" stroke-linecap="round" opacity=".35"/>`).join('')}`;
+const view = [
+{ title: 'Shortlist', items: ['S1','S2','B1','B2'].map(pick) },
+{ title: 'Scissors + ledger', items: [
+  { name: 'L1. Shears over ledger', note: 'Open ledger page with shears cutting across it, blue tile.',
+    svg: tile(BLUE)+ledger(96,120,320,300,'#fff',BLUE)+`<g transform="translate(256 250) scale(.62) translate(-256 -256)">${shears(BLUE,'#fff')}</g>` },
+  { name: 'L2. Ledger with cut edge', note: 'Ledger page, one lower corner snipped by a small pair of shears.',
+    svg: tile(TEAL)+ledger(86,86,300,320,'#fff',TEAL)+`<path d="M386 330 L330 406 H386 Z" fill="${TEAL}"/><g transform="translate(396 400) scale(.38) translate(-256 -256)">${shears(GOLD,TEAL,-40)}</g>` },
+  { name: 'L3. Shears as book spine', note: 'Open book whose spine is a pair of shears, blades up.',
+    svg: tile(INK)+`<path d="M80 150 H240 Q256 150 256 166 V372 Q256 356 240 356 H80 Z" fill="#fff"/><path d="M432 150 H272 Q256 150 256 166 V372 Q256 356 272 356 H432 Z" fill="${CREAM}"/>${[200,250,300].map(y=>`<line x1="116" y1="${y}" x2="214" y2="${y}" stroke="${INK}" stroke-width="10" stroke-linecap="round" opacity=".3"/><line x1="298" y1="${y}" x2="396" y2="${y}" stroke="${AMBER}" stroke-width="10" stroke-linecap="round" opacity=".6"/>`).join('')}<g transform="translate(256 256) scale(.5) translate(-256 -256)">${shears(GOLD,INK)}</g>` },
+  { name: 'L4. Ledger ruled by tape', note: 'Ledger page where the left margin is a ruler edge and a cut line runs through.',
+    svg: tile(BLUE)+ledger(100,96,312,320,'#fff',BLUE)+`<rect x="100" y="96" width="44" height="320" rx="22" fill="${GOLD}"/>${[0,1,2,3,4,5,6,7].map(i=>`<rect x="100" y="${120+i*36}" width="${i%2?16:28}" height="6" fill="${INK}"/>`).join('')}<line x1="290" y1="60" x2="290" y2="452" stroke="${AMBER}" stroke-width="10" stroke-dasharray="16 14" stroke-linecap="round" opacity="0"/>` },
+]},
+{ title: 'Button + scissors', items: [
+  { name: 'X1. Button with shears cutting thread', note: 'Four-hole button, tiny shears snipping the thread tail.',
+    svg: tile(AMBER)+button(230,246,130,'#fff',AMBER,null)+`<path d="M230 246 C300 300 350 330 380 420" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 0"/><g transform="translate(386 400) scale(.42) translate(-256 -256)">${shears('#fff',AMBER,-20)}</g>` },
+  { name: 'X2. Scissor handles as holes', note: 'Button face where the two holes are scissor finger loops, blades between.',
+    svg: tile(BLUE)+`<circle cx="256" cy="256" r="170" fill="#fff"/><circle cx="196" cy="330" r="38" fill="none" stroke="${BLUE}" stroke-width="22"/><circle cx="316" cy="330" r="38" fill="none" stroke="${BLUE}" stroke-width="22"/><path d="M212 296 L296 150 M300 296 L216 150" stroke="${BLUE}" stroke-width="24" stroke-linecap="round"/>` },
+  { name: 'X3. Button with shears inside', note: 'Dark button rim, shears in the centre, holes at the corners.',
+    svg: tile(TEAL)+`<circle cx="256" cy="256" r="170" fill="#fff"/>${[[-1,-1],[1,-1],[-1,1],[1,1]].map(([a,b])=>`<circle cx="${256+a*108}" cy="${256+b*108}" r="12" fill="${TEAL}"/>`).join('')}<g transform="translate(256 258) scale(.5) translate(-256 -256)">${shears(TEAL,'#fff')}</g>` },
+  { name: 'X4. Shears over two buttons', note: 'Gold shears across two overlapping buttons, a busy but rich mark.',
+    svg: tile(INK)+button(190,230,110,CREAM,INK,null)+button(332,300,110,AMBER,INK,null)+`<g transform="translate(256 256) scale(.78) translate(-256 -256)">${shears(GOLD,INK,-25)}</g>` },
+]},
+];
+// Sewing machine, side view. c = body, hole = detail colour, wheel = flywheel colour
+const machine = (c, detail, wheel) => `
+  <rect x="80" y="352" width="340" height="44" rx="12" fill="${c}"/>
+  <rect x="344" y="170" width="76" height="200" fill="${c}"/>
+  <rect x="80" y="130" width="340" height="86" rx="34" fill="${c}"/>
+  <rect x="80" y="130" width="92" height="170" rx="28" fill="${c}"/>
+  <rect x="244" y="92" width="44" height="44" rx="8" fill="${c}"/>
+  <rect x="252" y="104" width="28" height="6" rx="3" fill="${detail}"/>
+  <line x1="118" y1="296" x2="118" y2="360" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+  <rect x="180" y="168" width="140" height="10" rx="5" fill="${detail}" opacity=".45"/>
+  <circle cx="436" cy="196" r="52" fill="${wheel}"/>
+  <circle cx="436" cy="196" r="14" fill="${detail}"/>`;
+const spokes = (cx, cy, r, c, w, n=6) => Array.from({length:n},(_,i)=>{const a=i*Math.PI/n; return `<line x1="${cx-r*Math.cos(a)}" y1="${cy-r*Math.sin(a)}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`}).join('');
+const GREEN='#006a4e', RED='#f42a41';
+view.push({ title: 'Tailoring machine (Bangladesh inspired)', items: [
+  { name: 'M1. Machine, white on blue', note: 'Side-view machine with gold flywheel. Clean and instantly a darzi shop.',
+    svg: tile(BLUE)+`<g transform="translate(-14 12) scale(.97)">${machine('#fff',BLUE,GOLD)}</g>` },
+  { name: 'M2. Black machine, gold decal', note: 'Cream tile, black cast-iron machine with a gold stripe, like the old Singers still used across Bangladesh.',
+    svg: tile(CREAM)+`<g transform="translate(-14 12) scale(.97)">${machine(INK,CREAM,AMBER)}<rect x="182" y="184" width="130" height="8" rx="4" fill="${GOLD}"/></g>` },
+  { name: 'M3. Treadle wheel', note: 'Big spoked treadle wheel under a small machine head. The classic pedal-powered shop machine.',
+    svg: tile(TEAL)+`<g transform="translate(86 20) scale(.62)">${machine('#fff',TEAL,'#fff')}</g>
+      <circle cx="320" cy="340" r="104" fill="none" stroke="#fff" stroke-width="24"/>${spokes(320,340,92,'#fff',10)}<circle cx="320" cy="340" r="16" fill="${GOLD}"/>
+      <rect x="86" y="440" width="150" height="22" rx="11" fill="#fff"/><line x1="160" y1="440" x2="290" y2="360" stroke="#fff" stroke-width="12" stroke-linecap="round"/>` },
+  { name: 'M4. Machine + stitch line', note: 'Machine with a dashed stitch line running out under the needle.',
+    svg: tile(AMBER)+`<g transform="translate(-6 -30) scale(.95)">${machine('#fff',AMBER,GOLD)}</g><line x1="70" y1="450" x2="442" y2="450" stroke="#fff" stroke-width="14" stroke-dasharray="34 22" stroke-linecap="round"/>` },
+  { name: 'M5. Machine on ledger', note: 'Machine sitting on an open khata page, ruled lines below.',
+    svg: tile(BLUE)+`<g transform="translate(40 -20) scale(.8)">${machine('#fff',BLUE,GOLD)}</g>
+      <path d="M70 330 H250 Q256 330 256 336 V446 H70 Z" fill="${CREAM}"/><path d="M442 330 H262 Q256 330 256 336 V446 H442 Z" fill="#fff"/>
+      ${[364,394,424].map(y=>`<line x1="96" y1="${y}" x2="230" y2="${y}" stroke="${BLUE}" stroke-width="8" stroke-linecap="round" opacity=".35"/><line x1="282" y1="${y}" x2="416" y2="${y}" stroke="${BLUE}" stroke-width="8" stroke-linecap="round" opacity=".35"/>`).join('')}` },
+  { name: 'M6. Green and red nod', note: 'Bangladesh flag colours: green tile, red sun disc behind a white machine.',
+    svg: tile(GREEN)+`<circle cx="256" cy="256" r="170" fill="${RED}"/><g transform="translate(256 256) scale(.7) translate(-256 -256) translate(-8 6)">${machine('#fff',RED,GOLD)}</g>` },
+]});
+// ---- Machine-only round: replaces everything above in the view ----
+const fit = (inner, s=1.05) => `<g transform="translate(256 256) scale(${s}) translate(-284 -244)">${inner}</g>`;
+const outline = (c, w) => `<g fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M80 300 V158 Q80 130 108 130 H392 Q420 130 420 158 V396 H80 V352 H344 V216 H172 V300 Z"/>
+  <line x1="118" y1="300" x2="118" y2="362"/><rect x="244" y="92" width="44" height="38" rx="6"/>
+  <circle cx="436" cy="196" r="50"/><circle cx="436" cy="196" r="8" fill="${c}"/></g>`;
+const solid = (c, detail, wheel, spoke) => `
+  <path d="M80 300 V158 Q80 130 108 130 H392 Q420 130 420 158 V396 H80 V352 H344 V216 H172 V300 Z" fill="${c}" stroke="${c}" stroke-width="20" stroke-linejoin="round"/>
+  <line x1="118" y1="300" x2="118" y2="368" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+  <rect x="244" y="92" width="44" height="44" rx="8" fill="${c}"/>
+  <circle cx="436" cy="196" r="54" fill="${wheel}"/>${spoke ? spokes(436,196,40,detail,8,3) : ''}<circle cx="436" cy="196" r="12" fill="${detail}"/>
+  <rect x="190" y="160" width="130" height="10" rx="5" fill="${detail}" opacity=".5"/>`;
+const treadle = (c, wheel, detail) => `
+  <g transform="translate(150 20) scale(.62)">${machine(c,detail,c)}</g>
+  <circle cx="330" cy="340" r="108" fill="none" stroke="${wheel}" stroke-width="24"/>${spokes(330,340,96,wheel,10)}<circle cx="330" cy="340" r="16" fill="${detail}"/>
+  <rect x="80" y="448" width="170" height="24" rx="12" fill="${wheel}"/><line x1="165" y1="448" x2="300" y2="364" stroke="${wheel}" stroke-width="12" stroke-linecap="round"/>`;
+view.splice(0, view.length, { title: 'Tailoring machine only', items: [
+  { name: 'T1. Solid white on blue', note: 'One solid shape, gold flywheel. Simplest and best at 16px.',
+    svg: tile(BLUE)+fit(solid('#fff',BLUE,GOLD,false)) },
+  { name: 'T2. Spoked flywheel', note: 'Same solid machine with a spoked hand wheel for more character.',
+    svg: tile(TEAL)+fit(solid('#fff',TEAL,'#fff',true)) },
+  { name: 'T3. Line art', note: 'Outline only, white on deep blue. Lighter, more modern.',
+    svg: tile(DEEP)+fit(outline('#fff',20),1.05) },
+  { name: 'T4. Black cast iron', note: 'Black machine, gold flywheel on cream, antique Singer feel.',
+    svg: tile(CREAM)+fit(solid(INK,CREAM,AMBER,false)) },
+  { name: 'T5. Gold on dark', note: 'Gold machine on near-black, white flywheel. Premium shop-sign look.',
+    svg: tile(INK)+fit(solid(GOLD,INK,'#fff',false)) },
+  { name: 'T6. Full treadle', note: 'Machine head, big spoked treadle wheel and pedal. The classic Bangladeshi shop machine.',
+    svg: tile(BLUE)+treadle('#fff','#fff',BLUE) },
+  { name: 'T7. Round badge', note: 'Machine inside a circle instead of a rounded square, like a shop sign or stamp.',
+    svg: `<rect width="512" height="512" rx="256" fill="${AMBER}"/>`+fit(solid('#fff',AMBER,INK,false),.9) },
+  { name: 'T8. Amber solid', note: 'Warm amber body on a deep tile, a single accent colour.',
+    svg: tile(INK)+fit(solid(AMBER,INK,GOLD,false)) },
+]});
+const root = document.getElementById('root');
+for (const g of view) {
+  const cards = g.items.map(o => {
+    const svg = (cls='') => `<svg class="${cls}" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">${o.svg}</svg>`;
+    return `<section class="card"><h3>${o.name}</h3>
+      <div class="stage">${svg('icon')}<div class="lockup">${svg()}<div>DarziKhata<small>TAILOR LEDGER</small></div></div></div>
+      <div class="small">${svg()}${svg('t')}<span style="color:var(--muted);font-size:12px">32px and 16px (favicon)</span></div>
+      <p>${o.note}</p></section>`;
+  }).join('');
+  root.insertAdjacentHTML('beforeend', `<h2 class="group">${g.title}</h2><main>${cards}</main>`);
+}
+</script>
+</body>
+</html>

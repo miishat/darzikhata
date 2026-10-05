@@ -5,19 +5,18 @@ import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
-import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
-import { buttonClasses } from '../../ui/Button';
+import { PAYMENT_DOCK_SPACE } from '../../ui/PaymentDock';
 import { rovingTabsKeyDown } from '../../ui/rovingTabs';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { progressText } from '../common/orderText';
+import { CustomerDock } from './CustomerDock';
 import { MobileMeasurements, pickTemplate, useMeasurementTemplates } from './MobileMeasurements';
 
 type TabKey = 'measurements' | 'orders' | 'money';
 
 const ROUND =
   'flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
-const BAR_BUTTON = 'min-h-[54px]! rounded-2xl! text-base';
 
 function Stat({ label, value, tone = '', divided = false, small = false }: { label: string; value: string; tone?: string; divided?: boolean; small?: boolean }) {
   return (
@@ -75,7 +74,7 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
   const onKeyDown = rovingTabsKeyDown(tabs.map((x) => x.key), tab, setTab, (k) => `customer-tab-${k}`);
 
   return (
-    <div className={`flex flex-col gap-3 ${canMeasure || canOrder ? BOTTOM_BAR_SPACE : ''}`}>
+    <div className={`flex flex-col gap-3 ${canMeasure || canOrder ? PAYMENT_DOCK_SPACE : ''}`}>
       <div className="-mx-2 flex items-center justify-between">
         <Link
           to="/app/customers"
@@ -211,22 +210,12 @@ export function MobileCustomerProfile({ customerId }: { customerId: string }) {
       </div>
 
       {(canMeasure || canOrder) && (
-        <BottomBar>
-          {canMeasure && (
-            <Link to={`/app/customers/${customer.id}/measure/${selected!.id}`} className={`${buttonClasses('secondary', 'lg')} ${BAR_BUTTON} flex-1`}>
-              {t('customer.newMeasure')}
-            </Link>
-          )}
-          {canOrder && (
-            <Link
-              to={latest ? `/app/orders/new?repeat=${latest.id}` : `/app/orders/new?customer=${customer.id}`}
-              data-tour="order-again"
-              className={`${buttonClasses('primary', 'lg')} ${BAR_BUTTON} flex-[1.3]`}
-            >
-              {latest ? t('customer.orderAgain') : t('customer.newOrder')}
-            </Link>
-          )}
-        </BottomBar>
+        <CustomerDock
+          measureHref={canMeasure ? `/app/customers/${customer.id}/measure/${selected!.id}` : null}
+          orderHref={canOrder ? (latest ? `/app/orders/new?repeat=${latest.id}` : `/app/orders/new?customer=${customer.id}`) : null}
+          orderLabel={latest ? t('customer.orderAgain') : t('customer.newOrder')}
+          owed={showMoney ? owed : null}
+        />
       )}
     </div>
   );

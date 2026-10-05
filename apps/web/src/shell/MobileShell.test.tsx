@@ -38,10 +38,12 @@ describe('Account menu', () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
     await userEvent.click(await screen.findByRole('button', { name: 'অ্যাকাউন্ট ও আরও' }));
     const menu = await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' });
-    expect(within(menu).getByRole('radio', { name: 'English' })).toBeTruthy();
-    expect(within(menu).getByRole('radio', { name: 'গাঢ়' })).toBeTruthy();
     expect(within(menu).getByRole('button', { name: 'ডেমো ডেটা রিসেট করুন' })).toBeTruthy();
+    expect(within(menu).getByRole('switch', { name: 'মাপের কিপ্যাড' })).toBeTruthy();
 
+    await userEvent.click(within(menu).getByRole('button', { name: /ভাষা/ }));
+    expect(within(menu).getByRole('radio', { name: 'English' })).toBeTruthy();
+    await userEvent.click(within(menu).getByRole('button', { name: /রঙের থিম/ }));
     await userEvent.click(within(menu).getByRole('radio', { name: 'গাঢ়' }));
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
