@@ -1,4 +1,6 @@
-import { useMemo } from 'react';
+import { balanceDue } from '@darzikhata/domain';
+import { ClipboardList, PackageCheck, Scissors, Shirt, TriangleAlert, Wallet, type LucideIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
@@ -15,12 +17,23 @@ import { OrderTable } from './OrderTable';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
+const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
+
+const VIEW_ICONS: Record<OrderView, LucideIcon> = {
+  all: ClipboardList,
+  open: Scissors,
+  trial: Shirt,
+  ready: PackageCheck,
+  late: TriangleAlert,
+  owed: Wallet,
+};
+
 /**
  * The orders list. One route serves it with and without an open order, so the list,
  * its filters and the table's scroll position stay put when an order opens or closes.
  */
 export function OrdersPage() {
-  const { t, number } = useI18n();
+  const { t, number, money: formatMoney } = useI18n();
   const { kind } = useShell();
   const can = useCan();
   const state = useScopedState();
@@ -44,6 +57,12 @@ export function OrdersPage() {
 
   const counts = useMemo(() => statusCounts(state, today), [state, today]);
   const viewCounts = useMemo(() => countViews(state, today), [state, today]);
+  const owedTotal = useMemo(() => Object.values(state.orders).reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0), [state]);
+  // A new page or view starts at the top of the list.
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scroller.current?.scrollTo?.({ top: 0 });
+  }, [page, status, dueOnly]);
   const update = (next: OrderListQuery) => setParams(writeListQuery(next), { replace: true });
   const change = (fields: Partial<OrderListQuery>) => update({ ...query, ...fields, page: fields.page ?? 1 });
   const full = params.get('full') === '1';
@@ -94,22 +113,6 @@ export function OrdersPage() {
     );
   }
 
-  const nav = (
-    <nav className="flex items-center justify-between gap-2">
-      <span className="text-sm text-muted">
-        {result.total > 0 ? t('orders.range', { from: number(from1), to: number(from1 + result.rows.length - 1), total: number(result.total) }) : ''}
-      </span>
-      <div className="flex gap-2">
-        <Button variant="secondary" disabled={result.page <= 1} onClick={() => change({ page: result.page - 1 })}>
-          {t('orders.prev')}
-        </Button>
-        <Button variant="secondary" disabled={result.page >= result.pages} onClick={() => change({ page: result.page + 1 })}>
-          {t('orders.next')}
-        </Button>
-      </div>
-    </nav>
-  );
-
   if (orderId && full) {
     return (
       <div className="flex flex-col gap-3">
@@ -122,46 +125,74 @@ export function OrdersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-xl font-semibold">{t('nav.orders')}</h1>
-      <div className="flex items-start gap-5">
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
+    // The window less the shell header (3.5rem) and the page padding (2 × 1.5rem).
+    <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4">
+      <div className={`${CARD} min-w-0 flex-1`}>
+        <div className="flex flex-col gap-3 border-b border-line p-4">
+          <h1 className="font-display text-xl font-bold">{t('nav.orders')}</h1>
           <ViewTabs
+            tiles
             label={t('orders.tabs')}
-            views={tabViews.map((v: OrderView) => ({ value: v, label: t(`orders.chip.${v === 'late' ? 'overdue' : v}`), count: viewCounts[v] }))}
+            views={tabViews.map((v: OrderView) => ({
+              value: v,
+              label: t(`orders.chip.${v === 'late' ? 'overdue' : v}`),
+              count: viewCounts[v],
+              icon: VIEW_ICONS[v],
+              warn: v === 'late' || v === 'owed',
+              // The amount owed is a lot to fit once the order panel narrows the tiles.
+              note: v === 'owed' && !orderId ? formatMoney(owedTotal) : undefined,
+            }))}
             value={view}
             onChange={(next) => change(viewQuery(next as OrderView))}
             panelId={panelId}
           />
           <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts} />
-          <div role="tabpanel" id={panelId} {...(view ? { 'aria-labelledby': viewTabId(panelId, view) } : { 'aria-label': t('orders.list') })} className="flex flex-col gap-2">
-            {result.rows.length === 0 ? (
-              <p className="text-muted">{t('orders.empty')}</p>
-            ) : (
-              <OrderTable
-                rows={result.rows}
-                activeId={orderId}
-                onOpenFull={(order) => navigate(fullPageTo(order.id, search))}
-                onCloseDetail={closeOrder}
-              />
-            )}
+        </div>
+        {/* relative: keeps absolutely placed screen-reader text inside this scroll area, so the page itself never scrolls. */}
+        <div
+          ref={scroller}
+          role="tabpanel"
+          id={panelId}
+          {...(view ? { 'aria-labelledby': viewTabId(panelId, view) } : { 'aria-label': t('orders.list') })}
+          className="relative min-h-0 flex-1 overflow-auto"
+        >
+          {result.rows.length === 0 ? (
+            <p className="p-4 text-muted">{t('orders.empty')}</p>
+          ) : (
+            <OrderTable
+              rows={result.rows}
+              activeId={orderId}
+              onOpenFull={(order) => navigate(fullPageTo(order.id, search))}
+              onCloseDetail={closeOrder}
+            />
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line px-4 py-2">
+          <span className="text-sm text-muted">
+            {result.total > 0 ? t('orders.range', { from: number(from1), to: number(from1 + result.rows.length - 1), total: number(result.total) }) : ''}
+          </span>
+          {!orderId && (
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               <span className="inline-flex items-center gap-1.5"><Kbd>↑</Kbd><Kbd>↓</Kbd>{t('orders.hint.move')}</span>
               <span className="inline-flex items-center gap-1.5"><Kbd>Enter</Kbd>{t('orders.hint.open')}</span>
               <span className="inline-flex items-center gap-1.5"><Kbd>Esc</Kbd>{t('orders.hint.close')}</span>
             </p>
+          )}
+          <div className="ms-auto flex gap-2">
+            <Button variant="secondary" className="min-h-9!" disabled={result.page <= 1} onClick={() => change({ page: result.page - 1 })}>
+              {t('orders.prev')}
+            </Button>
+            <Button variant="secondary" className="min-h-9!" disabled={result.page >= result.pages} onClick={() => change({ page: result.page + 1 })}>
+              {t('orders.next')}
+            </Button>
           </div>
-          {nav}
         </div>
-        {orderId && (
-          <section
-            aria-label={t('orders.detail')}
-            className="sticky top-0 flex max-h-[calc(100dvh-7.5rem)] w-[400px] max-w-[45%] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-panel"
-          >
-            <OrderDetail orderId={orderId} onClose={closeOrder} />
-          </section>
-        )}
       </div>
+      {orderId && (
+        <section aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
+          <OrderDetail orderId={orderId} onClose={closeOrder} />
+        </section>
+      )}
     </div>
   );
 }
