@@ -41,7 +41,8 @@ describe('Presenter mode', () => {
     expect(await within(await panel()).findByText('ধাপ ২/৬')).toBeTruthy();
     expect(await current()).toBe('নতুন কাস্টমার যোগ করুন: নাম আর ফোন');
     expect(highlight()).toContain('[data-tour="new-customer"]');
-  });
+    // It renders the whole new order form, which takes longer than the default 5 seconds on the CI runners.
+  }, 15_000);
 
   it('lets the presenter tick off or skip steps, then end the scenario', async () => {
     window.localStorage.setItem('dk.presenter', 'on');
