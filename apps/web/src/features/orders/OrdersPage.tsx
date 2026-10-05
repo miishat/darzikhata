@@ -12,6 +12,8 @@ import { OrderDetail } from './OrderDetail';
 import { OrderFilters, SortButton } from './OrderFilters';
 import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
+import { ORDER_VARIANTS, VariantB, VariantC, VariantD } from './OrdersDesktopPrototype';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
@@ -29,6 +31,7 @@ export function OrdersPage() {
   const { search } = useLocation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const variant = useVariant(Object.keys(ORDER_VARIANTS));
 
   const money = can('money.view');
   const parsed = readListQuery(params);
@@ -44,7 +47,11 @@ export function OrdersPage() {
 
   const counts = useMemo(() => statusCounts(state, today), [state, today]);
   const viewCounts = useMemo(() => countViews(state, today), [state, today]);
-  const update = (next: OrderListQuery) => setParams(writeListQuery(next), { replace: true });
+  const update = (next: OrderListQuery) => {
+    const p = writeListQuery(next);
+    if (params.get('variant')) p.set('variant', params.get('variant')!);
+    setParams(p, { replace: true });
+  };
   const change = (fields: Partial<OrderListQuery>) => update({ ...query, ...fields, page: fields.page ?? 1 });
   const full = params.get('full') === '1';
   // Closing an order, or leaving its own page, keeps the list's filters in the address.
@@ -91,6 +98,17 @@ export function OrdersPage() {
         </div>
         {list}
       </div>
+    );
+  }
+
+  if (!(orderId && full) && variant !== 'A') {
+    return (
+      <>
+        {variant === 'B' && <VariantB query={query} update={update} change={change} />}
+        {variant === 'C' && <VariantC query={query} change={change} />}
+        {variant === 'D' && <VariantD query={query} change={change} />}
+        <PrototypeSwitcher variants={ORDER_VARIANTS} />
+      </>
     );
   }
 
@@ -162,6 +180,7 @@ export function OrdersPage() {
           </section>
         )}
       </div>
+      <PrototypeSwitcher variants={ORDER_VARIANTS} />
     </div>
   );
 }
