@@ -29,10 +29,11 @@ describe('Customers', () => {
     expect(within(customerList()).getAllByRole('link').length).toBeLessThan(customers.length);
   });
 
-  it('opens a profile beside the list on desktop and keeps the search', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers' });
+  it('opens a profile panel beside the list on desktop, keeps the search, and closes back to the full list', async () => {
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers' });
     const target = uniquelyNamed(Object.values(store.getSnapshot().state.customers));
-    expect(await screen.findByText('বাম পাশ থেকে একজন কাস্টমার বেছে নিন')).toBeTruthy();
+    await screen.findByRole('list', { name: 'কাস্টমার তালিকা' });
+    expect(screen.queryByRole('heading', { name: target.name })).toBeNull();
 
     await userEvent.type(screen.getByLabelText('নাম বা ফোন (বাংলা/English)'), target.name);
     await userEvent.click(within(customerList()).getByRole('link', { name: startsWith(target.name) }));
@@ -41,6 +42,33 @@ describe('Customers', () => {
     expect(screen.getByLabelText('নাম বা ফোন (বাংলা/English)')).toHaveProperty('value', target.name);
     const link = within(customerList()).getByRole('link', { name: startsWith(target.name) });
     expect(link.getAttribute('aria-current')).toBe('page');
+
+    await userEvent.click(screen.getByRole('link', { name: 'বন্ধ করুন' }));
+    expect(router.state.location.pathname).toBe('/app/customers');
+  });
+
+  it('filters the list to customers who owe money or have open orders', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers' });
+    const { state } = store.getSnapshot();
+    await screen.findByRole('list', { name: 'কাস্টমার তালিকা' });
+    const owing = new Set(Object.values(state.orders).filter((o) => balanceDue(o) > 0).map((o) => o.customerId));
+
+    const filters = screen.getByRole('group', { name: 'কাস্টমার ছাঁকুন' });
+    const owes = within(filters).getByRole('button', { name: /বাকি/ });
+    await userEvent.click(owes);
+    expect(owes.getAttribute('aria-pressed')).toBe('true');
+    expect(within(customerList()).getAllByRole('link')).toHaveLength(owing.size);
+
+    await userEvent.click(within(filters).getByRole('button', { name: /সব কাস্টমার/ }));
+    expect(within(customerList()).getAllByRole('link')).toHaveLength(Object.keys(state.customers).length);
+  });
+
+  it('shows English names in English', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers', language: 'en' });
+    const target = uniquelyNamed(Object.values(store.getSnapshot().state.customers));
+    await screen.findByRole('list', { name: 'Customer List' });
+    expect(within(screen.getByRole('list', { name: 'Customer List' })).getByRole('link', { name: startsWith(target.nameAlt!) })).toBeTruthy();
+    expect(within(screen.getByRole('list', { name: 'Customer List' })).queryByText(target.name)).toBeNull();
   });
 
   it('shows the household and its other members', async () => {
@@ -99,6 +127,7 @@ describe('Customers', () => {
     expect(screen.queryByText('অর্ডারের মোট মূল্য')).toBeNull();
     expect(screen.queryByText('বাকি', { selector: 'dt' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'তথ্য বদলান' })).toBeNull();
+    expect(within(screen.getByRole('group', { name: 'কাস্টমার ছাঁকুন' })).queryByRole('button', { name: /বাকি/ })).toBeNull();
   });
 
   it('shows the list, then the profile alone on mobile, with a way back', async () => {
