@@ -163,4 +163,13 @@ describe('Payments page', () => {
     const rows = within(screen.getByRole('table', { name: 'বাকি টাকা' })).getAllByRole('row');
     expect(rows).toHaveLength(3);
   });
+
+  it('on a phone lists one card per unpaid order, with no table', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/payments' });
+    const due = outstandingBalances(Object.values(store.getSnapshot().state.orders));
+    const list = await screen.findByRole('list', { name: 'বাকি টাকা' });
+    expect(within(list).getAllByRole('link')).toHaveLength(due.length);
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByText(formatTaka(due.reduce((s, r) => s + r.balance, 0), 'bn'))).toBeTruthy();
+  });
 });

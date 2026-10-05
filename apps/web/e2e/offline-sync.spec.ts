@@ -11,8 +11,8 @@ test('changes made offline sync later, and the waiting change is settled', async
   await expect(syncButton).toHaveAccessibleName('দেখতে হবে');
 
   await syncButton.click();
-  await dialog.getByRole('button', { name: 'অফলাইনে যান' }).click();
-  await dialog.getByRole('button', { name: 'বন্ধ করুন' }).click();
+  await dialog.getByRole('switch', { name: 'অফলাইনে যান' }).click();
+  await page.keyboard.press('Escape');
   await expect(syncButton).toHaveAccessibleName('অফলাইন');
 
   // The order and its advance stay on this device, even across a reload.
@@ -24,7 +24,7 @@ test('changes made offline sync later, and the waiting change is settled', async
 
   await syncButton.click();
   await expect(dialog.getByText(/^এই ডিভাইসে সিঙ্ক বাকি: /)).toBeVisible();
-  await dialog.getByRole('button', { name: 'অনলাইনে যান' }).click();
+  await dialog.getByRole('switch', { name: 'অনলাইনে যান' }).click();
   await expect(dialog.getByText('সব পরিবর্তন সিঙ্ক হয়েছে')).toBeVisible();
   await expect(syncButton).toHaveAccessibleName('দেখতে হবে');
 
