@@ -85,6 +85,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
           <Avatar id={customer.id} name={name} size="lg" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <h1 className="font-display text-xl font-bold">{name}</h1>
+            {customer.nameAlt && <p className="text-muted">{customer.nameAlt}</p>}
             <p className="text-sm text-muted">
               {customer.phone ?? t('customer.noPhone')}
               {household && ` · ${t('customer.householdOf', { label: household.label, n: number(members.length + 1) })}`}
