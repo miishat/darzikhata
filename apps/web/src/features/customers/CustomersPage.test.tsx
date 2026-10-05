@@ -38,7 +38,8 @@ describe('Customers', () => {
     await userEvent.type(screen.getByLabelText('নাম বা ফোন (বাংলা/English)'), target.name);
     await userEvent.click(within(customerList()).getByRole('link', { name: startsWith(target.name) }));
 
-    expect(await screen.findByRole('heading', { name: target.name })).toBeTruthy();
+    const heading = await screen.findByRole('heading', { name: target.name });
+    expect(heading.parentElement!.textContent).toContain(target.nameAlt!);
     expect(screen.getByLabelText('নাম বা ফোন (বাংলা/English)')).toHaveProperty('value', target.name);
     const link = within(customerList()).getByRole('link', { name: startsWith(target.name) });
     expect(link.getAttribute('aria-current')).toBe('page');
