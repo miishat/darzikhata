@@ -61,11 +61,6 @@ export function CustomerDock({ measureHref, orderHref, orderLabel, owed }: Custo
             <span className={`font-display text-lg leading-tight font-bold ${owed > 0 ? 'text-accent' : ''}`}>{money(owed)}</span>
           </div>
         )}
-        {measureHref && (
-          <Link to={measureHref} className={`flex h-12 items-center justify-center rounded-2xl px-4 text-base font-bold ${LIGHT} ${owed === null ? 'flex-1' : ''} ${FOCUS}`}>
-            {t('customer.newMeasure')}
-          </Link>
-        )}
         {orderHref && (
           <Link
             to={orderHref}
@@ -73,6 +68,11 @@ export function CustomerDock({ measureHref, orderHref, orderLabel, owed }: Custo
             className={`flex h-12 items-center justify-center rounded-2xl px-4 text-base font-bold ${LIGHT} ${owed === null ? 'flex-1' : ''} ${FOCUS}`}
           >
             {orderLabel}
+          </Link>
+        )}
+        {measureHref && (
+          <Link to={measureHref} className={`flex h-12 items-center justify-center rounded-2xl px-4 text-base font-bold ${LIGHT} ${owed === null ? 'flex-1' : ''} ${FOCUS}`}>
+            {t('customer.newMeasure')}
           </Link>
         )}
         <button
