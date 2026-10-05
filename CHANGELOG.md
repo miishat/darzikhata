@@ -19,7 +19,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - The desktop customers page is a directory: a full-width list with phone, garments measured, orders (with how many are open), last visit and what each customer owes, plus filter tiles with counts for all customers, those who owe money (with the total) and those with open orders. Opening a customer narrows the list to a column and shows their profile beside it, with a close button. The list and the profile are cards as tall as the window that scroll on their own, and the profile's header and actions stay in view.
-- In English, the customers page shows a customer's English name, and its initials, when they have one.
 - Phone payments page shows one card per unpaid order (customer, order number, amount due, paid bar) under a total, so nothing scrolls sideways; the page title is dropped on phones.
 - The customer screen on a phone has the same kind of bar: what they owe, tinted "new measurement" and "order again" buttons and a chevron. It starts hidden as a small "new measurement" tab on the tab bar's edge.
 - The sync sheet on a phone is a settings-style list: an online switch with the last sync time, "sync now" with the waiting count, and a review row when something needs checking. It has no title, no demo heading and no Close button on a phone.

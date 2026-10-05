@@ -63,14 +63,6 @@ describe('Customers', () => {
     expect(within(customerList()).getAllByRole('link')).toHaveLength(Object.keys(state.customers).length);
   });
 
-  it('shows English names in English', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers', language: 'en' });
-    const target = uniquelyNamed(Object.values(store.getSnapshot().state.customers));
-    await screen.findByRole('list', { name: 'Customer List' });
-    expect(within(screen.getByRole('list', { name: 'Customer List' })).getByRole('link', { name: startsWith(target.nameAlt!) })).toBeTruthy();
-    expect(within(screen.getByRole('list', { name: 'Customer List' })).queryByText(target.name)).toBeNull();
-  });
-
   it('shows the household and its other members', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/rahman-c2' });
     const { state } = store.getSnapshot();

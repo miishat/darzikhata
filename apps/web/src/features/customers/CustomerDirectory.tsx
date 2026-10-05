@@ -7,7 +7,6 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
 import { buttonClasses } from '../../ui/Button';
 import { useScopedState } from '../branches/BranchScopeProvider';
-import { customerName } from '../common/customerName';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { directoryCounts, directoryRows, filterRows, type DirectoryFilter, type DirectoryRow } from './directoryView';
 
@@ -125,11 +124,11 @@ export function CustomerDirectory({ query, onQueryChange, activeId, compact }: P
 }
 
 function DirectoryRowLink({ row, active, compact, showMoney }: { row: DirectoryRow; active: boolean; compact: boolean; showMoney: boolean }) {
-  const { t, money, date, number, label, language } = useI18n();
+  const { t, money, date, number, label } = useI18n();
   const { state, config } = useSnapshot();
   const hasAccess = useMeasurementAccess();
   const { customer } = row;
-  const name = customerName(customer, language);
+  const name = customer.name;
   const owed = showMoney && row.owed > 0 ? <span className="font-display font-semibold text-warn">{money(row.owed)}</span> : <span className="text-muted">–</span>;
   const linkClass = `px-4 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${active ? 'bg-brand-soft' : 'hover:bg-surface'}`;
 
