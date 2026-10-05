@@ -97,7 +97,7 @@ describe('receiptShareText', () => {
   it('mentions credit due in English when the shop owes the customer', () => {
     const order = spec54Order({ payments: [makePayment({ amount: 300000 })] });
     const text = receiptShareText(receiptModel(order, customer, config, 'en'), 'en');
-    expect(text).toContain('Credit due: ৳600');
-    expect(text).not.toContain('Balance due');
+    expect(text).toContain('Credit Due: ৳600');
+    expect(text).not.toContain('Balance Due');
   });
 });

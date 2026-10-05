@@ -100,7 +100,7 @@ describe('Public status page', () => {
   it('switches to English', async () => {
     const { order } = await openAsCustomer('rahman', (o) => !isOrderClosed(o));
     await userEvent.click(await screen.findByRole('button', { name: 'English' }));
-    expect(await screen.findByText(`Your order ${order.number}`)).toBeTruthy();
+    expect(await screen.findByText(`Your Order ${order.number}`)).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Rahman Tailors' })).toBeTruthy();
   });
 });

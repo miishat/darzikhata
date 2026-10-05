@@ -69,11 +69,11 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'More' })).toBeTruthy();
 
     await userEvent.click(screen.getByRole('radio', { name: 'Mobile' }));
-    expect(within(screen.getByRole('navigation', { name: 'Main menu' })).getAllByRole('link')).toHaveLength(5);
+    expect(within(screen.getByRole('navigation', { name: 'Main Menu' })).getAllByRole('link')).toHaveLength(5);
 
     const before = Object.keys(store.getSnapshot().state.orders).length;
-    await userEvent.click(screen.getByRole('button', { name: 'Reset demo data' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Reset demo data' });
+    await userEvent.click(screen.getByRole('button', { name: 'Reset Demo Data' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reset Demo Data' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
     expect(await screen.findByRole('heading', { name: 'Home' })).toBeTruthy();
     expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
