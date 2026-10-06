@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): desktop sidebar layouts, switched with ?variant=. Lives on prototype/sidebar-desktop only.
 import type { Role } from '@darzikhata/domain';
-import { ChevronLeft, ChevronRight, Ellipsis, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ellipsis } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { useCurrentStaff } from '../data/StoreContext';
@@ -18,10 +18,10 @@ import { SyncButton, SyncDialog } from './SyncStatus';
 
 export const SIDEBAR_VARIANTS = {
   A: 'Current',
-  B: 'Big items, toggle by the logo, rail with names',
-  C: 'Big items, toggle at the bottom, rail icons only',
-  D: 'Big items, toggle tab on the edge, rail with names',
-  E: 'Big items, solid current page, toggle by the logo',
+  B: 'Big items, edge tab by the logo',
+  C: 'Big items, edge tab in the middle',
+  D: 'Big items, edge tab near the bottom',
+  E: 'Big items, edge tab by the branch, rail icons only',
 } as const;
 
 const SHOP_KEYS = new Set(['payments', 'settings']);
@@ -35,16 +35,16 @@ function useL() {
 }
 
 interface Look {
-  toggle: 'top' | 'bottom' | 'edge';
+  /** Where the round tab sits on the sidebar's edge. */
+  tab: string;
   railNames: boolean;
-  solid: boolean;
 }
 
 const LOOKS: Record<'B' | 'C' | 'D' | 'E', Look> = {
-  B: { toggle: 'top', railNames: true, solid: false },
-  C: { toggle: 'bottom', railNames: false, solid: false },
-  D: { toggle: 'edge', railNames: true, solid: false },
-  E: { toggle: 'top', railNames: true, solid: true },
+  B: { tab: 'top-6', railNames: true },
+  C: { tab: 'top-1/2 -translate-y-1/2', railNames: true },
+  D: { tab: 'bottom-28', railNames: true },
+  E: { tab: 'top-20', railNames: false },
 };
 
 // Kept outside the component so switching variants keeps the rail open or closed.
@@ -80,19 +80,6 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
         : null;
 
   const toggleLabel = narrow ? l('মেনু বড় করুন', 'Expand menu') : l('মেনু ছোট করুন', 'Collapse menu');
-  const ToggleIcon = narrow ? PanelLeftOpen : PanelLeftClose;
-  const iconToggle = (
-    <button
-      type="button"
-      aria-label={toggleLabel}
-      title={toggleLabel}
-      aria-pressed={narrow}
-      onClick={() => setNarrow(!narrow)}
-      className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
-    >
-      <ToggleIcon aria-hidden="true" size={19} />
-    </button>
-  );
   const edgeToggle = (
     <button
       type="button"
@@ -100,25 +87,11 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
       title={toggleLabel}
       aria-pressed={narrow}
       onClick={() => setNarrow(!narrow)}
-      className="absolute -end-3.5 top-20 z-10 grid size-7 place-items-center rounded-full border border-line bg-panel text-muted shadow-sm hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+      className={`absolute -end-3.5 ${look.tab} z-10 grid size-7 place-items-center rounded-full border border-line bg-panel text-muted shadow-sm hover:text-ink focus-visible:outline-2 focus-visible:outline-focus`}
     >
       {narrow ? <ChevronRight aria-hidden="true" size={16} /> : <ChevronLeft aria-hidden="true" size={16} />}
     </button>
   );
-  const bottomToggle = (
-    <button
-      type="button"
-      aria-pressed={narrow}
-      title={toggleLabel}
-      aria-label={narrow ? toggleLabel : undefined}
-      onClick={() => setNarrow(!narrow)}
-      className={`flex min-h-10 items-center gap-2 rounded-lg text-sm font-medium text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-focus ${narrow ? 'w-full justify-center' : 'px-3'}`}
-    >
-      <ToggleIcon aria-hidden="true" size={19} />
-      {!narrow && toggleLabel}
-    </button>
-  );
-
   /* ---- wide: A with C's big items ---- */
   const wideLink = (item: NavItem) => {
     const badge = badgeOf(item);
@@ -131,32 +104,17 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
         aria-label={t(item.label)}
         aria-describedby={badge ? badgeId : undefined}
         className={({ isActive }) =>
-          `group flex items-center gap-3 rounded-xl p-1.5 pe-2.5 focus-visible:outline-2 focus-visible:outline-focus ${
-            isActive ? (look.solid ? 'bg-brand text-on-brand shadow-sm' : 'bg-brand-soft ring-1 ring-inset ring-brand/30') : 'hover:bg-surface'
+          `flex min-h-12 items-center gap-3 rounded-xl px-3 text-[0.95rem] focus-visible:outline-2 focus-visible:outline-focus ${
+            isActive ? 'bg-brand-soft font-semibold text-brand-strong' : 'font-medium text-ink hover:bg-surface'
           }`
         }
       >
-        {({ isActive }) => (
-          <>
-            <span
-              className={`grid size-10 shrink-0 place-items-center rounded-lg ${
-                isActive ? (look.solid ? 'bg-white/20 text-on-brand' : 'bg-brand text-on-brand') : 'bg-surface text-muted group-hover:bg-panel'
-              }`}
-            >
-              <item.icon aria-hidden="true" size={20} />
-            </span>
-            <span className={`min-w-0 flex-1 truncate text-[0.95rem] font-semibold ${isActive ? (look.solid ? '' : 'text-brand-strong') : 'text-ink'}`}>
-              {t(item.label)}
-            </span>
-            {badge && (
-              <span
-                id={badgeId}
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.late ? LATE : isActive && look.solid ? 'bg-white/20' : 'bg-surface text-muted'}`}
-              >
-                {badge.wide}
-              </span>
-            )}
-          </>
+        <item.icon aria-hidden="true" size={22} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{t(item.label)}</span>
+        {badge && (
+          <span id={badgeId} className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${badge.late ? LATE : 'bg-surface text-muted'}`}>
+            {badge.wide}
+          </span>
         )}
       </NavLink>
     );
@@ -183,11 +141,7 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
           <>
             <span
               className={`relative grid size-11 place-items-center rounded-xl ${
-                isActive
-                  ? look.solid
-                    ? 'bg-brand text-on-brand shadow-sm'
-                    : 'bg-brand-soft text-brand-strong ring-1 ring-inset ring-brand/30'
-                  : 'bg-surface group-hover:text-ink'
+                isActive ? 'bg-brand-soft text-brand-strong' : 'group-hover:bg-surface group-hover:text-ink'
               }`}
             >
               <item.icon aria-hidden="true" size={20} />
@@ -212,10 +166,9 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
   if (narrow) {
     return (
       <aside className={`no-print sticky top-0 flex h-dvh shrink-0 flex-col gap-3 border-r border-line bg-panel px-2 py-4 ${look.railNames ? 'w-24' : 'w-20'}`}>
-        {look.toggle === 'edge' && edgeToggle}
-        <div className="flex flex-col items-center gap-2">
+        {edgeToggle}
+        <div className="flex justify-center">
           <BrandMark size={36} />
-          {look.toggle === 'top' && iconToggle}
         </div>
         <nav aria-label={t('nav.main')} className={`-m-1 flex flex-1 flex-col overflow-y-auto p-1 pt-2 ${look.railNames ? 'gap-2' : 'gap-2.5'}`}>
           {main.map(railLink)}
@@ -223,7 +176,6 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
           {shop.map(railLink)}
         </nav>
         <div className="flex flex-col items-center gap-2 border-t border-line pt-3">
-          {look.toggle === 'bottom' && bottomToggle}
           <button
             type="button"
             onClick={() => setSyncOpen(true)}
@@ -254,12 +206,11 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
 
   return (
     <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 py-4">
-      {look.toggle === 'edge' && edgeToggle}
+      {edgeToggle}
       <div className="flex items-center gap-2.5 px-1">
         <BrandMark size={36} className="shrink-0" />
         <span className="font-display text-lg font-bold">{t('app.name')}</span>
         <span className="rounded bg-accent/15 px-1.5 text-xs font-semibold text-accent">{t('app.demo')}</span>
-        {look.toggle === 'top' && <span className="ms-auto">{iconToggle}</span>}
       </div>
       <BranchButton />
       <nav aria-label={t('nav.main')} className="-m-1 flex flex-1 flex-col gap-1 overflow-y-auto p-1">
@@ -272,7 +223,6 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
         )}
       </nav>
       <div className="flex flex-col gap-2 border-t border-line pt-3">
-        {look.toggle === 'bottom' && bottomToggle}
         <SyncButton block />
         <PersonButton />
       </div>
