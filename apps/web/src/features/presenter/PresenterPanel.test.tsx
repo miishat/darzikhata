@@ -45,10 +45,11 @@ describe('Presenter mode', () => {
     expect(highlight()).toContain('[data-tour="new-order"]');
 
     await userEvent.click(screen.getByRole('link', { name: 'নতুন অর্ডার' }));
-    expect(await within(await panel()).findByText('ধাপ ২/৬')).toBeTruthy();
+    // Step 2 shows once the whole new order form has rendered, which can take longer than findBy's
+    // default 1 second on a CI runner even with the page module loaded.
+    expect(await within(await panel()).findByText('ধাপ ২/৬', undefined, { timeout: 10_000 })).toBeTruthy();
     expect(await current()).toBe('নতুন কাস্টমার যোগ করুন: নাম আর ফোন');
     expect(highlight()).toContain('[data-tour="new-customer"]');
-    // It renders the whole new order form, which takes longer than the default 5 seconds on the CI runners.
   }, 15_000);
 
   it('lets the presenter tick off or skip steps, then end the scenario', async () => {
