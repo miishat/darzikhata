@@ -8,7 +8,7 @@ import { useToday } from '../common/hooks';
 import { matchesText, orderRow } from '../orders/orderList';
 import { useShell } from '../../shell/ShellPreference';
 import { MobilePayments } from './MobilePayments';
-import { PAYMENT_VARIANTS, VariantB, VariantC, VariantD } from './PaymentsDesktopPrototype';
+import { PAYMENT_VARIANTS, VariantB, VariantC, VariantD, VariantE } from './PaymentsDesktopPrototype';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 
 const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
@@ -65,6 +65,7 @@ export function PaymentsPage() {
         {variant === 'B' && <VariantB />}
         {variant === 'C' && <VariantC />}
         {variant === 'D' && <VariantD />}
+        {variant === 'E' && <VariantE />}
         <PrototypeSwitcher variants={PAYMENT_VARIANTS} />
       </>
     );

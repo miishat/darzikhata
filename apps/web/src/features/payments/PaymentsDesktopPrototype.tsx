@@ -1,8 +1,9 @@
 // PROTOTYPE (throwaway): desktop layouts for /app/payments, switched with ?variant=. A is the current page.
 // B: one full-height card (tiles for money due, credit and today's takings, search, the table scrolling inside); a row opens the order's money beside it.
 // C: by customer: who owes across all their orders on the left, their orders and every payment they made on the right.
+// E: B's list; a row opens its customer beside it, C style: every order with that order's money buttons, and every payment with its date and correct button.
 // D: a cash book: today's takings by method across the top, the day-by-day payment log on the left, dues by age on the right.
-import { balanceDue, effectSign, netPaid, orderTotal, type Order, type Payment, type PaymentMethod } from '@darzikhata/domain';
+import { balanceDue, effectSign, moneySummary, netPaid, orderTotal, type Order, type Payment, type PaymentMethod } from '@darzikhata/domain';
 import { Banknote, CalendarClock, HandCoins, Search, Undo2, Wallet, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -11,11 +12,13 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
 import { PaidBar } from '../../ui/PaidBar';
 import { useScopedState } from '../branches/BranchScopeProvider';
-import { useToday } from '../common/hooks';
+import { Button } from '../../ui/Button';
+import { useCan, useToday } from '../common/hooks';
 import { matchesText, orderRow } from '../orders/orderList';
 import { OrderMoney } from './OrderMoney';
+import { CorrectionDialog, DiscountDialog, PriceAdjustmentDialog, RefundDialog, TakePaymentDialog } from './paymentDialogs';
 
-export const PAYMENT_VARIANTS = { A: 'Current', B: 'Card + money panel', C: 'By customer', D: 'Cash book' };
+export const PAYMENT_VARIANTS = { A: 'Current', B: 'Card + money panel', C: 'By customer', D: 'Cash book', E: 'B list + customer money' };
 
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 const PAGE = 'flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4';
@@ -152,7 +155,7 @@ function MoneySide({ id, onClose }: { id: string; onClose(): void }) {
 
 /* ------------------------------------------------------------------ B ------------------------------------------------------------------ */
 
-export function VariantB() {
+export function VariantB({ side }: { side?: (id: string, close: () => void) => ReactNode }) {
   const { t, money, number, date } = useI18n();
   const L = useL();
   const [text, setText] = useState('');
@@ -162,8 +165,11 @@ export function VariantB() {
   const name = useCustomerName();
   const today = useToday();
   const lastPaid = (o: Order) => o.payments.reduce<string | null>((m, p) => (m && m > p.at ? m : p.at), null);
+  const state = useScopedState();
+  // With a customer panel open, that customer's other orders are tinted too.
+  const pickedCustomer = side && picked ? state.orders[picked]?.customerId : undefined;
   const row = (o: Order, cells: ReactNode) => (
-    <tr key={o.id} aria-selected={picked === o.id} onClick={() => pick(o.id)} className={`cursor-pointer border-b border-line ${picked === o.id ? 'bg-brand-soft' : 'hover:bg-surface'}`}>
+    <tr key={o.id} aria-selected={picked === o.id} onClick={() => pick(o.id)} className={`cursor-pointer border-b border-line ${picked === o.id ? 'bg-brand-soft' : o.customerId === pickedCustomer ? 'bg-brand-soft/40 hover:bg-surface' : 'hover:bg-surface'}`}>
       <td className="px-3 py-2">
         <div className="flex items-center gap-2.5">
           <Avatar id={o.customerId} name={name(o.customerId)} size="sm" />
@@ -277,7 +283,7 @@ export function VariantB() {
         </div>
         <div className="border-t border-line px-4 py-2 text-sm text-muted">{L('একটা সারিতে ক্লিক করলে পাশে সেই অর্ডারের টাকার হিসাব আর "টাকা নিন" আসে', 'Click a row to see that order’s money beside the list, with Take payment')}</div>
       </div>
-      {picked && <MoneySide id={picked} onClose={() => pick(null)} />}
+      {picked && (side ? side(picked, () => pick(null)) : <MoneySide id={picked} onClose={() => pick(null)} />)}
     </div>
   );
 }
@@ -546,4 +552,173 @@ export function VariantD() {
       </div>
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ E ------------------------------------------------------------------ */
+
+type MoneyDialog = { kind: 'take' | 'refund' | 'discount' | 'adjust'; order: Order } | { kind: 'correct'; order: Order; payment: Payment } | null;
+
+/** The customer of the picked order: every order with its money and buttons, then every payment with its date. */
+function CustomerMoneySide({ id, onClose }: { id: string; onClose(): void }) {
+  const { t, money, number, date } = useI18n();
+  const L = useL();
+  const can = useCan();
+  const state = useScopedState();
+  const name = useCustomerName();
+  const [, pick] = usePicked();
+  const [dialog, setDialog] = useState<MoneyDialog>(null);
+  const picked = state.orders[id];
+  if (!picked) return null;
+  const customerId = picked.customerId;
+  const orders = Object.values(state.orders)
+    .filter((o) => o.customerId === customerId)
+    .sort((a, b) => balanceDue(b) - balanceDue(a) || b.createdAt.localeCompare(a.createdAt));
+  const owed = orders.reduce((s, o) => s + Math.max(0, balanceDue(o)), 0);
+  const credit = orders.reduce((s, o) => s + Math.max(0, -balanceDue(o)), 0);
+  const paidAll = orders.reduce((s, o) => s + netPaid(o.payments), 0);
+  const timeline = orders
+    .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount })))
+    .sort((a, b) => b.payment.at.localeCompare(a.payment.at));
+  const close = () => setDialog(null);
+
+  return (
+    <aside aria-label={name(customerId)} className={`${CARD} w-[min(600px,46%)] shrink-0`}>
+      <div className="flex items-center gap-3 border-b border-line p-4">
+        <Avatar id={customerId} name={name(customerId)} size="lg" />
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate font-display text-xl font-bold">{name(customerId)}</h2>
+          <Link to={`/app/customers/${customerId}`} className="text-sm text-brand-strong underline">
+            {L('প্রোফাইল দেখুন', 'Open profile')}
+          </Link>
+        </div>
+        <button type="button" aria-label={t('common.close')} onClick={onClose} className="grid size-9 place-items-center self-start rounded-lg hover:bg-surface">
+          <X size={18} />
+        </button>
+      </div>
+      <dl className="m-0 grid grid-cols-3 border-b border-line">
+        <div className="px-4 py-2.5">
+          <dt className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</dt>
+          <dd className="m-0 font-display text-xl font-bold text-warn">{money(owed)}</dd>
+        </div>
+        <div className="border-s border-line px-4 py-2.5">
+          <dt className="text-xs text-muted">{L('মোট জমা', 'Paid in all')}</dt>
+          <dd className="m-0 font-display text-xl font-bold text-ok">{money(paidAll)}</dd>
+        </div>
+        <div className="border-s border-line px-4 py-2.5">
+          <dt className="text-xs text-muted">{t('payments.credit')}</dt>
+          <dd className="m-0 font-display text-xl font-bold">{money(credit)}</dd>
+        </div>
+      </dl>
+      <div className="relative min-h-0 flex-1 overflow-auto">
+        <h3 className="sticky top-0 z-10 border-b border-line bg-surface px-4 py-1.5 text-sm font-semibold">
+          {L('অর্ডার', 'Orders')} <span className="font-normal text-muted">{number(orders.length)}</span>
+        </h3>
+        <ul className="m-0 flex list-none flex-col gap-2 p-3">
+          {orders.map((o) => {
+            const m = moneySummary(o);
+            const open = o.id === id;
+            return (
+              <li key={o.id} className={`rounded-xl border ${open ? 'border-brand ring-1 ring-brand' : 'border-line'}`}>
+                <button type="button" aria-expanded={open} onClick={() => pick(o.id)} className="flex w-full items-center gap-4 p-3 text-start">
+                  <span className="flex w-24 flex-col">
+                    <span className="font-semibold">{o.number}</span>
+                    <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <PaidBar paid={m.paid} total={m.total} />
+                    <span className="text-xs text-muted">
+                      {money(m.paid)} / {money(m.total)}
+                    </span>
+                  </span>
+                  <span className={`w-28 text-end font-display text-lg font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>
+                    {m.balance > 0 ? money(m.balance) : m.creditDue > 0 ? money(m.creditDue) : L('পরিশোধিত', 'Paid')}
+                  </span>
+                </button>
+                {open && (
+                  <div className="flex flex-col gap-3 border-t border-line p-3">
+                    <dl className="m-0 grid grid-cols-4 gap-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-muted">{t('money.total')}</dt>
+                        <dd className="m-0 font-semibold">{money(m.total)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted">{t('money.discount')}</dt>
+                        <dd className="m-0 font-semibold">{o.discount ? money(o.discount.amount) : '-'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted">{t('money.paid')}</dt>
+                        <dd className="m-0 font-semibold text-ok">{money(m.paid)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted">{m.creditDue > 0 ? t('money.creditDue') : t('money.balance')}</dt>
+                        <dd className={`m-0 font-semibold ${m.creditDue > 0 ? 'text-ok' : 'text-warn'}`}>{money(m.creditDue > 0 ? m.creditDue : m.balance)}</dd>
+                      </div>
+                    </dl>
+                    {m.creditDue > 0 && <p className="text-sm font-semibold">{t('payments.creditNote')}</p>}
+                    <div className="flex flex-wrap gap-2">
+                      {can('payments.record') && m.balance > 0 && <Button onClick={() => setDialog({ kind: 'take', order: o })}>{t('payments.take')}</Button>}
+                      {can('payments.refund') && netPaid(o.payments) > 0 && (
+                        <Button variant="secondary" onClick={() => setDialog({ kind: 'refund', order: o })}>
+                          {t('payments.refund')}
+                        </Button>
+                      )}
+                      {can('orders.edit') && (
+                        <>
+                          <Button variant="secondary" onClick={() => setDialog({ kind: 'discount', order: o })}>
+                            {t('payments.discount')}
+                          </Button>
+                          <Button variant="secondary" onClick={() => setDialog({ kind: 'adjust', order: o })}>
+                            {t('payments.adjust')}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <h3 className="sticky top-0 z-10 border-y border-line bg-surface px-4 py-1.5 text-sm font-semibold">
+          {L('সব জমা ও ফেরত', 'Every payment and refund')} <span className="font-normal text-muted">{number(timeline.length)}</span>
+        </h3>
+        <ol className="m-0 flex list-none flex-col p-4">
+          {timeline.map((e) => (
+            <li key={e.payment.id} className="relative flex items-start gap-3 border-s-2 border-line pb-4 ps-4 last:pb-0">
+              <span aria-hidden="true" className={`absolute -start-[7px] top-1.5 size-3 rounded-full ${e.effect < 0 ? 'bg-warn' : 'bg-ok'}`} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="flex items-baseline gap-2">
+                  <span className={`font-display text-lg font-bold ${e.effect < 0 ? 'text-warn' : 'text-ok'}`}>{money(e.effect)}</span>
+                  <span className="rounded-full bg-surface px-2 text-xs">{t(`method.${e.payment.method}`)}</span>
+                </span>
+                <span className="text-sm text-muted">
+                  {date(e.payment.at.slice(0, 10))} · {t(`receipt.kind.${e.payment.kind}`)} ·{' '}
+                  <button type="button" onClick={() => pick(e.order.id)} className="text-brand-strong underline">
+                    {e.order.number}
+                  </button>
+                  {e.payment.reference && ` · ${e.payment.reference}`}
+                </span>
+                {e.payment.reason && <span className="text-sm">{e.payment.reason}</span>}
+              </span>
+              {can('payments.correct') && e.payment.kind !== 'correction' && (
+                <Button variant="secondary" className="min-h-9!" onClick={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })}>
+                  {t('payments.correct')}
+                </Button>
+              )}
+            </li>
+          ))}
+          {timeline.length === 0 && <li className="text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</li>}
+        </ol>
+      </div>
+      {dialog?.kind === 'take' && <TakePaymentDialog order={dialog.order} onClose={close} />}
+      {dialog?.kind === 'refund' && <RefundDialog order={dialog.order} onClose={close} />}
+      {dialog?.kind === 'discount' && <DiscountDialog order={dialog.order} onClose={close} />}
+      {dialog?.kind === 'adjust' && <PriceAdjustmentDialog order={dialog.order} onClose={close} />}
+      {dialog?.kind === 'correct' && <CorrectionDialog order={dialog.order} payment={dialog.payment} onClose={close} />}
+    </aside>
+  );
+}
+
+export function VariantE() {
+  return <VariantB side={(id, close) => <CustomerMoneySide id={id} onClose={close} />} />;
 }
