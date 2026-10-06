@@ -51,7 +51,8 @@ export interface OrderEntry {
   /** Throws the draft away, here and in storage, and starts an empty one. */
   discard(): void;
   setCustomer(customer: DraftCustomer | null): void;
-  addItem(templateId: string): void;
+  /** Adds a garment and returns its key, or null when the template is unknown. */
+  addItem(templateId: string): string | null;
   updateItem(key: string, changes: Partial<DraftItem>): void;
   removeItem(key: string): void;
   update(changes: Partial<Pick<OrderDraft, 'discount' | 'advance' | 'notes'>>): void;
@@ -210,9 +211,9 @@ export function useOrderEntry(): OrderEntry {
     }));
   };
 
-  const addItem = (templateId: string) => {
+  const addItem = (templateId: string): string | null => {
     const template = config ? templateById(config, templateId) : null;
-    if (!template) return;
+    if (!template) return null;
     const customerId = draft.customer?.kind === 'existing' ? draft.customer.customerId : null;
     const item = newDraftItem(template, store.createId(), {
       customerId,
@@ -221,6 +222,7 @@ export function useOrderEntry(): OrderEntry {
       deliveryDate: addDays(today, DELIVERY_DAYS),
     });
     setDraft((d) => ({ ...d, items: [...d.items, item] }));
+    return item.key;
   };
 
   const updateItem = (key: string, changes: Partial<DraftItem>) =>

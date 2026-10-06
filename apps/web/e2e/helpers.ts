@@ -55,10 +55,14 @@ export async function takeFirstOrder(page: Page) {
     await left.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
     await left.getByLabel('ফোন', { exact: true }).fill('01799887766');
 
+    // Shirt and panjabi share field labels, so fill only once the middle column shows the new garment.
+    const showing = (name: string) => expect(middle.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
     await left.getByRole('button', { name: '+ শার্ট' }).click();
+    await showing('শার্ট ১');
     await middle.getByLabel('সংখ্যা').fill('২');
     await fill(middle, SHIRT);
     await left.getByRole('button', { name: '+ পাঞ্জাবি' }).click();
+    await showing('পাঞ্জাবি ২');
     await fill(middle, { ...SHIRT, 'ঝুল': '42' });
 
     await right.getByLabel('অগ্রিম').fill('১০০০');
