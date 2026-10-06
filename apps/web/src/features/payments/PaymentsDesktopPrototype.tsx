@@ -1,9 +1,9 @@
 // PROTOTYPE (throwaway): desktop layouts for /app/payments, switched with ?variant=. A is the current page.
-// Every other variant keeps the same list (tiles, search, one row per order) and changes only the customer card on the right:
-// B: polished stack: totals band, orders as an accordion with the price breakdown, the picked order's actions docked at the bottom.
-// C: statement: one tab per order (and All), a dated statement with a running balance, actions docked at the bottom.
-// D: receipt: the picked order as a receipt (garments and prices), large action tiles, the other orders as chips.
-// E: collect first: a payment form right in the card for the picked order, then the order switcher and the history.
+// Every other variant keeps the same list on the left and the same customer card (header, totals, docked actions); they differ only in how the picked order is shown:
+// B: the orders as a row of tabs, the picked one solid, its details flat below.
+// C: compact order rows with a check and an accent bar on the picked one, its details after the list.
+// D: the picked order leads the card, the other orders wait below and swap in.
+// E: a narrow rail of orders down the card's left, the picked one joined to the details like a folder tab.
 import { balanceDue, effectSign, moneySummary, netPaid, orderTotal, type Order, type Payment, type PaymentMethod } from '@darzikhata/domain';
 import { HandCoins, Pencil, Percent, Phone, Search, SlidersHorizontal, Undo2, Wallet, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
@@ -21,7 +21,7 @@ import { matchesText, orderRow } from '../orders/orderList';
 import { receiptModel, type ReceiptModel } from '../print/receipt';
 import { CorrectionDialog, DiscountDialog, PriceAdjustmentDialog, RefundDialog, TakePaymentDialog } from './paymentDialogs';
 
-export const PAYMENT_VARIANTS = { A: 'Current', B: 'Polished stack', C: 'Statement + tabs', D: 'Receipt + action tiles', E: 'Collect first' };
+export const PAYMENT_VARIANTS = { A: 'Current', B: 'Order tabs', C: 'Order list + check', D: 'Picked order first', E: 'Order rail' };
 
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 const PAGE = 'flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4';
@@ -445,16 +445,18 @@ function EntryLine({ e, showOrder, onCorrect }: { e: Entry; showOrder: boolean; 
   );
 }
 
-/* ------------------------------------------------------------------ B ------------------------------------------------------------------ */
+/* ------------------------------------------------------------- the B card frame ------------------------------------------------------------- */
 
-function StackCard({ id }: { id: string }) {
-  const { t, money, number, date } = useI18n();
+type Customer = ReturnType<typeof useCustomerMoney>;
+type OpenDialog = (dialog: MoneyDialog) => void;
+
+/** B's frame: header, totals band, a scrolling body, and the picked order's actions docked at the bottom. */
+function CustomerCard({ id, body }: { id: string; body: (c: Customer, open: OpenDialog) => ReactNode }) {
+  const { t, money } = useI18n();
   const L = useL();
   const [, pick] = usePicked();
   const [dialog, setDialog] = useState<MoneyDialog>(null);
   const c = useCustomerMoney(id);
-  const pickedTimeline = c.timeline.filter((e) => e.order.id === id);
-  const others = c.timeline.filter((e) => e.order.id !== id);
   return (
     <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
       <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)} />
@@ -483,480 +485,266 @@ function StackCard({ id }: { id: string }) {
         </div>
         <PaidBar paid={c.paid} total={c.billed} />
       </div>
-      <div className="relative min-h-0 flex-1 overflow-auto px-4 py-3">
-        <h3 className="mb-2 text-xs font-semibold text-muted">
-          {L('অর্ডার', 'Orders')} · {number(c.orders.length)}
-        </h3>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {c.orders.map((o) => {
-            const m = moneySummary(o);
-            const open = o.id === id;
-            const model = c.models.get(o.id);
-            return (
-              <li key={o.id} className={`overflow-hidden rounded-xl border ${open ? 'border-brand shadow-sm' : 'border-line'}`}>
-                <button type="button" aria-expanded={open} onClick={() => pick(o.id)} className={`flex w-full items-center gap-4 px-3 py-2.5 text-start ${open ? 'bg-brand-soft/50' : 'hover:bg-surface'}`}>
-                  <span className="flex w-24 shrink-0 flex-col">
-                    <span className="font-semibold">{o.number}</span>
-                    <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <PaidBar paid={m.paid} total={m.total} />
-                    <span className="text-xs text-muted">
-                      {money(m.paid)} / {money(m.total)}
-                    </span>
-                  </span>
-                  <span className={`w-28 text-end font-display text-lg font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>
-                    {m.balance > 0 ? money(m.balance) : m.creditDue > 0 ? money(m.creditDue) : L('পরিশোধিত', 'Paid')}
-                  </span>
-                </button>
-                {open && model && (
-                  <div className="flex flex-col gap-3 border-t border-line px-3 py-3">
-                    <Breakdown model={model} />
-                    <div className="flex min-w-0 flex-col border-t border-line pt-2">
-                      <h4 className="text-xs font-semibold text-muted">{L('এই অর্ডারের জমা', 'Paid on this order')}</h4>
-                      {pickedTimeline.length === 0 ? (
-                        <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
-                      ) : (
-                        <ul className="m-0 list-none divide-y divide-line p-0">
-                          {pickedTimeline.map((e) => (
-                            <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {others.length > 0 && (
-          <>
-            <h3 className="mb-1 mt-4 text-xs font-semibold text-muted">{L('অন্য অর্ডারের জমা', 'Paid on other orders')}</h3>
-            <ul className="m-0 list-none divide-y divide-line p-0">
-              {others.map((e) => (
-                <EntryLine key={e.payment.id} e={e} showOrder onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+      {body(c, setDialog)}
       <ActionBar order={c.picked} open={(kind) => setDialog({ kind, order: c.picked })} />
       <DialogHost dialog={dialog} close={() => setDialog(null)} />
     </aside>
+  );
+}
+
+/** The picked order laid flat: its garments, the price breakdown, and what was paid on it. */
+function OrderDetail({ c, open, title = true }: { c: Customer; open: OpenDialog; title?: boolean }) {
+  const { money, date } = useI18n();
+  const L = useL();
+  const model = c.models.get(c.picked.id);
+  const entries = c.timeline.filter((e) => e.order.id === c.picked.id);
+  if (!model) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      {title && (
+        <div className="flex items-baseline gap-2">
+          <h3 className="font-display text-lg font-bold">{model.orderNumber}</h3>
+          <span className="text-sm text-muted">{date(model.createdAt.slice(0, 10))}</span>
+          <Link to={`/app/orders/${c.picked.id}`} className="ms-auto text-sm font-semibold text-brand-strong hover:underline">
+            {L('অর্ডার খুলুন', 'Open order')}
+          </Link>
+        </div>
+      )}
+      <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-sm">
+        {model.lines.map((l) => (
+          <li key={l.itemId} className={`flex items-baseline gap-3 ${l.cancelled ? 'text-muted line-through' : ''}`}>
+            <span className="min-w-0 flex-1 truncate">
+              {l.garment}
+              {l.wearer && <span className="text-xs text-muted"> · {l.wearer}</span>}
+            </span>
+            <span className="whitespace-nowrap text-muted">{money(l.price)}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="rounded-xl bg-surface/60 px-3 py-2">
+        <Breakdown model={model} />
+      </div>
+      <div className="flex flex-col">
+        <h4 className="text-xs font-semibold text-muted">{L('এই অর্ডারের জমা', 'Paid on this order')}</h4>
+        {entries.length === 0 ? (
+          <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
+        ) : (
+          <ul className="m-0 list-none divide-y divide-line p-0">
+            {entries.map((e) => (
+              <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => open({ kind: 'correct', order: e.order, payment: e.payment })} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Payments on the customer's other orders, for the bottom of the body. */
+function OtherPayments({ c, open }: { c: Customer; open: OpenDialog }) {
+  const L = useL();
+  const others = c.timeline.filter((e) => e.order.id !== c.picked.id);
+  if (others.length === 0) return null;
+  return (
+    <div className="flex flex-col">
+      <h4 className="text-xs font-semibold text-muted">{L('অন্য অর্ডারের জমা', 'Paid on other orders')}</h4>
+      <ul className="m-0 list-none divide-y divide-line p-0">
+        {others.map((e) => (
+          <EntryLine key={e.payment.id} e={e} showOrder onCorrect={() => open({ kind: 'correct', order: e.order, payment: e.payment })} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function balanceText(o: Order, money: (n: number) => string, L: (bn: string, en: string) => string) {
+  const m = moneySummary(o);
+  return m.balance > 0 ? money(m.balance) : m.creditDue > 0 ? money(m.creditDue) : L('পরিশোধিত', 'Paid');
+}
+
+/* ------------------------------------------------------------------ B ------------------------------------------------------------------ */
+
+/** B: the orders as a row of tabs; the picked one is a solid tab and its details sit flat below. */
+function TabsBody({ c, open }: { c: Customer; open: OpenDialog }) {
+  const { money } = useI18n();
+  const L = useL();
+  const [, pick] = usePicked();
+  return (
+    <>
+      {c.orders.length > 1 && (
+        <div role="tablist" aria-label={L('অর্ডার', 'Orders')} className="flex gap-2 overflow-x-auto border-b border-line px-4 py-2.5">
+          {c.orders.map((o) => {
+            const on = o.id === c.picked.id;
+            const owing = moneySummary(o).balance > 0;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => pick(o.id)}
+                className={`flex shrink-0 flex-col items-start rounded-lg px-3 py-1.5 text-start ${on ? 'bg-ink text-panel' : 'bg-surface hover:bg-line/60'}`}
+              >
+                <span className="text-sm font-semibold">{o.number}</span>
+                <span className={`text-xs ${on ? 'opacity-80' : owing ? 'text-warn-ink' : 'text-ok'}`}>{balanceText(o, money, L)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="relative flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-4">
+        <OrderDetail c={c} open={open} />
+        <OtherPayments c={c} open={open} />
+      </div>
+    </>
   );
 }
 
 /* ------------------------------------------------------------------ C ------------------------------------------------------------------ */
 
-interface StatementRow {
-  key: string;
-  at: string;
-  order: Order;
-  text: string;
-  note: string;
-  /** Positive: the customer owes more. Negative: less. */
-  change: number;
-  payment?: Payment;
-}
-
-function statementOf(orders: Order[], models: Map<string, ReceiptModel>, t: ReturnType<typeof useI18n>['t']): StatementRow[] {
-  const rows: StatementRow[] = [];
-  for (const o of orders) {
-    const model = models.get(o.id);
-    if (!model) continue;
-    rows.push({ key: `${o.id}-bill`, at: o.createdAt, order: o, text: t('money.subtotal'), note: model.lines.filter((l) => !l.cancelled).map((l) => l.garment).join(', '), change: model.subtotal });
-    if (o.discount) rows.push({ key: `${o.id}-disc`, at: o.createdAt, order: o, text: t('money.discount'), note: o.discount.reason, change: -o.discount.amount });
-    for (const a of o.priceAdjustments) rows.push({ key: a.id, at: a.at, order: o, text: t('money.adjustments'), note: a.reason, change: a.amount });
-    for (const p of o.payments)
-      rows.push({ key: p.id, at: p.at, order: o, text: `${t(`receipt.kind.${p.kind}`)} · ${t(`method.${p.method}`)}`, note: [p.reference, p.reason].filter(Boolean).join(' · '), change: -effectSign(p, o.payments) * p.amount, payment: p });
-  }
-  return rows.sort((a, b) => a.at.localeCompare(b.at));
-}
-
-function StatementCard({ id }: { id: string }) {
-  const { t, money, date } = useI18n();
+/** C: compact order rows that never expand; the picked one has a check and an accent bar, and its details follow the list. */
+function ListBody({ c, open }: { c: Customer; open: OpenDialog }) {
+  const { money, number, date } = useI18n();
   const L = useL();
   const [, pick] = usePicked();
-  const [all, setAll] = useState(false);
-  const [dialog, setDialog] = useState<MoneyDialog>(null);
-  const c = useCustomerMoney(id);
-  const rows = statementOf(all ? c.orders : [c.picked], c.models, t);
-  let running = 0;
-  const withBalance = rows.map((r) => ({ ...r, balance: (running += r.change) }));
-  const tab = (key: string, on: boolean, onClick: () => void, children: ReactNode) => (
-    <button
-      key={key}
-      type="button"
-      role="tab"
-      aria-selected={on}
-      onClick={onClick}
-      className={`-mb-px flex shrink-0 flex-col items-start border-b-[3px] px-3 py-2 text-start ${on ? 'border-brand' : 'border-transparent text-muted hover:text-ink'}`}
-    >
-      {children}
-    </button>
-  );
   return (
-    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
-      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)}>
-        <div className="text-end">
-          <p className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</p>
-          <p className="font-display text-2xl font-bold leading-tight text-warn">{money(c.owed)}</p>
+    <div className="relative flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-4">
+      {c.orders.length > 1 && (
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-xs font-semibold text-muted">
+            {L('অর্ডার', 'Orders')} · {number(c.orders.length)}
+          </h3>
+          <ul className="m-0 flex list-none flex-col p-0">
+            {c.orders.map((o) => {
+              const on = o.id === c.picked.id;
+              const m = moneySummary(o);
+              return (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => pick(o.id)}
+                    className={`flex w-full items-center gap-3 border-s-4 py-2 pe-2 ps-3 text-start ${on ? 'border-brand font-semibold' : 'border-transparent hover:bg-surface'}`}
+                  >
+                    <span aria-hidden="true" className={`grid size-5 shrink-0 place-items-center rounded-full text-xs ${on ? 'bg-brand text-on-brand' : 'ring-1 ring-line'}`}>
+                      {on ? '✓' : ''}
+                    </span>
+                    <span className="w-20">{o.number}</span>
+                    <span className="w-28 text-xs font-normal text-muted">{date(o.createdAt.slice(0, 10))}</span>
+                    <span className="min-w-0 flex-1">
+                      <PaidBar paid={m.paid} total={m.total} />
+                    </span>
+                    <span className={`w-24 text-end font-display ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>{balanceText(o, money, L)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </CardHeader>
-      <div role="tablist" aria-label={L('অর্ডার', 'Orders')} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line px-2">
-        {c.orders.map((o) => {
-          const m = moneySummary(o);
-          return tab(
-            o.id,
-            !all && o.id === id,
-            () => {
-              setAll(false);
-              pick(o.id);
-            },
-            <>
-              <span className="text-sm font-semibold text-ink">{o.number}</span>
-              <span className={`text-xs ${m.balance > 0 ? 'text-warn-ink' : 'text-ok'}`}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
-            </>,
-          );
-        })}
-        {c.orders.length > 1 &&
-          tab(
-            'all',
-            all,
-            () => setAll(true),
-            <>
-              <span className="text-sm font-semibold text-ink">{L('সব অর্ডার', 'All orders')}</span>
-              <span className="text-xs text-muted">{L('পুরো খাতা', 'Whole ledger')}</span>
-            </>,
-          )}
-      </div>
-      <div className="relative min-h-0 flex-1 overflow-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              <th scope="col" className={HEAD}>{t('receipt.date')}</th>
-              <th scope="col" className={HEAD}>{L('বিবরণ', 'Details')}</th>
-              <th scope="col" className={`${HEAD} text-end`}>{L('টাকা', 'Amount')}</th>
-              <th scope="col" className={`${HEAD} text-end`}>{t('money.balance')}</th>
-              <th scope="col" className={HEAD}>
-                <span className="sr-only">{t('payments.correct')}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {withBalance.map((r) => (
-              <tr key={r.key} className="border-b border-line align-top">
-                <td className="whitespace-nowrap px-3 py-2 text-muted">{date(r.at.slice(0, 10))}</td>
-                <td className="px-3 py-2">
-                  <span className="font-semibold">{r.text}</span>
-                  {all && <span className="text-muted"> · {r.order.number}</span>}
-                  {r.note && <span className="block text-xs text-muted">{r.note}</span>}
-                </td>
-                <td className={`whitespace-nowrap px-3 py-2 text-end font-semibold ${r.change < 0 ? 'text-ok' : ''}`}>
-                  {r.change < 0 ? '− ' : '+ '}
-                  {money(Math.abs(r.change))}
-                </td>
-                <td className="whitespace-nowrap px-3 py-2 text-end font-display font-bold">{money(r.balance)}</td>
-                <td className="py-1 pe-2">{r.payment && r.payment.kind !== 'correction' && <CorrectButton onClick={() => setDialog({ kind: 'correct', order: r.order, payment: r.payment! })} />}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <ActionBar order={c.picked} open={(kind) => setDialog({ kind, order: c.picked })} />
-      <DialogHost dialog={dialog} close={() => setDialog(null)} />
-    </aside>
+      )}
+      <section className="flex flex-col gap-3 border-t border-line pt-4">
+        <OrderDetail c={c} open={open} />
+      </section>
+      <OtherPayments c={c} open={open} />
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ D ------------------------------------------------------------------ */
 
-function ReceiptCard({ id }: { id: string }) {
+/** D: the picked order leads the body; the customer's other orders wait below and swap in when clicked. */
+function HeroBody({ c, open }: { c: Customer; open: OpenDialog }) {
   const { money, date } = useI18n();
   const L = useL();
   const [, pick] = usePicked();
-  const [dialog, setDialog] = useState<MoneyDialog>(null);
-  const c = useCustomerMoney(id);
-  const model = c.models.get(id);
-  const actions = useActions(c.picked);
-  const mine = c.timeline.filter((e) => e.order.id === id);
+  const rest = c.orders.filter((o) => o.id !== c.picked.id);
   return (
-    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
-      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)} />
-      {c.orders.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
-          {c.orders.map((o) => {
-            const m = moneySummary(o);
-            const on = o.id === id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => pick(o.id)}
-                className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm ${on ? 'border-brand bg-brand-soft font-semibold text-brand-strong ring-1 ring-brand' : 'border-line hover:bg-surface'}`}
-              >
-                {o.number}
-                <span className={m.balance > 0 ? 'text-warn-ink' : 'text-ok'}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
-              </button>
-            );
-          })}
-          <span className="ms-auto text-sm text-muted">
-            {L('মোট বাকি', 'Owes in all')} <b className="font-display text-warn">{money(c.owed)}</b>
-          </span>
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-auto">
+      <div className="border-b border-line p-4">
+        <OrderDetail c={c} open={open} />
+      </div>
+      {rest.length > 0 && (
+        <div className="flex flex-col gap-1.5 p-4">
+          <h3 className="text-xs font-semibold text-muted">{L('এই কাস্টমারের অন্য অর্ডার', 'Other orders')}</h3>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {rest.map((o) => {
+              const m = moneySummary(o);
+              return (
+                <li key={o.id}>
+                  <button type="button" onClick={() => pick(o.id)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start ring-1 ring-inset ring-line hover:bg-surface">
+                    <span className="flex w-24 flex-col">
+                      <span className="font-semibold">{o.number}</span>
+                      <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <PaidBar paid={m.paid} total={m.total} />
+                    </span>
+                    <span className={`w-24 text-end font-display font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>{balanceText(o, money, L)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
-      <div className="relative min-h-0 flex-1 overflow-auto bg-surface/50 p-4">
-        {model && (
-          <div className="mx-auto flex max-w-md flex-col gap-3 rounded-xl border border-line bg-panel p-4 shadow-sm">
-            <div className="flex items-baseline justify-between">
-              <span className="font-display text-lg font-bold">{model.orderNumber}</span>
-              <span className="text-sm text-muted">{date(model.createdAt.slice(0, 10))}</span>
-            </div>
-            <ul className="m-0 flex list-none flex-col border-y border-dashed border-line px-0 py-2 text-sm">
-              {model.lines.map((l) => (
-                <li key={l.itemId} className={`flex items-baseline gap-3 py-1 ${l.cancelled ? 'text-muted line-through' : ''}`}>
-                  <span className="min-w-0 flex-1">
-                    {l.garment}
-                    {l.wearer && <span className="text-xs text-muted"> · {l.wearer}</span>}
-                  </span>
-                  <span className="whitespace-nowrap">{money(l.price)}</span>
-                </li>
-              ))}
-            </ul>
-            <Breakdown model={model} />
-            <PaidBar paid={model.paid} total={model.total} />
-          </div>
-        )}
-        {actions.length > 0 && (
-          <div className="mx-auto mt-4 grid max-w-md grid-cols-2 gap-2">
-            {actions.map((a) => (
-              <button
-                key={a.kind}
-                type="button"
-                onClick={() => setDialog({ kind: a.kind, order: c.picked })}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-start font-semibold ring-inset ${a.kind === 'take' ? 'col-span-2 bg-brand text-on-brand hover:bg-brand-strong' : 'bg-panel ring-1 ring-line hover:bg-surface'}`}
-              >
-                <span aria-hidden="true" className={`grid size-9 place-items-center rounded-lg ${a.kind === 'take' ? 'bg-white/15' : 'bg-surface'}`}>
-                  <a.icon size={18} />
-                </span>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="mx-auto mt-4 max-w-md">
-          <h3 className="text-xs font-semibold text-muted">{L('জমার ইতিহাস', 'Payment history')}</h3>
-          {mine.length === 0 ? (
-            <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
-          ) : (
-            <ul className="m-0 list-none divide-y divide-line p-0">
-              {mine.map((e) => (
-                <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className="px-4 pb-4">
+        <OtherPayments c={c} open={open} />
       </div>
-      <DialogHost dialog={dialog} close={() => setDialog(null)} />
-    </aside>
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ E ------------------------------------------------------------------ */
 
-/** Take money for the picked order without a dialog. Records only on the button, never on Enter. */
-function CollectForm({ order }: { order: Order }) {
-  const { t, money } = useI18n();
-  const L = useL();
-  const store = useStore();
-  const can = useCan();
-  const balance = moneySummary(order).balance;
-  const [id, setId] = useState(() => store.createId());
-  const [amount, setAmount] = useState<number | null>(balance > 0 ? balance : null);
-  const [method, setMethod] = useState<PaymentMethod>('cash');
-  const [reference, setReference] = useState('');
-  const [done, setDone] = useState<number | null>(null);
-  const [formKey, setFormKey] = useState(0);
-  const { problem, working, save } = useSave(() => {
-    setDone(amount);
-    setId(store.createId());
-    setReference('');
-    setFormKey((k) => k + 1);
-  });
-  if (!can('payments.record')) return null;
-  if (balance <= 0)
-    return (
-      <div className="flex items-center gap-3 rounded-xl bg-ok-soft px-4 py-3 text-ok">
-        <HandCoins aria-hidden="true" size={20} />
-        <span className="font-semibold">{done !== null ? L(`${money(done)} জমা হয়েছে। এই অর্ডারের সব টাকা জমা হয়েছে।`, `${money(done)} recorded. This order is fully paid.`) : L('এই অর্ডারের সব টাকা জমা হয়েছে', 'This order is fully paid')}</span>
-      </div>
-    );
-  const submit = () => {
-    if (amount === null || amount <= 0) return;
-    void save({
-      type: 'payment.recorded',
-      orderId: order.id,
-      payment: { id, amount, method, reference: reference.trim(), kind: order.payments.length === 0 ? 'advance' : 'payment', corrects: null, reason: '' },
-    });
-  };
-  return (
-    <section aria-label={t('payments.takeTitle')} className="flex flex-col gap-3 rounded-xl border-2 border-brand bg-brand-soft/30 p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-semibold">
-          {t('payments.takeTitle')} · {order.number}
-        </h3>
-        <span className="text-sm text-muted">
-          {t('money.balance')} <b className="font-display text-warn">{money(balance)}</b>
-        </span>
-      </div>
-      <div key={`${order.id}-${formKey}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <NumberField label={t('payments.amount')} kind="money" initialValue={balance} onValueChange={setAmount} />
-        <div role="radiogroup" aria-label={t('payment.method')} className="flex rounded-lg bg-panel p-1 ring-1 ring-line">
-          {METHODS.map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={method === m}
-              onClick={() => setMethod(m)}
-              className={`min-h-10 rounded-md px-3 text-sm font-semibold ${method === m ? 'bg-brand text-on-brand' : 'text-muted hover:text-ink'}`}
-            >
-              {t(`method.${m}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex items-end gap-3">
-        {method !== 'cash' && (
-          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
-            {t('payment.reference')}
-            <input value={reference} onChange={(e) => setReference(e.target.value)} autoComplete="off" className="min-h-11 rounded-lg border border-line bg-panel px-3 font-normal" />
-          </label>
-        )}
-        <Button onClick={submit} disabled={working || amount === null || amount <= 0} className="ms-auto min-w-40">
-          <HandCoins aria-hidden="true" size={16} />
-          {t('payments.record')}
-        </Button>
-      </div>
-      {problem && <p className="text-sm text-danger">{problem}</p>}
-      {done !== null && !problem && (
-        <p role="status" className="text-sm font-semibold text-ok">
-          {L(`${money(done)} জমা হয়েছে`, `${money(done)} recorded`)}
-        </p>
-      )}
-    </section>
-  );
-}
-
-function CollectCard({ id }: { id: string }) {
-  const { money, number, date } = useI18n();
+/** E: a narrow rail of orders down the left of the card; the picked one joins the details pane like a folder tab. */
+function RailBody({ c, open }: { c: Customer; open: OpenDialog }) {
+  const { money, date } = useI18n();
   const L = useL();
   const [, pick] = usePicked();
-  const [dialog, setDialog] = useState<MoneyDialog>(null);
-  const c = useCustomerMoney(id);
-  const model = c.models.get(id);
-  const others = useActions(c.picked).filter((a) => a.kind !== 'take');
   return (
-    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
-      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)}>
-        <div className="text-end">
-          <p className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</p>
-          <p className="font-display text-2xl font-bold leading-tight text-warn">{money(c.owed)}</p>
-        </div>
-      </CardHeader>
-      <div className="relative flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
-        <CollectForm key={id} order={c.picked} />
-        {model && (
-          <details className="rounded-xl border border-line">
-            <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5">
-              <span className="font-semibold">{L('হিসাবের খুঁটিনাটি', 'Price breakdown')}</span>
-              <span className="text-sm text-muted">
-                {money(model.paid)} / {money(model.total)}
-              </span>
-              <span className="ms-auto flex gap-1">
-                {others.map((a) => (
-                  <button
-                    key={a.kind}
-                    type="button"
-                    title={a.label}
-                    aria-label={a.label}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setDialog({ kind: a.kind, order: c.picked });
-                    }}
-                    className="grid size-9 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-surface hover:text-ink"
-                  >
-                    <a.icon size={16} />
-                  </button>
-                ))}
-              </span>
-            </summary>
-            <div className="border-t border-line px-3 py-2">
-              <Breakdown model={model} />
-            </div>
-          </details>
-        )}
-        {c.orders.length > 1 && (
-          <div className="flex flex-col gap-2">
-            <h3 className="text-xs font-semibold text-muted">
-              {L('এই কাস্টমারের অর্ডার', 'This customer’s orders')} · {number(c.orders.length)}
-            </h3>
-            <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
-              {c.orders.map((o) => {
-                const m = moneySummary(o);
-                const on = o.id === id;
-                return (
-                  <li key={o.id}>
-                    <button
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => pick(o.id)}
-                      className={`flex w-full flex-col gap-1.5 rounded-xl border p-3 text-start ${on ? 'border-brand bg-brand-soft/40 ring-1 ring-brand' : 'border-line hover:bg-surface'}`}
-                    >
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span className="font-semibold">{o.number}</span>
-                        <span className={`font-display font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
-                      </span>
-                      <PaidBar paid={m.paid} total={m.total} />
-                      <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-        <div className="flex flex-col">
-          <h3 className="text-xs font-semibold text-muted">{L('সব জমা ও ফেরত', 'Every payment and refund')}</h3>
-          {c.timeline.length === 0 ? (
-            <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
-          ) : (
-            <ul className="m-0 list-none divide-y divide-line p-0">
-              {c.timeline.map((e) => (
-                <EntryLine key={e.payment.id} e={e} showOrder onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
-              ))}
-            </ul>
-          )}
-        </div>
+    <div className="flex min-h-0 flex-1">
+      <ul aria-label={L('অর্ডার', 'Orders')} className="m-0 flex w-36 shrink-0 list-none flex-col gap-1 overflow-y-auto border-e border-line bg-surface/60 py-2 ps-2">
+        {c.orders.map((o) => {
+          const on = o.id === c.picked.id;
+          const m = moneySummary(o);
+          return (
+            <li key={o.id}>
+              <button
+                type="button"
+                aria-current={on ? 'true' : undefined}
+                onClick={() => pick(o.id)}
+                className={`-me-px flex w-full flex-col gap-1 rounded-s-lg py-2 pe-2 ps-3 text-start ${on ? 'border border-e-0 border-line bg-panel' : 'hover:bg-surface'}`}
+              >
+                <span className="flex items-baseline justify-between gap-1">
+                  <span className="text-sm font-semibold">{o.number}</span>
+                </span>
+                <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
+                <PaidBar paid={m.paid} total={m.total} />
+                <span className={`text-sm font-display font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>{balanceText(o, money, L)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="relative flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-4">
+        <OrderDetail c={c} open={open} />
+        <OtherPayments c={c} open={open} />
       </div>
-      <DialogHost dialog={dialog} close={() => setDialog(null)} />
-    </aside>
+    </div>
   );
 }
 
 /* ---------------------------------------------------------------- variants ---------------------------------------------------------------- */
 
 export function VariantB() {
-  return <DueList side={(id) => <StackCard id={id} />} />;
+  return <DueList side={(id) => <CustomerCard id={id} body={(c, open) => <TabsBody c={c} open={open} />} />} />;
 }
 export function VariantC() {
-  return <DueList side={(id) => <StatementCard id={id} />} />;
+  return <DueList side={(id) => <CustomerCard id={id} body={(c, open) => <ListBody c={c} open={open} />} />} />;
 }
 export function VariantD() {
-  return <DueList side={(id) => <ReceiptCard id={id} />} />;
+  return <DueList side={(id) => <CustomerCard id={id} body={(c, open) => <HeroBody c={c} open={open} />} />} />;
 }
 export function VariantE() {
-  return <DueList side={(id) => <CollectCard id={id} />} />;
+  return <DueList side={(id) => <CustomerCard id={id} body={(c, open) => <RailBody c={c} open={open} />} />} />;
 }
