@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The desktop work page opens on the list, and the view switch shows List first and Board second. Only the board is kept in the address now; old links that ask for the list still open it.
 - The desktop sidebar's header shows the shop name with the branch and app name under it, level with the top bar and with a line below that continues the top bar's edge. Menu items are larger, Payments and Settings sit below a plain line instead of an "Accounts & Shop" title, and a tab on the sidebar's edge folds it to a narrow rail of icons with short names, counts as small badges (late work in the usual amber), a sync dot and the person's avatar. The choice is remembered on the device. Desktop Home now fills the width like the other pages, so it uses the room the rail frees.
 - The desktop top bar's search fills the free space, has a search icon and says what it finds (order number, customer name or phone). Beside it are a বাংলা | English switch, a button that steps the colour theme through light, dark and match device, and New Customer next to New Order.
 - Desktop Home fits the screen: the four lists fill the space under today's panel with coloured headers and icons, show as many rows as fit, and end in a "See n More" link instead of scrolling. Today's deliveries open in Orders with today's date already set.
