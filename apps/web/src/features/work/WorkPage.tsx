@@ -16,6 +16,8 @@ import { MobileWorkPage } from './MobileWorkPage';
 import { useWorkList } from './useWorkList';
 import { WorkBoard, WorkerChips } from './BoardView';
 import { WorkGroupTable } from './WorkGroupTable';
+import { VariantB, VariantC, VariantD, WORK_VARIANTS } from './WorkDesktopPrototype';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { assignees, filterWork, stageOptions } from './workList';
 
 type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
@@ -30,6 +32,7 @@ function DesktopWorkPage() {
   const [params] = useSearchParams();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [open, setOpen] = useState<Open>(null);
+  const variant = useVariant(Object.keys(WORK_VARIANTS));
 
   const canAssign = can('work.assign');
   const canMove = can('work.updateStage');
@@ -79,7 +82,7 @@ function DesktopWorkPage() {
 
   // A garment a filter or the view has hidden must not stay selected, or the batch and the bar's count
   // would not match what is on screen.
-  const visible = view === 'board' ? boardRows : shown;
+  const visible = view === 'board' && (variant === 'A' || variant === 'B') ? boardRows : shown;
   useEffect(() => {
     const ids = new Set(visible.map((r) => r.item.id));
     setSelected((prev) => (prev.size > 0 && [...prev].some((id) => !ids.has(id)) ? new Set([...prev].filter((id) => ids.has(id))) : prev));
@@ -88,6 +91,44 @@ function DesktopWorkPage() {
   const printParams = new URLSearchParams(params);
   if (view === 'board') printParams.delete('stage');
   const printSearch = printParams.toString();
+
+  if (variant !== 'A') {
+    const ctx = {
+      all,
+      shown,
+      groups,
+      boardRows,
+      query,
+      setQuery,
+      view,
+      setView,
+      seesAll: viewer.seesAll,
+      workers,
+      counts: chipCounts,
+      lateCount,
+      stages,
+      selected: selectable ? selected : null,
+      toggle,
+      clear: () => setSelected(new Set()),
+      actions: (
+        <>
+          {canAssign && <Button onClick={() => openDialog('assign')}>{t('work.assign')}</Button>}
+          {canMove && <Button onClick={() => openDialog('stage')}>{t('item.changeStage')}</Button>}
+        </>
+      ),
+      printHref: `/print/work${printSearch ? `?${printSearch}` : ''}`,
+    };
+    return (
+      <>
+        {variant === 'B' && <VariantB ctx={ctx} />}
+        {variant === 'C' && <VariantC ctx={ctx} />}
+        {variant === 'D' && <VariantD ctx={ctx} />}
+        {open?.kind === 'assign' && <BatchAssignDialog refs={open.refs} onClose={closeDialog} />}
+        {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}
+        <PrototypeSwitcher variants={WORK_VARIANTS} />
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -165,6 +206,7 @@ function DesktopWorkPage() {
       )}
       {open?.kind === 'assign' && <BatchAssignDialog refs={open.refs} onClose={closeDialog} />}
       {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}
+      <PrototypeSwitcher variants={WORK_VARIANTS} />
     </div>
   );
 }
