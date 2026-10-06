@@ -28,6 +28,20 @@ describe('Work board', () => {
     expect(screen.getByRole('tabpanel')).toBeTruthy();
   });
 
+  it('comes back to the board after visiting another page, until the list is chosen again', async () => {
+    const { router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    await userEvent.click(await screen.findByRole('tab', { name: 'বোর্ড' }));
+    await act(() => router.navigate('/app/orders'));
+    await act(() => router.navigate('/app/work'));
+    expect(await screen.findByRole('region', { name: 'কাজের বোর্ড' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'বোর্ড', selected: true })).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('tab', { name: 'তালিকা' }));
+    await act(() => router.navigate('/app/orders'));
+    await act(() => router.navigate('/app/work'));
+    expect(await screen.findByRole('region', { name: 'রফিক মিয়া' })).toBeTruthy();
+  });
+
   it('keeps the board in the address and leaves it out for the list', async () => {
     const { router } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
     await userEvent.click(await screen.findByRole('tab', { name: 'বোর্ড' }));

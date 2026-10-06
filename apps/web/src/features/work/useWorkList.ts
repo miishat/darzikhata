@@ -2,6 +2,7 @@ import type { ItemRef } from '@darzikhata/domain';
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { useCurrentStaff, useSnapshot } from '../../data/StoreContext';
+import { readSetting, writeSetting } from '../../lib/safeStorage';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import {
@@ -17,6 +18,7 @@ import {
 
 const NO_REFS: ItemRef[] = [];
 const NO_GROUPS: WorkGroup[] = [];
+const VIEW_KEY = 'dk.work.view';
 
 export type WorkView = 'board' | 'list';
 
@@ -54,8 +56,10 @@ export function useWorkList(): WorkList {
   const { stage } = parsed;
   const query = useMemo<WorkQuery>(() => ({ by, worker, stage }), [by, worker, stage]);
 
-  // The list is the default; only the board is written to the address (an old `view=list` still opens the list).
-  const view: WorkView = params.get('view') === 'board' ? 'board' : 'list';
+  // The address wins; without one, the view last chosen on this device, and the list before any choice.
+  // Only the board is written to the address (an old `view=list` still opens the list).
+  const asked = params.get('view');
+  const view: WorkView = asked === 'board' || asked === 'list' ? asked : readSetting(VIEW_KEY) === 'board' ? 'board' : 'list';
   const setQuery = useCallback(
     (next: WorkQuery) => {
       const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
@@ -66,6 +70,7 @@ export function useWorkList(): WorkList {
   );
   const setView = useCallback(
     (next: WorkView) => {
+      writeSetting(VIEW_KEY, next);
       const written = new URLSearchParams(params);
       if (next === 'board') written.set('view', 'board');
       else written.delete('view');
