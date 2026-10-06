@@ -90,7 +90,7 @@ export function StaffSettings() {
   );
 }
 
-function StaffDialog({ staff, onClose, onSaved }: { staff: Staff | null; onClose(): void; onSaved(): void }) {
+export function StaffDialog({ staff, onClose, onSaved }: { staff: Staff | null; onClose(): void; onSaved(): void }) {
   const { t, language } = useI18n();
   const store = useStore();
   const { config, session } = useSnapshot();

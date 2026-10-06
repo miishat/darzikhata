@@ -140,7 +140,7 @@ export function BranchSettings() {
   );
 }
 
-function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onClose(): void; onSaved(): void }) {
+export function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onClose(): void; onSaved(): void }) {
   const { t, language } = useI18n();
   const store = useStore();
   const [nameBn, setNameBn] = useState(branch?.name.bn ?? '');

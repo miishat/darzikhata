@@ -3,12 +3,26 @@ import { RequireCapability } from '../../app/guards';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useCan } from '../common/hooks';
 import { SETTINGS_SECTIONS } from './sections';
+import { useShell } from '../../shell/ShellPreference';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { SETTINGS_VARIANTS, VariantB, VariantC, VariantD } from './SettingsDesktopPrototype';
 
 /** The settings frame: a menu of the sections this role may use, then the chosen section. */
 export function SettingsPage() {
   const { t } = useI18n();
   const can = useCan();
   const sections = SETTINGS_SECTIONS.filter((s) => s.requires.some(can));
+  const { kind } = useShell();
+  const variant = useVariant(Object.keys(SETTINGS_VARIANTS));
+  if (kind !== 'mobile' && variant !== 'A')
+    return (
+      <RequireCapability anyOf={['settings.edit', 'staff.manage']}>
+        {variant === 'B' && <VariantB />}
+        {variant === 'C' && <VariantC />}
+        {variant === 'D' && <VariantD />}
+        <PrototypeSwitcher variants={SETTINGS_VARIANTS} />
+      </RequireCapability>
+    );
   return (
     <RequireCapability anyOf={['settings.edit', 'staff.manage']}>
       <div className="flex flex-col gap-4">
@@ -27,6 +41,7 @@ export function SettingsPage() {
           ))}
         </nav>
         <Outlet />
+        {kind !== 'mobile' && <PrototypeSwitcher variants={SETTINGS_VARIANTS} />}
       </div>
     </RequireCapability>
   );
