@@ -8,6 +8,8 @@ import { useToday } from '../common/hooks';
 import { matchesText, orderRow } from '../orders/orderList';
 import { useShell } from '../../shell/ShellPreference';
 import { MobilePayments } from './MobilePayments';
+import { PAYMENT_VARIANTS, VariantB, VariantC, VariantD } from './PaymentsDesktopPrototype';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 
 const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
 const cell = 'whitespace-nowrap px-3 py-2';
@@ -19,6 +21,7 @@ export function PaymentsPage() {
   const today = useToday();
   const [text, setText] = useState('');
   const { kind } = useShell();
+  const variant = useVariant(Object.keys(PAYMENT_VARIANTS));
 
   const { due, credit } = useMemo(() => {
     const orders = Object.values(state.orders).filter((order: Order) => matchesText(orderRow(order, state, today), text));
@@ -56,8 +59,20 @@ export function PaymentsPage() {
     );
   }
 
+  if (variant !== 'A') {
+    return (
+      <>
+        {variant === 'B' && <VariantB />}
+        {variant === 'C' && <VariantC />}
+        {variant === 'D' && <VariantD />}
+        <PrototypeSwitcher variants={PAYMENT_VARIANTS} />
+      </>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-4">
+      <PrototypeSwitcher variants={PAYMENT_VARIANTS} />
       <h1 className="text-xl font-semibold">{t('payments.title')}</h1>
       <TextField label={t('orders.search')} type="search" value={text} onChange={(e) => setText(e.target.value)} className="max-w-md" />
 
