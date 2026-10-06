@@ -16,7 +16,7 @@ import { useTheme, type ThemePreference } from './theme';
 export const TOPBAR_VARIANTS = {
   A: 'Current',
   B: 'Page title + tools',
-  C: 'Wide command search',
+  C: 'Wide search on the left + theme',
   D: 'Today chips + search',
   E: 'Navy bar',
 } as const;
@@ -124,16 +124,16 @@ export function BarB({ role, searchInput }: BarProps) {
 
 // ---------------------------------------------------------------- C
 
-/** A wide search in the middle that says what it finds; quick create buttons on the right. */
+/** A wide search on the left that says what it finds; language, theme and quick create buttons on the right. */
 export function BarC({ role, searchInput }: BarProps) {
   const { t } = useI18n();
   const L = useL();
   return (
     <header className={`${HEADER} border-line bg-panel`}>
-      <div className="flex flex-1 justify-center">
-        <GlobalSearch role={role} inputRef={searchInput} look="wide" placeholder={L('অর্ডার নম্বর, কাস্টমারের নাম বা ফোন খুঁজুন', 'Search order number, customer name or phone')} />
-      </div>
+      <GlobalSearch role={role} inputRef={searchInput} look="wide" placeholder={L('অর্ডার নম্বর, কাস্টমারের নাম বা ফোন খুঁজুন', 'Search order number, customer name or phone')} />
+      <div className="flex-1" />
       <LanguageSwitch />
+      <ThemeButton />
       {can(role, 'customers.edit') && (
         <Link to="/app/customers/new" className={`${buttonClasses('secondary')} shrink-0`}>
           <UserPlus aria-hidden="true" size={18} />
