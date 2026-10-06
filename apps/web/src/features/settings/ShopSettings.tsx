@@ -1,4 +1,5 @@
 import { toBanglaDigits, toEnglishDigits } from '@darzikhata/domain';
+import { Link2, Phone, ReceiptText, ShieldCheck, Store } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -7,6 +8,7 @@ import { Checkbox } from '../../ui/Checkbox';
 import { TextField } from '../../ui/TextField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { configProblemText } from './configProblems';
+import { SECTION_BODY, SectionHeader, SettingCard } from './SettingsCards';
 
 interface ShopInput {
   nameBn: string;
@@ -86,61 +88,95 @@ export function ShopSettings() {
     setSaved(true);
   }
 
-  return (
-    <form onSubmit={save} noValidate className="flex max-w-xl flex-col gap-4">
-      <h2 className="text-lg font-semibold">{t('settings.shop.title')}</h2>
-      <TextField
-        label={t('settings.shop.nameBn')}
-        value={input.nameBn}
-        onChange={(e) => set('nameBn', e.target.value)}
-        error={nameMissing ? t('settings.shop.error.name') : undefined}
-        autoComplete="off"
-      />
-      <TextField
-        label={t('settings.shop.nameEn')}
-        value={input.nameEn}
-        onChange={(e) => set('nameEn', e.target.value)}
-        autoComplete="off"
-      />
-      <TextField
-        label={t('settings.shop.phone')}
-        value={input.phone}
-        onChange={(e) => set('phone', e.target.value)}
-        type="tel"
-        inputMode="tel"
-        autoComplete="off"
-      />
-      <TextField
-        label={t('settings.shop.address')}
-        value={input.address}
-        onChange={(e) => set('address', e.target.value)}
-        autoComplete="off"
-      />
-      <TextField
-        label={t('settings.shop.linkDays')}
-        value={input.days}
-        onChange={(e) => set('days', e.target.value)}
-        error={daysInvalid ? t('settings.shop.error.days') : undefined}
-        hint={t('settings.shop.linkDaysHint')}
-        inputMode="numeric"
-        autoComplete="off"
-      />
-      <Checkbox label={t('settings.shop.restrict')} checked={input.restrict} onChange={(v) => set('restrict', v)} />
+  function discard() {
+    setInput(initial);
+    setNameMissing(false);
+    setDaysInvalid(false);
+    setProblem(null);
+  }
 
-      {problem && (
-        <p role="alert" className="text-danger">
-          {problem}
-        </p>
-      )}
-      {saved && (
-        <p role="status" className="text-brand-strong">
-          {t('settings.saved')}
-        </p>
-      )}
-      <div>
-        <Button type="submit" size="lg" disabled={saving}>
-          {t('common.save')}
-        </Button>
+  // The receipt preview shows the name in the screen's language, falling back to the other.
+  const shownName = (language === 'bn' ? input.nameBn : input.nameEn).trim() || input.nameBn.trim() || input.nameEn.trim();
+
+  return (
+    <form onSubmit={save} noValidate className="flex min-h-0 flex-1 flex-col">
+      <SectionHeader path="shop" />
+      <div className={`${SECTION_BODY} p-4 sm:p-5`}>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <SettingCard icon={Store} title={t('settings.shop.nameCard')} sub={t('settings.shop.nameCardHint')}>
+            <TextField
+              label={t('settings.shop.nameBn')}
+              value={input.nameBn}
+              onChange={(e) => set('nameBn', e.target.value)}
+              error={nameMissing ? t('settings.shop.error.name') : undefined}
+              autoComplete="off"
+            />
+            <TextField
+              label={t('settings.shop.nameEn')}
+              value={input.nameEn}
+              onChange={(e) => set('nameEn', e.target.value)}
+              autoComplete="off"
+            />
+          </SettingCard>
+          <SettingCard icon={Phone} title={t('settings.shop.contact')} sub={t('settings.shop.contactHint')}>
+            <TextField
+              label={t('settings.shop.phone')}
+              value={input.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+            />
+            <TextField
+              label={t('settings.shop.address')}
+              value={input.address}
+              onChange={(e) => set('address', e.target.value)}
+              autoComplete="off"
+            />
+          </SettingCard>
+          <SettingCard icon={Link2} title={t('settings.shop.links')} sub={t('settings.shop.linkDaysHint')}>
+            <TextField
+              label={t('settings.shop.linkDays')}
+              value={input.days}
+              onChange={(e) => set('days', e.target.value)}
+              error={daysInvalid ? t('settings.shop.error.days') : undefined}
+              inputMode="numeric"
+              autoComplete="off"
+            />
+          </SettingCard>
+          <SettingCard icon={ShieldCheck} title={t('settings.shop.privacy')} sub={t('settings.shop.privacyHint')}>
+            <div className="rounded-lg bg-surface/60 p-3">
+              <Checkbox label={t('settings.shop.restrict')} checked={input.restrict} onChange={(v) => set('restrict', v)} />
+            </div>
+          </SettingCard>
+          <SettingCard icon={ReceiptText} title={t('settings.shop.preview')} sub={t('settings.shop.previewHint')} className="lg:col-span-2">
+            <div className="rounded-lg bg-surface/60 p-4 text-center">
+              <p className="font-display text-xl font-bold">{shownName}</p>
+              <p className="text-sm text-muted">{[input.address.trim(), input.phone.trim()].filter(Boolean).join(' · ')}</p>
+            </div>
+          </SettingCard>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface/60 px-4 py-3 sm:px-5">
+        {problem && (
+          <p role="alert" className="text-danger">
+            {problem}
+          </p>
+        )}
+        {saved && (
+          <p role="status" className="text-brand-strong">
+            {t('settings.saved')}
+          </p>
+        )}
+        {dirty && !problem && <p className="text-sm text-warn-ink">{t('settings.unsaved')}</p>}
+        <div className="ms-auto flex gap-2">
+          <Button variant="secondary" disabled={!dirty || saving} onClick={discard}>
+            {t('settings.discard')}
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {t('common.save')}
+          </Button>
+        </div>
       </div>
       {dialog}
     </form>
