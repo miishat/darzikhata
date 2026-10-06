@@ -43,6 +43,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- On the desktop new order form, a newly added garment is chosen in the same click, so typing straight into its measurements can no longer land on the previous garment (which left the new one missing a measurement and the order refused on save).
 - Taking new measurements for a customer on a phone uses the in-app keypad when it is on, instead of always opening the phone's keyboard.
 - The desktop garment menu no longer offers Cancel on a garment that is already cancelled.
 - The payment bar no longer covers the top of the raised New order button, and pages leave room for both.

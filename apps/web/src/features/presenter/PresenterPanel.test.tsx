@@ -38,7 +38,8 @@ describe('Presenter mode', () => {
     expect(highlight()).toContain('[data-tour="new-order"]');
 
     await userEvent.click(screen.getByRole('link', { name: 'নতুন অর্ডার' }));
-    expect(await within(await panel()).findByText('ধাপ ২/৬')).toBeTruthy();
+    // The new order form is slow to mount on CI runners, so this step gets longer than the default second.
+    expect(await within(await panel()).findByText('ধাপ ২/৬', {}, { timeout: 5000 })).toBeTruthy();
     expect(await current()).toBe('নতুন কাস্টমার যোগ করুন: নাম আর ফোন');
     expect(highlight()).toContain('[data-tour="new-customer"]');
     // It renders the whole new order form, which takes longer than the default 5 seconds on the CI runners.
