@@ -20,6 +20,7 @@ import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { useMeasurementAccess } from '../common/hooks';
 import { problemText } from '../common/problemText';
 import { MeasureTiles } from '../orders/entry/MeasureTiles';
+import { DesktopMeasurementForm } from './DesktopMeasurementForm';
 import { fieldGroups, groupLabel } from './measurementView';
 
 export interface MeasurementInputsProps {
@@ -68,7 +69,10 @@ export function MeasurementInputs({ template, values, errors = {}, onChange }: M
   );
 }
 
-/** Take new measurements for one customer and garment. Adds a version; orders keep their frozen copies. */
+/**
+ * Take new measurements for one customer and garment. Adds a version; orders keep their frozen copies. On a desktop the
+ * new values sit beside the earlier versions, any of which can be copied in.
+ */
 export function MeasurementForm() {
   const { t } = useI18n();
   const { customerId = '', templateId = '' } = useParams();
@@ -85,7 +89,7 @@ export function MeasurementForm() {
     );
   }
   if (!hasAccess(customer)) return <p className="text-muted">{t('measure.hidden')}</p>;
-  return <Form customerId={customer.id} template={template} />;
+  return <Form key={template.id} customerId={customer.id} template={template} />;
 }
 
 function Form({ customerId, template }: { customerId: string; template: GarmentTemplate }) {
@@ -106,6 +110,7 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
     return numbers;
   });
   const [values, setValues] = useState<Record<string, number>>(previous);
+  const [generation, setGeneration] = useState(0);
   const [source, setSource] = useState<MeasurementSource>('body');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -116,15 +121,20 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
   const { dialog, allowNextNavigation } = useUnsavedGuard(dirty);
   const backTo = `/app/customers/${customerId}?tab=${template.id}`;
 
+  const withUnits = () => {
+    const out: Record<string, MeasurementValue> = {};
+    for (const field of template.fields) {
+      const value = values[field.key];
+      if (value !== undefined) out[field.key] = { value, unit: field.unit };
+    }
+    return out;
+  };
+
   async function save(e: FormEvent) {
     e.preventDefault();
     if (saving || !current) return;
-    const withUnits: Record<string, MeasurementValue> = {};
-    for (const field of template.fields) {
-      const value = values[field.key];
-      if (value !== undefined) withUnits[field.key] = { value, unit: field.unit };
-    }
-    const missing = missingRequiredFields(template.fields, withUnits);
+    const units = withUnits();
+    const missing = missingRequiredFields(template.fields, units);
     setErrors(Object.fromEntries(missing.map((key) => [key, t('measure.required')])));
     setProblem(null);
     if (missing.length > 0) return;
@@ -140,7 +150,7 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
         takenBy: current.staff.id,
         source,
         notes: notes.trim(),
-        values: withUnits,
+        values: units,
       },
     });
     setSaving(false);
@@ -151,6 +161,36 @@ function Form({ customerId, template }: { customerId: string; template: GarmentT
     }
     allowNextNavigation();
     navigate(backTo);
+  }
+
+  const customer = state.customers[customerId];
+  if (kind === 'desktop' && customer) {
+    return (
+      <form onSubmit={save} noValidate className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-3">
+        <DesktopMeasurementForm
+          customer={customer}
+          template={template}
+          previous={previous}
+          values={values}
+          onValues={setValues}
+          onReplace={(next) => {
+            setValues(next);
+            setGeneration((g) => g + 1);
+          }}
+          generation={generation}
+          errors={errors}
+          missing={missingRequiredFields(template.fields, withUnits()).length}
+          source={source}
+          onSource={setSource}
+          notes={notes}
+          onNotes={setNotes}
+          problem={problem}
+          saving={saving}
+          backTo={backTo}
+        />
+        {dialog}
+      </form>
+    );
   }
 
   return (
