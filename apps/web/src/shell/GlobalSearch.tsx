@@ -1,5 +1,6 @@
 import { can, type Role } from '@darzikhata/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type RefObject } from 'react';
+import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useScopedState } from '../features/branches/BranchScopeProvider';
 import { globalSearch, type SearchHit } from '../features/search/globalSearch';
@@ -68,7 +69,8 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
   };
 
   return (
-    <div className="relative w-full max-w-md flex-1">
+    <div className="relative min-w-0 flex-1">
+      <Search aria-hidden="true" size={17} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
       <input
         ref={inputRef}
         type="text"
@@ -88,7 +90,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="h-10 w-full rounded-lg border border-line bg-surface ps-3 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus"
+        className="h-11 w-full rounded-xl border border-line bg-surface ps-10 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus"
       />
       <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
         /

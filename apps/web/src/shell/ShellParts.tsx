@@ -1,6 +1,8 @@
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useCurrentStaff, useSnapshot } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
+import { useTheme, type ThemePreference } from './theme';
 
 /** `onDark` is for navy backgrounds, where the light hover wash would sit under white text. */
 export function LanguageToggle({ compact = false, onDark = false }: { compact?: boolean; onDark?: boolean }) {
@@ -17,6 +19,47 @@ export function LanguageToggle({ compact = false, onDark = false }: { compact?: 
       }`}
     >
       {compact ? (next === 'en' ? 'EN' : 'বাংলা') : next === 'en' ? 'English' : 'বাংলা'}
+    </button>
+  );
+}
+
+/** The desktop top bar's language control: both languages side by side, the current one raised. It keeps to the right even when there is no search. */
+export function LanguageSwitch() {
+  const { t, language, setLanguage } = useI18n();
+  const half = (on: boolean) =>
+    `min-h-8 rounded-md px-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-focus ${
+      on ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink'
+    }`;
+  return (
+    <div role="group" aria-label={t('more.language')} className="ms-auto flex shrink-0 items-center gap-0.5 rounded-lg bg-surface p-1 ring-1 ring-inset ring-line">
+      <button type="button" lang="bn" aria-pressed={language === 'bn'} onClick={() => setLanguage('bn')} className={half(language === 'bn')}>
+        {t('more.language.bangla')}
+      </button>
+      <button type="button" lang="en" aria-pressed={language === 'en'} onClick={() => setLanguage('en')} className={half(language === 'en')}>
+        {t('more.language.english')}
+      </button>
+    </div>
+  );
+}
+
+const THEME_ORDER: ThemePreference[] = ['light', 'dark', 'auto'];
+const THEME_ICON = { auto: Monitor, light: Sun, dark: Moon };
+
+/** One button that steps the colour theme through light, dark and match device; its icon shows the current one. */
+export function ThemeButton() {
+  const { t } = useI18n();
+  const { theme, setTheme } = useTheme();
+  const Icon = THEME_ICON[theme];
+  const label = `${t('more.theme')}: ${t(`more.theme.${theme}`)}`;
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={() => setTheme(THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]!)}
+      className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-line text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+    >
+      <Icon aria-hidden="true" size={18} />
     </button>
   );
 }

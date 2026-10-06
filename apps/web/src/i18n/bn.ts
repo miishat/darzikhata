@@ -550,7 +550,7 @@ export const bn = {
   'payments.nothingYet': 'এখনো কিছু জমা হয়নি',
 
   'search.label': 'অর্ডার বা কাস্টমার খুঁজুন',
-  'search.placeholder': 'খুঁজুন',
+  'search.placeholder': 'অর্ডার নম্বর, কাস্টমারের নাম বা ফোন খুঁজুন',
   'search.none': 'কিছু পাওয়া যায়নি',
   'settings.problem.shopName': 'দোকানের নাম লিখুন।',
   'settings.problem.noManager': 'স্টাফ সামলাতে পারেন এমন অন্তত একজন সক্রিয় ব্যক্তি লাগবে।',
