@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -106,6 +106,31 @@ describe('Customer form', () => {
     expect(await screen.findByRole('heading', { name: 'কাস্টমারের তথ্য বদলান' })).toBeTruthy();
     const customer = store.getSnapshot().state.customers['rahman-c1']!;
     expect(screen.getByLabelText('নাম')).toHaveProperty('value', customer.name);
+  });
+
+  it('previews the profile beside the desktop form as it is typed', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/new' });
+    const preview = await screen.findByRole('complementary', { name: 'প্রোফাইলে যেভাবে দেখাবে' });
+    expect(within(preview).getByText('নাম এখনো লেখা হয়নি')).toBeTruthy();
+    expect(within(preview).getByText('সেভ করার পর এই কাস্টমারের মাপ নেওয়া আর অর্ডার দেওয়া যাবে।')).toBeTruthy();
+
+    await userEvent.type(screen.getByLabelText('নাম'), 'সুমি আক্তার');
+    await userEvent.click(screen.getByRole('radio', { name: 'মহিলা' }));
+    await userEvent.selectOptions(screen.getByLabelText('পরিবার'), 'নতুন পরিবার');
+    await userEvent.type(screen.getByLabelText('পরিবারের নাম'), 'আক্তার পরিবার');
+    expect(within(preview).getByText('সুমি আক্তার')).toBeTruthy();
+    expect(within(preview).getByText('মহিলা')).toBeTruthy();
+    expect(within(preview).getByText('আক্তার পরিবার')).toBeTruthy();
+    expect(screen.getByText('পরিবর্তন এখনো সেভ হয়নি')).toBeTruthy();
+  });
+
+  it('shows a saved customer’s orders and measurements beside the desktop form', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/rahman-c1/edit' });
+    const preview = await screen.findByRole('complementary', { name: 'প্রোফাইলে যেভাবে দেখাবে' });
+    expect(within(preview).getByText('অর্ডার')).toBeTruthy();
+    expect(within(preview).getByText('চলমান অর্ডার')).toBeTruthy();
+    expect(within(preview).getByText('মাপ')).toBeTruthy();
+    expect(screen.getByText('কোনো পরিবর্তন নেই')).toBeTruthy();
   });
 
   it('is only for staff who may edit customers', async () => {
