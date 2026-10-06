@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Taking measurements on a desktop fills the window. A bar across the top has the title, the customer and a tab for each garment with when it was last measured. Below it, one grid puts the new values beside up to five earlier versions, newest first, with values that moved between versions in amber and a badge on each new value that differs from the last one. Clicking any earlier value copies it into the new column, and "Use These" above a column copies that whole version. Enter moves to the next field. Measured from, notes, how many changed and how many are still missing, Cancel and Save sit at the bottom.
 - The desktop customer form (new and edit) is a card as tall as the window: name and the other-script name, phone and gender, household side by side, notes below, and Cancel and Save at the bottom with a note when there are unsaved changes. Beside it, a preview shows the profile as it will look while you type (avatar, name, phone, gender and household, and who else is in that household), and for a saved customer their orders, open orders, what they owe, their last visit and when each garment was last measured.
 - The desktop new order form fills the window in three parts. A bar across the top has the title and the customer: a search with results under it and a New Customer button, a new customer's fields in one row, or the chosen customer with Profile and Change Customer links (Change opens a search) and tiles for what they owe, their open orders and their last visit. Below it, the garments are tiles with price, measurement status and wearer, plus an Add Garment tile with the list of garments, over the chosen garment's measurements and details. Beside them, a receipt lists each garment and its price as it is typed, with discount, advance and notes, and the totals and Save stay in view at the bottom.
 - The desktop work page opens on the list, and the view switch shows List first and Board second. Choosing Board is remembered on the device, so leaving Work and coming back shows the board again until the list is chosen.
@@ -50,6 +51,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- Switching garments on the measurement page no longer keeps the previous garment's values in the form.
 - On the desktop new order form, a newly added garment is chosen in the same click, so typing straight into its measurements can no longer land on the previous garment (which left the new one missing a measurement and the order refused on save).
 - Taking new measurements for a customer on a phone uses the in-app keypad when it is on, instead of always opening the phone's keyboard.
 - The desktop garment menu no longer offers Cancel on a garment that is already cancelled.
