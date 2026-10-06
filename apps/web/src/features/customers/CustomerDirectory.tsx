@@ -61,7 +61,7 @@ export function CustomerDirectory({ query, onQueryChange, activeId, compact }: P
   );
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm" aria-label={t('nav.customers')}>
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm" aria-label={t('nav.customers')}>
       <div className="flex flex-col gap-3 border-b border-line p-3">
         <div className="flex items-center gap-2">
           {!compact && <h1 className="mr-2 font-display text-xl font-bold">{t('nav.customers')}</h1>}
