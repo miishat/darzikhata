@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 
 const panel = () => screen.findByRole('complementary', { name: 'উপস্থাপনা' });
@@ -19,6 +19,13 @@ async function startFirstOrder() {
 const current = async () => (await panel()).querySelector('[aria-current="step"]')?.textContent;
 
 describe('Presenter mode', () => {
+  // The new order page is lazy. A navigation waits in a transition until its module has loaded, and the
+  // presenter only sees the new path once it commits. Compiling that module for the first time can take
+  // seconds on a CI runner, so load it before the tests rather than inside a step's wait.
+  beforeAll(async () => {
+    await import('../orders/NewOrderPage');
+  }, 60_000);
+
   it('is turned on and off from More', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/more' });
     expect(screen.queryByRole('complementary', { name: 'উপস্থাপনা' })).toBeNull();
@@ -38,8 +45,7 @@ describe('Presenter mode', () => {
     expect(highlight()).toContain('[data-tour="new-order"]');
 
     await userEvent.click(screen.getByRole('link', { name: 'নতুন অর্ডার' }));
-    // The new order form is slow to mount on CI runners, so this step gets longer than the default second.
-    expect(await within(await panel()).findByText('ধাপ ২/৬', {}, { timeout: 5000 })).toBeTruthy();
+    expect(await within(await panel()).findByText('ধাপ ২/৬')).toBeTruthy();
     expect(await current()).toBe('নতুন কাস্টমার যোগ করুন: নাম আর ফোন');
     expect(highlight()).toContain('[data-tour="new-customer"]');
     // It renders the whole new order form, which takes longer than the default 5 seconds on the CI runners.
