@@ -133,6 +133,19 @@ export function dashboardModel(orders: Order[], today: string): DashboardModel {
   };
 }
 
+/** On the desktop Home, a list row is 53px with its divider and the "more" link below a cut-off list is 37px. */
+export const LIST_ROW_PX = 53;
+export const LIST_MORE_PX = 37;
+
+/**
+ * How many of a list's rows its card shows without scrolling. All of them when they fit, or when the
+ * height is not known yet (0). Otherwise as many as fit above the "more" link, and always at least one.
+ */
+export function rowsThatFit(room: number, total: number): number {
+  if (room <= 0 || total * LIST_ROW_PX <= room) return total;
+  return Math.max(1, Math.floor((room - LIST_MORE_PX) / LIST_ROW_PX));
+}
+
 export const TODO_LIMIT = 6;
 export type TodoKind = 'trial' | 'delivery' | 'late';
 export interface TodoRow {
