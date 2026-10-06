@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -38,8 +38,11 @@ describe('Presenter mode', () => {
 
   it('starts a scenario on a fresh copy of its shop, highlights the next control and follows the app', async () => {
     window.localStorage.setItem('dk.presenter', 'on');
-    const { store } = await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/dashboard' });
+    const { store, router } = await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/orders' });
     await startFirstOrder();
+    // Starting goes to /app, which then redirects to Home. A click before that redirect lands can be
+    // undone by it on a slow runner, so wait for Home first. (The test starts on Orders so Home means the redirect.)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/app/dashboard'));
     expect(store.getSnapshot().config?.id).toBe('rahman');
     expect(await current()).toBe('নতুন অর্ডার খুলুন');
     expect(highlight()).toContain('[data-tour="new-order"]');
