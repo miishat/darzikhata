@@ -16,7 +16,7 @@ import { useTheme, type ThemePreference } from './theme';
 export const TOPBAR_VARIANTS = {
   A: 'Current',
   B: 'Page title + tools',
-  C: 'Wide search on the left + theme',
+  C: 'Search fills the bar + theme',
   D: 'Today chips + search',
   E: 'Navy bar',
 } as const;
@@ -46,7 +46,7 @@ function LanguageSwitch({ dark }: { dark?: boolean }) {
         বাংলা
       </button>
       <button type="button" lang="en" aria-pressed={language === 'en'} onClick={() => setLanguage('en')} className={half(language === 'en')}>
-        EN
+        English
       </button>
     </div>
   );
@@ -131,7 +131,6 @@ export function BarC({ role, searchInput }: BarProps) {
   return (
     <header className={`${HEADER} border-line bg-panel`}>
       <GlobalSearch role={role} inputRef={searchInput} look="wide" placeholder={L('অর্ডার নম্বর, কাস্টমারের নাম বা ফোন খুঁজুন', 'Search order number, customer name or phone')} />
-      <div className="flex-1" />
       <LanguageSwitch />
       <ThemeButton />
       {can(role, 'customers.edit') && (

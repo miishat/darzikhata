@@ -80,7 +80,7 @@ export function GlobalSearch({
   };
 
   return (
-    <div className={`relative w-full flex-1 ${look === 'wide' ? 'max-w-2xl' : look === 'icon' ? 'max-w-sm' : 'max-w-md'}`}>
+    <div className={`relative w-full flex-1 ${look === 'wide' ? '' : look === 'icon' ? 'max-w-sm' : 'max-w-md'}`}>
       {look && (
         <Search aria-hidden="true" size={17} className={`pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 ${look === 'dark' ? 'text-on-navy-muted' : 'text-muted'}`} />
       )}
