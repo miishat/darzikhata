@@ -1,13 +1,16 @@
 import type { Staff } from '@darzikhata/domain';
+import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { SelectField } from '../../ui/SelectField';
 import { TextField } from '../../ui/TextField';
 import { Shell } from '../orders/itemDialogs';
 import { configProblemText } from './configProblems';
+import { SECTION_BODY, SectionHeader, StatusPill } from './SettingsCards';
 import { readStaff, staffForm, type StaffForm } from './staffInput';
 
 /** People who work in the shop: add, edit, and deactivate (never delete, their names are on past work). */
@@ -17,64 +20,52 @@ export function StaffSettings() {
   const [editing, setEditing] = useState<{ staff: Staff | null } | null>(null);
   const [saved, setSaved] = useState(false);
   if (!config) return null;
-  const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   const roleName = (id: string) => config.roles.find((r) => r.id === id)?.name[language] ?? id;
   const branchText = (staff: Staff) =>
     staff.branchIds === 'all'
       ? t('branch.all')
       : staff.branchIds.map((id) => config.branches.find((b) => b.id === id)?.name[language] ?? id).join(', ');
+  const edit = (staff: Staff | null) => {
+    setSaved(false);
+    setEditing({ staff });
+  };
 
   return (
-    <div className="flex max-w-4xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">{t('settings.staff')}</h2>
-        <Button
-          onClick={() => {
-            setSaved(false);
-            setEditing({ staff: null });
-          }}
-        >
-          {t('settings.staff.new')}
-        </Button>
-      </div>
-      {saved && (
-        <p role="status" className="text-brand-strong">
-          {t('settings.saved')}
-        </p>
-      )}
-      <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-        <table aria-label={t('settings.staff')} className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-line">
-              <th scope="col" className={head}>{t('settings.col.name')}</th>
-              <th scope="col" className={head}>{t('settings.staff.role')}</th>
-              <th scope="col" className={head}>{t('branch.label')}</th>
-              <th scope="col" className={head}>{t('settings.col.status')}</th>
-              <td className={head} />
-            </tr>
-          </thead>
-          <tbody>
-            {config.staff.map((staff) => (
-              <tr key={staff.id} className="border-b border-line last:border-b-0">
-                <td className="px-3 py-2 font-semibold">{staff.name}</td>
-                <td className="px-3 py-2">{roleName(staff.roleId)}</td>
-                <td className="px-3 py-2">{branchText(staff)}</td>
-                <td className="px-3 py-2">{staff.active ? t('settings.staff.active') : t('settings.staff.inactive')}</td>
-                <td className="px-3 py-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSaved(false);
-                      setEditing({ staff });
-                    }}
-                  >
-                    {t('settings.editItem', { name: staff.name })}
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <SectionHeader
+        path="staff"
+        action={
+          <Button onClick={() => edit(null)}>
+            <Plus aria-hidden="true" size={18} />
+            {t('settings.staff.new')}
+          </Button>
+        }
+      />
+      <div className={`${SECTION_BODY} flex flex-col gap-3 p-4 sm:p-5`}>
+        {saved && (
+          <p role="status" className="text-brand-strong">
+            {t('settings.saved')}
+          </p>
+        )}
+        <ul aria-label={t('settings.staff')} className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+          {config.staff.map((staff) => (
+            <li key={staff.id} className={`flex items-center gap-3 rounded-xl border border-line p-4 ${staff.active ? 'bg-panel' : 'bg-surface/60'}`}>
+              <Avatar id={staff.id} name={staff.name} />
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-semibold">{staff.name}</h3>
+                <p className="truncate text-sm text-muted">
+                  {roleName(staff.roleId)} · {branchText(staff)}
+                </p>
+                <div className="mt-1">
+                  <StatusPill on={staff.active} label={staff.active ? t('settings.staff.active') : t('settings.staff.inactive')} />
+                </div>
+              </div>
+              <Button variant="secondary" aria-label={t('settings.editItem', { name: staff.name })} onClick={() => edit(staff)}>
+                <Pencil aria-hidden="true" size={16} />
+              </Button>
+            </li>
+          ))}
+        </ul>
       </div>
       {editing && (
         <StaffDialog
@@ -86,7 +77,7 @@ export function StaffSettings() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 

@@ -15,8 +15,8 @@ describe('Branch settings', () => {
     await userEvent.click(within(dialog).getByRole('radio', { name: 'কারখানা' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'সেভ করুন' }));
 
-    const table = await screen.findByRole('table', { name: 'শাখার তালিকা' });
-    expect(within(table).getAllByRole('row')).toHaveLength(3);
+    const list = await screen.findByRole('list', { name: 'শাখার তালিকা' });
+    expect(within(list).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toHaveLength(2);
     expect(store.getSnapshot().config!.branches.at(-1)).toMatchObject({
       id: 'workshop',
       name: { bn: 'কারখানা', en: 'Workshop' },

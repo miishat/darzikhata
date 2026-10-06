@@ -25,8 +25,8 @@ describe('Staff settings', () => {
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'কারখানা' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'সেভ করুন' }));
 
-    const table = await screen.findByRole('table', { name: 'স্টাফ' });
-    expect(within(table).getByRole('row', { name: /নতুন দর্জি/ }).textContent).toContain('কারখানা');
+    const list = await screen.findByRole('list', { name: 'স্টাফ' });
+    expect(within(list).getByRole('heading', { name: 'নতুন দর্জি' }).closest('li')!.textContent).toContain('কারখানা');
     const added = store.getSnapshot().config!.staff.find((s) => s.name === 'নতুন দর্জি')!;
     expect(added).toMatchObject({ roleId: 'tailor', pin: '6666', branchIds: ['workshop'], active: true });
     expect(await trySignIn(store, added.id, '6666')).toBe(true);
@@ -39,8 +39,8 @@ describe('Staff settings', () => {
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'সক্রিয়' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'সেভ করুন' }));
 
-    const table = await screen.findByRole('table', { name: 'স্টাফ' });
-    expect(within(table).getByRole('row', { name: /সেলিম শেখ/ }).textContent).toContain('নিষ্ক্রিয়');
+    const list = await screen.findByRole('list', { name: 'স্টাফ' });
+    expect(within(list).getByRole('heading', { name: 'সেলিম শেখ' }).closest('li')!.textContent).toContain('নিষ্ক্রিয়');
     expect(store.getSnapshot().config!.staff.find((s) => s.id === 'uniform-tailor-2')!.active).toBe(false);
     expect(await trySignIn(store, 'uniform-tailor-2', '5555')).toBe(false);
   });
@@ -73,10 +73,10 @@ describe('Staff settings', () => {
     expect(pin.value).not.toBe('');
   });
 
-  it('never shows a PIN in the staff table', async () => {
+  it('never shows a PIN in the staff list', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
-    const table = await screen.findByRole('table', { name: 'স্টাফ' });
-    const text = table.textContent ?? '';
+    const list = await screen.findByRole('list', { name: 'স্টাফ' });
+    const text = list.textContent ?? '';
     for (const person of store.getSnapshot().config!.staff) {
       expect(text).not.toContain(person.pin);
       expect(text).not.toContain(person.pin.replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[Number(d)]!));

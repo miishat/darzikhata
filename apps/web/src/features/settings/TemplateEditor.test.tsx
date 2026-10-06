@@ -19,9 +19,9 @@ describe('Template editor', () => {
     await userEvent.type(screen.getByLabelText('ঘর ৯: ইংরেজি নাম'), 'Back');
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
 
-    const list = await screen.findByRole('table', { name: 'পোশাকের ধরন' });
+    const list = await screen.findByRole('list', { name: 'পোশাকের ধরন' });
     expect((await screen.findByText('সেভ হয়েছে')).getAttribute('role')).toBe('status');
-    expect(within(within(list).getByRole('row', { name: /শার্ট/ })).getByText('৳৮০০')).toBeTruthy();
+    expect(within(within(list).getByRole('link', { name: 'শার্ট' }).closest('li')!).getByText('৳৮০০')).toBeTruthy();
     const shirt = store.getSnapshot().config!.templates.find((t) => t.id === 'shirt')!;
     expect(shirt.defaultPrice).toBe(80000);
     expect(shirt.fields.at(-1)).toEqual({ key: 'back', label: { bn: 'পিঠ', en: 'Back' }, unit: 'inch', group: 'body', required: true });
@@ -38,7 +38,7 @@ describe('Template editor', () => {
     const n = template.stages.findIndex((s) => s.key === 'trial') + 1;
     await userEvent.click(await screen.findByRole('button', { name: `ধাপ ${bn(n)} বাদ দিন` }));
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
-    await screen.findByRole('table', { name: 'পোশাকের ধরন' });
+    await screen.findByRole('list', { name: 'পোশাকের ধরন' });
     const saved = store.getSnapshot().config!.templates.find((t) => t.id === template.id)!;
     expect(saved.stages.map((s) => s.key)).not.toContain('trial');
 
@@ -76,7 +76,7 @@ describe('Template editor', () => {
     await userEvent.click(await screen.findByRole('link', { name: 'প্যান্ট' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: 'নতুন অর্ডারে দেখান' }));
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
-    await screen.findByRole('table', { name: 'পোশাকের ধরন' });
+    await screen.findByRole('list', { name: 'পোশাকের ধরন' });
     expect(store.getSnapshot().config!.templates.find((t) => t.id === 'coat')).toMatchObject({ defaultPrice: 250000, active: true });
 
     await act(() => router.navigate('/app/orders/new'));

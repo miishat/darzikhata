@@ -1,25 +1,25 @@
 import type { Branch } from '@darzikhata/domain';
+import { Building2, MonitorSmartphone, Pencil, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
-import { SelectField } from '../../ui/SelectField';
 import { TextField } from '../../ui/TextField';
 import { Shell } from '../orders/itemDialogs';
 import { configProblemText } from './configProblems';
+import { SECTION_BODY, SectionHeader, SettingCard } from './SettingsCards';
 import { slugKey } from './keys';
 
-/** Branches (never deleted) and which branch each device belongs to. */
+/** Branches (never deleted), each with the devices that belong to it. A device moves with its own select. */
 export function BranchSettings() {
-  const { t, language } = useI18n();
+  const { t, language, number } = useI18n();
   const store = useStore();
   const { config } = useSnapshot();
   const [editing, setEditing] = useState<{ branch: Branch | null } | null>(null);
   const [saved, setSaved] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   if (!config) return null;
-  const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
 
   async function moveDevice(deviceId: string, branchId: string) {
     setSaved(false);
@@ -34,21 +34,23 @@ export function BranchSettings() {
     }
     setSaved(true);
   }
+  const edit = (branch: Branch | null) => {
+    setSaved(false);
+    setEditing({ branch });
+  };
 
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">{t('settings.branches.list')}</h2>
-          <Button
-            onClick={() => {
-              setSaved(false);
-              setEditing({ branch: null });
-            }}
-          >
+    <>
+      <SectionHeader
+        path="branches"
+        action={
+          <Button onClick={() => edit(null)}>
+            <Plus aria-hidden="true" size={18} />
             {t('settings.branches.new')}
           </Button>
-        </div>
+        }
+      />
+      <div className={`${SECTION_BODY} flex flex-col gap-3 p-4 sm:p-5`}>
         {saved && (
           <p role="status" className="text-brand-strong">
             {t('settings.saved')}
@@ -59,73 +61,54 @@ export function BranchSettings() {
             {problem}
           </p>
         )}
-        <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-          <table aria-label={t('settings.branches.list')} className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-line">
-                <th scope="col" className={head}>{t('settings.col.name')}</th>
-                <th scope="col" className={head}>{t('settings.branch.kind')}</th>
-                <th scope="col" className={head}>{t('settings.shop.address')}</th>
-                <td className={head} />
-              </tr>
-            </thead>
-            <tbody>
-              {config.branches.map((branch) => (
-                <tr key={branch.id} className="border-b border-line last:border-b-0">
-                  <td className="px-3 py-2 font-semibold">{branch.name[language]}</td>
-                  <td className="px-3 py-2">{t(`branchKind.${branch.kind}`)}</td>
-                  <td className="px-3 py-2">{branch.address}</td>
-                  <td className="px-3 py-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setSaved(false);
-                        setEditing({ branch });
-                      }}
-                    >
-                      {t('settings.editItem', { name: branch.name[language] })}
+        <ul aria-label={t('settings.branches.list')} className="grid gap-3 lg:grid-cols-2">
+          {config.branches.map((branch) => {
+            const devices = config.devices.filter((d) => d.branchId === branch.id);
+            return (
+              <li key={branch.id}>
+                <SettingCard
+                  icon={branch.kind === 'shop' ? Store : Building2}
+                  className="h-full"
+                  title={branch.name[language]}
+                  sub={[t(`branchKind.${branch.kind}`), branch.address, t('settings.device.count', { n: number(devices.length) })].filter(Boolean).join(' · ')}
+                  action={
+                    <Button variant="secondary" aria-label={t('settings.editItem', { name: branch.name[language] })} onClick={() => edit(branch)}>
+                      <Pencil aria-hidden="true" size={16} />
                     </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  }
+                >
+                  <ul aria-label={t('settings.devices.list')} className="flex flex-col gap-2">
+                    {devices.length === 0 && <li className="text-sm text-muted">{t('settings.devices.none')}</li>}
+                    {devices.map((device) => (
+                      <li key={device.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-surface/60 px-3 py-2">
+                        <MonitorSmartphone aria-hidden="true" size={18} className="text-muted" />
+                        <span className="min-w-0 flex-1 font-semibold">{device.name}</span>
+                        <span className="rounded-md bg-panel px-1.5 py-0.5 text-xs">
+                          {t('settings.device.series')} {device.series}
+                        </span>
+                        <select
+                          aria-label={t('settings.device.branch', { name: device.name })}
+                          value={device.branchId}
+                          onChange={(e) => void moveDevice(device.id, e.target.value)}
+                          className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus"
+                        >
+                          {config.branches.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name[language]}
+                            </option>
+                          ))}
+                        </select>
+                      </li>
+                    ))}
+                  </ul>
+                </SettingCard>
+              </li>
+            );
+          })}
+        </ul>
         <p className="text-sm text-muted">{t('settings.branches.note')}</p>
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">{t('settings.devices.list')}</h2>
-        <div className="overflow-x-auto rounded-xl border border-line bg-panel">
-          <table aria-label={t('settings.devices.list')} className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-line">
-                <th scope="col" className={head}>{t('settings.col.name')}</th>
-                <th scope="col" className={head}>{t('settings.device.series')}</th>
-                <th scope="col" className={head}>{t('branch.label')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {config.devices.map((device) => (
-                <tr key={device.id} className="border-b border-line last:border-b-0">
-                  <td className="px-3 py-2 font-semibold">{device.name}</td>
-                  <td className="px-3 py-2">{device.series}</td>
-                  <td className="px-3 py-2">
-                    <SelectField
-                      label={t('settings.device.branch', { name: device.name })}
-                      value={device.branchId}
-                      options={config.branches.map((b) => ({ value: b.id, label: b.name[language] }))}
-                      onChange={(branchId) => void moveDevice(device.id, branchId)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
         <p className="text-sm text-muted">{t('settings.devices.note')}</p>
-      </section>
-
+      </div>
       {editing && (
         <BranchDialog
           branch={editing.branch}
@@ -136,7 +119,7 @@ export function BranchSettings() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
