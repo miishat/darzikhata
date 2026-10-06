@@ -5,7 +5,7 @@ export const DASHBOARD_VARIANTS = {
   A: 'Current',
   B: 'A + icons, tinted headers, 8 rows',
   C: 'C with D headers, rows that fit + more',
-  D: 'C with colour band headers, slimmer top',
+  D: 'C but the cards scroll inside',
   E: 'A + icons, accent edge, 7 rows + more',
 } as const;
 
@@ -27,6 +27,6 @@ export interface Look {
 export const LOOKS: Record<string, Look> = {
   B: { header: 'tint', limit: 8 },
   C: { header: 'band', limit: 99, fill: true, fit: true },
-  D: { header: 'band', limit: 99, fill: true, slimTop: true },
+  D: { header: 'band', limit: 99, fill: true },
   E: { header: 'accent', limit: 7, more: true },
 };
