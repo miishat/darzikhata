@@ -263,7 +263,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
   );
 
   return (
-    <section className="mx-auto flex h-[calc(100dvh-6.5rem)] min-h-96 w-full max-w-[1240px] flex-col gap-3">
+    <section className="flex h-[calc(100dvh-6.5rem)] min-h-96 w-full flex-col gap-3">
       <h1 className="sr-only">{t('nav.dashboard')}</h1>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col">
