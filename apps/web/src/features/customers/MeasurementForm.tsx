@@ -17,6 +17,8 @@ import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { NumberField } from '../../ui/NumberField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { MEASURE_VARIANTS, MeasureVariantB, MeasureVariantC, MeasureVariantD } from './CustomerPagesDesktopPrototype';
 import { useMeasurementAccess } from '../common/hooks';
 import { problemText } from '../common/problemText';
 import { MeasureTiles } from '../orders/entry/MeasureTiles';
@@ -76,6 +78,8 @@ export function MeasurementForm() {
   const hasAccess = useMeasurementAccess();
   const customer = state.customers[customerId];
   const template = config ? templateById(config, templateId) : null;
+  const { kind } = useShell();
+  const variant = useVariant(Object.keys(MEASURE_VARIANTS));
 
   if (!customer || !template) {
     return (
@@ -85,7 +89,21 @@ export function MeasurementForm() {
     );
   }
   if (!hasAccess(customer)) return <p className="text-muted">{t('measure.hidden')}</p>;
-  return <Form customerId={customer.id} template={template} />;
+  const k = `${variant}-${template.id}`;
+  return (
+    <>
+      {kind !== 'desktop' || variant === 'A' ? (
+        <Form key={k} customerId={customer.id} template={template} />
+      ) : variant === 'B' ? (
+        <MeasureVariantB key={k} customer={customer} template={template} />
+      ) : variant === 'C' ? (
+        <MeasureVariantC key={k} customer={customer} template={template} />
+      ) : (
+        <MeasureVariantD key={k} customer={customer} template={template} />
+      )}
+      {kind === 'desktop' && <PrototypeSwitcher variants={MEASURE_VARIANTS} />}
+    </>
+  );
 }
 
 function Form({ customerId, template }: { customerId: string; template: GarmentTemplate }) {

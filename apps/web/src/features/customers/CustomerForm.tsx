@@ -9,6 +9,9 @@ import { SelectField } from '../../ui/SelectField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { TextField } from '../../ui/TextField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { useShell } from '../../shell/ShellPreference';
+import { CUSTOMER_FORM_VARIANTS, CustomerVariantB, CustomerVariantC, CustomerVariantD } from './CustomerPagesDesktopPrototype';
 import { problemText } from '../common/problemText';
 import {
   customerEvents,
@@ -30,6 +33,8 @@ export function CustomerForm() {
   const { customerId } = useParams();
   const { state } = useSnapshot();
   const customer = customerId ? state.customers[customerId] : undefined;
+  const { kind } = useShell();
+  const variant = useVariant(Object.keys(CUSTOMER_FORM_VARIANTS));
 
   if (customerId && !customer) {
     return (
@@ -38,7 +43,22 @@ export function CustomerForm() {
       </p>
     );
   }
-  return <Form key={customerId ?? NEW_FORM} customer={customer ?? null} />;
+  const k = `${variant}-${customerId ?? NEW_FORM}`;
+  const c = customer ?? null;
+  return (
+    <>
+      {kind !== 'desktop' || variant === 'A' ? (
+        <Form key={k} customer={c} />
+      ) : variant === 'B' ? (
+        <CustomerVariantB key={k} customer={c} />
+      ) : variant === 'C' ? (
+        <CustomerVariantC key={k} customer={c} />
+      ) : (
+        <CustomerVariantD key={k} customer={c} />
+      )}
+      {kind === 'desktop' && <PrototypeSwitcher variants={CUSTOMER_FORM_VARIANTS} />}
+    </>
+  );
 }
 
 function Form({ customer }: { customer: Customer | null }) {
