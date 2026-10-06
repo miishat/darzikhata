@@ -8,12 +8,15 @@ import { DesktopSidebar } from './DesktopSidebar';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageToggle } from './ShellParts';
 import { useShortcuts } from './useShortcuts';
+import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
+import { BarB, BarC, BarD, BarE, TOPBAR_VARIANTS } from './TopBarPrototype';
 
 /** Sidebar and top bar for laptops and large screens. */
 export function DesktopShell({ role }: { role: Role }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
+  const variant = useVariant(Object.keys(TOPBAR_VARIANTS));
 
   useShortcuts({
     onSearch: () => {
@@ -32,6 +35,11 @@ export function DesktopShell({ role }: { role: Role }) {
     <div className="flex min-h-dvh">
       <DesktopSidebar role={role} />
       <div className="flex min-w-0 flex-1 flex-col">
+        {variant === 'B' && <BarB role={role} searchInput={searchInput} />}
+        {variant === 'C' && <BarC role={role} searchInput={searchInput} />}
+        {variant === 'D' && <BarD role={role} searchInput={searchInput} />}
+        {variant === 'E' && <BarE role={role} searchInput={searchInput} />}
+        {variant === 'A' && (
         <header className="no-print flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
           <GlobalSearch role={role} inputRef={searchInput} />
           <div className="flex-1" />
@@ -43,6 +51,8 @@ export function DesktopShell({ role }: { role: Role }) {
             </Link>
           )}
         </header>
+        )}
+        <PrototypeSwitcher variants={TOPBAR_VARIANTS} />
         <main className="min-w-0 flex-1 overflow-x-clip p-6">
           <Suspense fallback={<Loading />}>
             <Outlet />

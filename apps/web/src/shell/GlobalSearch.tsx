@@ -1,5 +1,6 @@
 import { can, type Role } from '@darzikhata/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type RefObject } from 'react';
+import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useScopedState } from '../features/branches/BranchScopeProvider';
 import { globalSearch, type SearchHit } from '../features/search/globalSearch';
@@ -17,7 +18,18 @@ function hitLabel(hit: SearchHit): string {
 }
 
 /** The top-bar search box: orders by number, customers by name or phone. */
-export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObject<HTMLInputElement | null> }) {
+export function GlobalSearch({
+  role,
+  inputRef,
+  look,
+  placeholder,
+}: {
+  role: Role;
+  inputRef: RefObject<HTMLInputElement | null>;
+  /** PROTOTYPE: the top bar variants' search styles. */
+  look?: 'icon' | 'wide' | 'dark';
+  placeholder?: string;
+}) {
   const { t } = useI18n();
   const state = useScopedState();
   const navigate = useNavigate();
@@ -68,7 +80,10 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
   };
 
   return (
-    <div className="relative w-full max-w-md flex-1">
+    <div className={`relative w-full flex-1 ${look === 'wide' ? 'max-w-2xl' : look === 'icon' ? 'max-w-sm' : 'max-w-md'}`}>
+      {look && (
+        <Search aria-hidden="true" size={17} className={`pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 ${look === 'dark' ? 'text-on-navy-muted' : 'text-muted'}`} />
+      )}
       <input
         ref={inputRef}
         type="text"
@@ -78,7 +93,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={showList && active >= 0 && hits[active] ? optionId(active) : undefined}
-        placeholder={t('search.placeholder')}
+        placeholder={placeholder ?? t('search.placeholder')}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -88,7 +103,11 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={onKeyDown}
-        className="h-10 w-full rounded-lg border border-line bg-surface ps-3 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus"
+        className={
+          look === 'dark'
+            ? 'h-10 w-full rounded-lg border border-white/15 bg-white/10 ps-10 pe-9 text-sm text-on-navy placeholder:text-on-navy-muted focus:bg-white focus:text-ink focus-visible:outline-2 focus-visible:outline-focus'
+            : `h-10 w-full rounded-lg border border-line bg-surface ${look ? 'ps-10' : 'ps-3'} pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus ${look === 'wide' ? 'h-11 rounded-xl' : ''}`
+        }
       />
       <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
         /
