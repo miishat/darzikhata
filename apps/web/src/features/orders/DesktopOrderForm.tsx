@@ -64,13 +64,6 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const lineHasErrors = (key: string) => Object.keys(errors).some((path) => path.startsWith(`items.${key}.`));
   const customerId = entry.draft.customer?.kind === 'existing' ? entry.draft.customer.customerId : null;
 
-  // A newly added line becomes the chosen one.
-  const count = useRef(items.length);
-  useEffect(() => {
-    if (items.length > count.current) setChosenKey(items[items.length - 1]!.key);
-    count.current = items.length;
-  }, [items]);
-
   const statusLine = (item: DraftItem): { text: string; tone: string } | null => {
     const template = config ? templateById(config, item.templateId) : null;
     if (!template) return null;
@@ -181,7 +174,11 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                   key={tpl.id}
                   type="button"
                   className="min-h-9 rounded-lg border border-dashed border-line px-3 text-sm text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                  onClick={() => entry.addItem(tpl.id)}
+                  onClick={() => {
+                    // A newly added line becomes the chosen one in the same render, so typing never lands in the previous one.
+                    const key = entry.addItem(tpl.id);
+                    if (key) setChosenKey(key);
+                  }}
                 >
                   {t('entry.quickAdd', { item: label(tpl.name) })}
                 </button>
