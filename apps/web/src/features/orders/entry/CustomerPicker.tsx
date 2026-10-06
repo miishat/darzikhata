@@ -2,11 +2,9 @@ import { searchCustomers, type Gender } from '@darzikhata/domain';
 import { useMemo, useState } from 'react';
 import { useSnapshot } from '../../../data/StoreContext';
 import { useI18n } from '../../../i18n/I18nProvider';
-import { Avatar } from '../../../ui/Avatar';
 import { Button } from '../../../ui/Button';
 import { ChoiceGroup } from '../../../ui/ChoiceGroup';
 import { TextField } from '../../../ui/TextField';
-import { useScopedState } from '../../branches/BranchScopeProvider';
 import type { DraftErrors } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
 import { useErrorText } from './shared';
@@ -14,10 +12,9 @@ import { useErrorText } from './shared';
 const MATCHES = 8;
 
 /** Choose an existing customer by search, or type a new one. */
-export function CustomerPicker({ entry, errors, card = false }: { entry: OrderEntry; errors: DraftErrors; card?: boolean }) {
-  const { t, number } = useI18n();
+export function CustomerPicker({ entry, errors }: { entry: OrderEntry; errors: DraftErrors }) {
+  const { t } = useI18n();
   const { state } = useSnapshot();
-  const scoped = useScopedState();
   const [query, setQuery] = useState('');
   const errorText = useErrorText(errors);
   const customer = entry.draft.customer;
@@ -29,28 +26,6 @@ export function CustomerPicker({ entry, errors, card = false }: { entry: OrderEn
 
   if (customer?.kind === 'existing') {
     const chosen = state.customers[customer.customerId];
-    if (card) {
-      // Desktop: avatar, name, phone and how many orders they have had, with a short "change".
-      const earlier = Object.values(scoped.orders).filter((o) => o.customerId === customer.customerId).length;
-      return (
-        <div className="flex flex-col gap-2">
-          {chosen && (
-            <div className="flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2">
-              <Avatar id={chosen.id} name={chosen.name} />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-semibold">{chosen.name}</span>
-                {chosen.phone && <span className="text-sm text-muted">{chosen.phone}</span>}
-                <span className="text-sm text-muted">{t('entry.earlierOrders', { n: number(earlier) })}</span>
-              </div>
-              <Button variant="ghost" onClick={() => entry.setCustomer(null)}>
-                {t('entry.changeCustomerShort')}
-              </Button>
-            </div>
-          )}
-          {errorText('customer') && <p className="text-sm text-danger">{errorText('customer')}</p>}
-        </div>
-      );
-    }
     return (
       <div className="flex flex-col gap-3">
         {chosen && (

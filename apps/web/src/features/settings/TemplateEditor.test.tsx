@@ -80,8 +80,8 @@ describe('Template editor', () => {
     expect(store.getSnapshot().config!.templates.find((t) => t.id === 'coat')).toMatchObject({ defaultPrice: 250000, active: true });
 
     await act(() => router.navigate('/app/orders/new'));
-    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    const garments = within(within(left).getByRole('group', { name: 'পোশাক যোগ করুন' })).getAllByRole('button').map((b) => b.textContent);
+    const card = await screen.findByRole('region', { name: 'পোশাক ও মাপ' });
+    const garments = within(within(card).getByRole('group', { name: 'পোশাক যোগ করুন' })).getAllByRole('button').map((b) => b.textContent);
     expect(garments).toContain('+ কোট');
     expect(garments).not.toContain('+ প্যান্ট');
   });
