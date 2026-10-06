@@ -1,42 +1,38 @@
 // PROTOTYPE (throwaway): desktop layouts for /app/payments, switched with ?variant=. A is the current page.
-// B: one full-height card (tiles for money due, credit and today's takings, search, the table scrolling inside); a row opens the order's money beside it.
-// C: by customer: who owes across all their orders on the left, their orders and every payment they made on the right.
-// E: B's list; a row opens its customer beside it, C style: every order with that order's money buttons, and every payment with its date and correct button.
-// D: a cash book: today's takings by method across the top, the day-by-day payment log on the left, dues by age on the right.
+// Every other variant keeps the same list (tiles, search, one row per order) and changes only the customer card on the right:
+// B: polished stack: totals band, orders as an accordion with the price breakdown, the picked order's actions docked at the bottom.
+// C: statement: one tab per order (and All), a dated statement with a running balance, actions docked at the bottom.
+// D: receipt: the picked order as a receipt (garments and prices), large action tiles, the other orders as chips.
+// E: collect first: a payment form right in the card for the picked order, then the order switcher and the history.
 import { balanceDue, effectSign, moneySummary, netPaid, orderTotal, type Order, type Payment, type PaymentMethod } from '@darzikhata/domain';
-import { Banknote, CalendarClock, HandCoins, Search, Undo2, Wallet, X, type LucideIcon } from 'lucide-react';
+import { HandCoins, Pencil, Percent, Phone, Search, SlidersHorizontal, Undo2, Wallet, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useSnapshot } from '../../data/StoreContext';
+import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
+import { Button } from '../../ui/Button';
+import { NumberField } from '../../ui/NumberField';
 import { PaidBar } from '../../ui/PaidBar';
 import { useScopedState } from '../branches/BranchScopeProvider';
-import { Button } from '../../ui/Button';
 import { useCan, useToday } from '../common/hooks';
+import { useSave } from '../orders/itemDialogs';
 import { matchesText, orderRow } from '../orders/orderList';
-import { OrderMoney } from './OrderMoney';
+import { receiptModel, type ReceiptModel } from '../print/receipt';
 import { CorrectionDialog, DiscountDialog, PriceAdjustmentDialog, RefundDialog, TakePaymentDialog } from './paymentDialogs';
 
-export const PAYMENT_VARIANTS = { A: 'Current', B: 'Card + money panel', C: 'By customer', D: 'Cash book', E: 'B list + customer money' };
+export const PAYMENT_VARIANTS = { A: 'Current', B: 'Polished stack', C: 'Statement + tabs', D: 'Receipt + action tiles', E: 'Collect first' };
 
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 const PAGE = 'flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4';
 const HEAD = 'sticky top-0 z-10 whitespace-nowrap border-b border-line bg-panel px-3 py-2 text-start text-sm font-semibold text-muted';
+const SIDE = `${CARD} w-[min(600px,46%)] shrink-0`;
 const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
 
 /** Language-aware text for strings the app has no key for yet (prototype only). */
 function useL() {
   const { language } = useI18n();
   return (bn: string, en: string) => (language === 'bn' ? bn : en);
-}
-
-interface Entry {
-  order: Order;
-  payment: Payment;
-  /** Signed effect on money held. */
-  effect: number;
-  day: string;
 }
 
 function useMoneyData(text: string) {
@@ -52,19 +48,17 @@ function useMoneyData(text: string) {
       .map((order) => ({ order, credit: -balanceDue(order) }))
       .filter((r) => r.credit > 0)
       .sort((a, b) => b.credit - a.credit);
-    const entries: Entry[] = orders
-      .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount, day: payment.at.slice(0, 10) })))
+    const todayEntries = orders
+      .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount })))
+      .filter((e) => e.payment.at.slice(0, 10) === today)
       .sort((a, b) => b.payment.at.localeCompare(a.payment.at));
-    const todayEntries = entries.filter((e) => e.day === today);
     return {
-      orders,
       due,
       credit,
-      entries,
+      todayEntries,
       dueTotal: due.reduce((s, r) => s + r.balance, 0),
       creditTotal: credit.reduce((s, r) => s + r.credit, 0),
       todayTotal: todayEntries.reduce((s, e) => s + e.effect, 0),
-      todayEntries,
     };
   }, [state, text, today]);
 }
@@ -97,12 +91,8 @@ function daysBetween(from: string, to: string) {
 function Tile({ icon: Icon, label, value, sub, tone, on, onClick }: { icon: LucideIcon; label: string; value: string; sub?: string; tone: 'brand' | 'warn' | 'ok'; on?: boolean; onClick?: () => void }) {
   const ring = on ? (tone === 'warn' ? 'bg-warn-soft ring-2 ring-warn-line' : tone === 'ok' ? 'bg-ok-soft ring-2 ring-ok' : 'bg-brand-soft ring-2 ring-brand') : 'bg-surface/60 ring-1 ring-line';
   const chip = tone === 'warn' ? 'bg-warn-soft text-warn' : tone === 'ok' ? 'bg-ok-soft text-ok' : 'bg-brand-soft text-brand-strong';
-  const Tag = onClick ? 'button' : 'div';
   return (
-    <Tag
-      {...(onClick ? { type: 'button' as const, 'aria-pressed': on, onClick } : {})}
-      className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-start ring-inset ${ring} ${onClick ? 'hover:bg-surface' : ''}`}
-    >
+    <button type="button" aria-pressed={on} onClick={onClick} className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-start ring-inset hover:bg-surface ${ring}`}>
       <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-lg ${chip}`}>
         <Icon size={18} />
       </span>
@@ -111,7 +101,7 @@ function Tile({ icon: Icon, label, value, sub, tone, on, onClick }: { icon: Luci
         <span className="font-display text-xl font-bold leading-tight">{value}</span>
         {sub && <span className="truncate text-xs text-muted">{sub}</span>}
       </span>
-    </Tag>
+    </button>
   );
 }
 
@@ -125,37 +115,10 @@ function SearchBox({ value, onChange, className = '' }: { value: string; onChang
   );
 }
 
-/** The order's money, as on the order page, in a side card. */
-function MoneySide({ id, onClose }: { id: string; onClose(): void }) {
-  const { t } = useI18n();
-  const state = useScopedState();
-  const name = useCustomerName();
-  const order = state.orders[id];
-  if (!order) return null;
-  return (
-    <aside aria-label={t('payments.section')} className={`${CARD} w-[min(520px,42%)] shrink-0`}>
-      <div className="flex items-center gap-3 border-b border-line p-4">
-        <Avatar id={order.customerId} name={name(order.customerId)} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-lg font-bold">{name(order.customerId)}</p>
-          <Link to={`/app/orders/${order.id}`} className="text-sm text-brand-strong underline">
-            {order.number}
-          </Link>
-        </div>
-        <button type="button" aria-label={t('common.close')} onClick={onClose} className="grid size-9 place-items-center rounded-lg hover:bg-surface">
-          <X size={18} />
-        </button>
-      </div>
-      <div className="relative min-h-0 flex-1 overflow-auto p-4 [&>section]:border-0 [&>section]:p-0">
-        <OrderMoney order={order} />
-      </div>
-    </aside>
-  );
-}
+/* ---------------------------------------------------------------- the list ---------------------------------------------------------------- */
 
-/* ------------------------------------------------------------------ B ------------------------------------------------------------------ */
-
-export function VariantB({ side }: { side?: (id: string, close: () => void) => ReactNode }) {
+/** The list every variant shares: tiles for money due, credit and today's takings, search, and the table scrolling inside the card. */
+function DueList({ side }: { side: (id: string) => ReactNode }) {
   const { t, money, number, date } = useI18n();
   const L = useL();
   const [text, setText] = useState('');
@@ -164,12 +127,16 @@ export function VariantB({ side }: { side?: (id: string, close: () => void) => R
   const data = useMoneyData(text);
   const name = useCustomerName();
   const today = useToday();
-  const lastPaid = (o: Order) => o.payments.reduce<string | null>((m, p) => (m && m > p.at ? m : p.at), null);
   const state = useScopedState();
-  // With a customer panel open, that customer's other orders are tinted too.
-  const pickedCustomer = side && picked ? state.orders[picked]?.customerId : undefined;
+  const pickedCustomer = picked ? state.orders[picked]?.customerId : undefined;
+  const lastPaid = (o: Order) => o.payments.reduce<string | null>((m, p) => (m && m > p.at ? m : p.at), null);
   const row = (o: Order, cells: ReactNode) => (
-    <tr key={o.id} aria-selected={picked === o.id} onClick={() => pick(o.id)} className={`cursor-pointer border-b border-line ${picked === o.id ? 'bg-brand-soft' : o.customerId === pickedCustomer ? 'bg-brand-soft/40 hover:bg-surface' : 'hover:bg-surface'}`}>
+    <tr
+      key={o.id}
+      aria-selected={picked === o.id}
+      onClick={() => pick(o.id)}
+      className={`cursor-pointer border-b border-line ${picked === o.id ? 'bg-brand-soft' : o.customerId === pickedCustomer ? 'bg-brand-soft/40 hover:bg-surface' : 'hover:bg-surface'}`}
+    >
       <td className="px-3 py-2">
         <div className="flex items-center gap-2.5">
           <Avatar id={o.customerId} name={name(o.customerId)} size="sm" />
@@ -182,6 +149,7 @@ export function VariantB({ side }: { side?: (id: string, close: () => void) => R
       {cells}
     </tr>
   );
+  const empty = (tab === 'due' && data.due.length === 0) || (tab === 'credit' && data.credit.length === 0) || (tab === 'today' && data.todayEntries.length === 0);
   return (
     <div className={PAGE}>
       <div className={`${CARD} min-w-0 flex-1`}>
@@ -277,350 +245,257 @@ export function VariantB({ side }: { side?: (id: string, close: () => void) => R
               </>
             )}
           </table>
-          {((tab === 'due' && data.due.length === 0) || (tab === 'credit' && data.credit.length === 0) || (tab === 'today' && data.todayEntries.length === 0)) && (
-            <p className="p-4 text-muted">{L('এখানে কিছু নেই', 'Nothing here')}</p>
-          )}
+          {empty && <p className="p-4 text-muted">{L('এখানে কিছু নেই', 'Nothing here')}</p>}
         </div>
-        <div className="border-t border-line px-4 py-2 text-sm text-muted">{L('একটা সারিতে ক্লিক করলে পাশে সেই অর্ডারের টাকার হিসাব আর "টাকা নিন" আসে', 'Click a row to see that order’s money beside the list, with Take payment')}</div>
       </div>
-      {picked && (side ? side(picked, () => pick(null)) : <MoneySide id={picked} onClose={() => pick(null)} />)}
+      {picked && state.orders[picked] && side(picked)}
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ C ------------------------------------------------------------------ */
+/* ------------------------------------------------------------ shared card parts ------------------------------------------------------------ */
 
-export function VariantC() {
-  const { t, money, number, date } = useI18n();
-  const L = useL();
-  const [text, setText] = useState('');
-  const [picked, pick] = usePicked();
-  const data = useMoneyData(text);
-  const name = useCustomerName();
+type MoneyDialog = { kind: 'take' | 'refund' | 'discount' | 'adjust'; order: Order } | { kind: 'correct'; order: Order; payment: Payment } | null;
+
+interface Entry {
+  order: Order;
+  payment: Payment;
+  effect: number;
+  by: string;
+}
+
+/** Everything the customer card needs about the picked order's customer. */
+function useCustomerMoney(id: string) {
+  const { language } = useI18n();
+  const { config } = useSnapshot();
   const state = useScopedState();
-  const [params, setParams] = useSearchParams();
-  const people = useMemo(() => {
-    const map = new Map<string, { id: string; owed: number; orders: Order[] }>();
-    for (const { order, balance } of data.due) {
-      const p = map.get(order.customerId) ?? { id: order.customerId, owed: 0, orders: [] };
-      p.owed += balance;
-      p.orders.push(order);
-      map.set(order.customerId, p);
-    }
-    return [...map.values()].sort((a, b) => b.owed - a.owed);
-  }, [data.due]);
-  const customerId = params.get('customer') ?? people[0]?.id ?? null;
-  const setCustomer = (id: string) =>
-    setParams(
-      (prev) => {
-        const p = new URLSearchParams(prev);
-        p.set('customer', id);
-        p.delete('order');
-        return p;
-      },
-      { replace: true },
-    );
-  const theirOrders = Object.values(state.orders)
-    .filter((o) => o.customerId === customerId)
+  const picked = state.orders[id]!;
+  const customer = state.customers[picked.customerId] ?? null;
+  const orders = Object.values(state.orders)
+    .filter((o) => o.customerId === picked.customerId)
     .sort((a, b) => balanceDue(b) - balanceDue(a) || b.createdAt.localeCompare(a.createdAt));
-  const theirPayments = theirOrders
-    .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount })))
+  const staff = (sid: string) => config?.staff.find((s) => s.id === sid)?.name ?? '';
+  const models = new Map<string, ReceiptModel>(config ? orders.map((o) => [o.id, receiptModel(o, customer, config, language)]) : []);
+  const timeline: Entry[] = orders
+    .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount, by: staff(payment.by) })))
     .sort((a, b) => b.payment.at.localeCompare(a.payment.at));
-  const owed = theirOrders.reduce((s, o) => s + Math.max(0, balanceDue(o)), 0);
-  const max = Math.max(1, ...people.map((p) => p.owed));
+  const owed = orders.reduce((s, o) => s + Math.max(0, balanceDue(o)), 0);
+  const credit = orders.reduce((s, o) => s + Math.max(0, -balanceDue(o)), 0);
+  const paid = orders.reduce((s, o) => s + netPaid(o.payments), 0);
+  const billed = orders.reduce((s, o) => s + orderTotal(o), 0);
+  return { picked, customer, orders, models, timeline, owed, credit, paid, billed, staff };
+}
 
+function DialogHost({ dialog, close }: { dialog: MoneyDialog; close(): void }) {
+  if (!dialog) return null;
+  if (dialog.kind === 'take') return <TakePaymentDialog order={dialog.order} onClose={close} />;
+  if (dialog.kind === 'refund') return <RefundDialog order={dialog.order} onClose={close} />;
+  if (dialog.kind === 'discount') return <DiscountDialog order={dialog.order} onClose={close} />;
+  if (dialog.kind === 'adjust') return <PriceAdjustmentDialog order={dialog.order} onClose={close} />;
+  return dialog.kind === 'correct' ? <CorrectionDialog order={dialog.order} payment={dialog.payment} onClose={close} /> : null;
+}
+
+/** Which money actions this person may take on this order. */
+function useActions(order: Order) {
+  const { t } = useI18n();
+  const can = useCan();
+  const m = moneySummary(order);
+  return [
+    { kind: 'take' as const, icon: HandCoins, label: t('payments.take'), show: can('payments.record') && m.balance > 0 },
+    { kind: 'refund' as const, icon: Undo2, label: t('payments.refund'), show: can('payments.refund') && netPaid(order.payments) > 0 },
+    { kind: 'discount' as const, icon: Percent, label: t('payments.discount'), show: can('orders.edit') },
+    { kind: 'adjust' as const, icon: SlidersHorizontal, label: t('payments.adjust'), show: can('orders.edit') },
+  ].filter((a) => a.show);
+}
+
+function CardHeader({ customerId, phone, onClose, children }: { customerId: string; phone: string | null; onClose(): void; children?: ReactNode }) {
+  const { t } = useI18n();
+  const L = useL();
+  const name = useCustomerName();
   return (
-    <div className={PAGE}>
-      <aside aria-label={t('payments.due')} className={`${CARD} w-80 shrink-0`}>
-        <div className="flex flex-col gap-3 border-b border-line p-4">
-          <h1 className="font-display text-xl font-bold">{t('payments.title')}</h1>
-          <p className="text-sm text-muted">
-            {t('payments.dueTotal')} <span className="font-display text-lg font-bold text-warn">{money(data.dueTotal)}</span> · {L(`${number(people.length)} জন`, `${number(people.length)} people`)}
-          </p>
-          <SearchBox value={text} onChange={setText} />
-        </div>
-        <ul className="relative m-0 min-h-0 flex-1 list-none overflow-y-auto p-2">
-          {people.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                aria-pressed={customerId === p.id}
-                onClick={() => setCustomer(p.id)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start ${customerId === p.id ? 'bg-brand-soft ring-2 ring-inset ring-brand' : 'hover:bg-surface'}`}
-              >
-                <Avatar id={p.id} name={name(p.id)} />
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="flex items-baseline gap-2">
-                    <span className="min-w-0 flex-1 truncate font-semibold">{name(p.id)}</span>
-                    <span className="font-display font-bold text-warn">{money(p.owed)}</span>
-                  </span>
-                  <span aria-hidden="true" className="h-1.5 rounded-full bg-warn" style={{ width: `${(p.owed / max) * 100}%`, minWidth: '0.5rem' }} />
-                  <span className="text-xs text-muted">{L(`${number(p.orders.length)}টি অর্ডারে বাকি`, `${number(p.orders.length)} orders owing`)}</span>
-                </span>
-              </button>
-            </li>
+    <div className="flex items-start gap-3 border-b border-line p-4">
+      <Avatar id={customerId} name={name(customerId)} size="lg" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h2 className="truncate font-display text-xl font-bold">{name(customerId)}</h2>
+        <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
+          {phone && (
+            <span className="inline-flex items-center gap-1">
+              <Phone aria-hidden="true" size={13} />
+              {phone}
+            </span>
+          )}
+          <Link to={`/app/customers/${customerId}`} className="font-semibold text-brand-strong hover:underline">
+            {L('প্রোফাইল', 'Profile')}
+          </Link>
+        </p>
+      </div>
+      {children}
+      <button type="button" aria-label={t('common.close')} onClick={onClose} className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink">
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+/** The picked order's actions, docked at the bottom of the card: its balance and Take payment on top, the rest in one row below. */
+function ActionBar({ order, open }: { order: Order; open(kind: 'take' | 'refund' | 'discount' | 'adjust'): void }) {
+  const { t, money } = useI18n();
+  const actions = useActions(order);
+  const take = actions.find((a) => a.kind === 'take');
+  const rest = actions.filter((a) => a.kind !== 'take');
+  const m = moneySummary(order);
+  return (
+    <div className="flex flex-col gap-2 border-t border-line bg-surface/60 p-3">
+      <div className="flex items-center gap-3">
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-xs text-muted">{order.number}</span>
+          <span className={`font-display text-lg font-bold leading-tight ${m.creditDue > 0 ? 'text-ok' : 'text-warn'}`}>
+            {m.creditDue > 0 ? t('money.creditDue') : t('money.balance')} {money(m.creditDue > 0 ? m.creditDue : m.balance)}
+          </span>
+        </span>
+        {take && (
+          <Button onClick={() => open('take')} className="min-w-40">
+            <HandCoins aria-hidden="true" size={16} />
+            {take.label}
+          </Button>
+        )}
+      </div>
+      {rest.length > 0 && (
+        <div className="flex gap-2">
+          {rest.map((a) => (
+            <button
+              key={a.kind}
+              type="button"
+              onClick={() => open(a.kind)}
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-panel px-2 text-sm font-semibold ring-1 ring-inset ring-line hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+            >
+              <a.icon aria-hidden="true" size={15} className="text-muted" />
+              {a.label}
+            </button>
           ))}
-        </ul>
-      </aside>
-      {customerId && (
-        <section aria-label={name(customerId)} className={`${CARD} min-w-0 flex-1`}>
-          <div className="flex items-center gap-3 border-b border-line p-4">
-            <Avatar id={customerId} name={name(customerId)} size="lg" />
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate font-display text-2xl font-bold">{name(customerId)}</h2>
-              <Link to={`/app/customers/${customerId}`} className="text-sm text-brand-strong underline">
-                {L('প্রোফাইল দেখুন', 'Open profile')}
-              </Link>
-            </div>
-            <div className="text-end">
-              <p className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</p>
-              <p className="font-display text-2xl font-bold text-warn">{money(owed)}</p>
-            </div>
-          </div>
-          <div className="grid min-h-0 flex-1 grid-cols-[1fr_minmax(0,22rem)]">
-            <div className="relative min-h-0 overflow-auto p-4">
-              <h3 className="mb-2 text-sm font-semibold text-muted">{L('অর্ডার', 'Orders')}</h3>
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {theirOrders.map((o) => {
-                  const bal = balanceDue(o);
-                  const open = picked === o.id;
-                  return (
-                    <li key={o.id} className={`rounded-xl border ${open ? 'border-brand' : 'border-line'}`}>
-                      <button type="button" aria-expanded={open} onClick={() => pick(open ? null : o.id)} className="flex w-full items-center gap-4 p-3 text-start">
-                        <span className="w-20 font-semibold">{o.number}</span>
-                        <span className="flex min-w-0 flex-1 flex-col gap-1">
-                          <PaidBar paid={netPaid(o.payments)} total={orderTotal(o)} />
-                          <span className="text-xs text-muted">
-                            {money(netPaid(o.payments))} / {money(orderTotal(o))}
-                          </span>
-                        </span>
-                        <span className={`w-28 text-end font-display text-lg font-bold ${bal > 0 ? 'text-warn' : 'text-ok'}`}>{bal > 0 ? money(bal) : bal < 0 ? `${t('money.creditDue')} ${money(-bal)}` : L('পরিশোধিত', 'Paid')}</span>
-                      </button>
-                      {open && (
-                        <div className="border-t border-line p-3 [&>section]:border-0 [&>section]:p-0">
-                          <OrderMoney order={o} />
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-            <div className="relative min-h-0 overflow-auto border-s border-line bg-surface/40 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-muted">{L('সব জমা ও ফেরত', 'Every payment and refund')}</h3>
-              <ol className="m-0 flex list-none flex-col gap-0 p-0">
-                {theirPayments.map((e) => (
-                  <li key={e.payment.id} className="relative flex gap-3 border-s-2 border-line ps-4 pb-4">
-                    <span aria-hidden="true" className={`absolute -start-[7px] top-1 size-3 rounded-full ${e.effect < 0 ? 'bg-warn' : 'bg-ok'}`} />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className={`font-semibold ${e.effect < 0 ? 'text-warn' : 'text-ok'}`}>{money(e.effect)}</span>
-                      <span className="text-xs text-muted">
-                        {date(e.payment.at.slice(0, 10))} · {t(`receipt.kind.${e.payment.kind}`)} · {t(`method.${e.payment.method}`)} · {e.order.number}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-                {theirPayments.length === 0 && <li className="text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</li>}
-              </ol>
-            </div>
-          </div>
-        </section>
+        </div>
       )}
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ D ------------------------------------------------------------------ */
-
-export function VariantD() {
-  const { t, money, number, date } = useI18n();
-  const L = useL();
-  const [text, setText] = useState('');
-  const [picked, pick] = usePicked();
-  const data = useMoneyData(text);
-  const name = useCustomerName();
-  const today = useToday();
-  const weekAgo = new Date(Date.parse(today) - 6 * 86_400_000).toISOString().slice(0, 10);
-  const week = data.entries.filter((e) => e.day >= weekAgo).reduce((s, e) => s + e.effect, 0);
-  const byMethod = METHODS.map((m) => ({ m, sum: data.todayEntries.filter((e) => e.payment.method === m).reduce((s, e) => s + e.effect, 0) }));
-  const days = useMemo(() => {
-    const map = new Map<string, Entry[]>();
-    for (const e of data.entries) map.set(e.day, [...(map.get(e.day) ?? []), e]);
-    return [...map.entries()];
-  }, [data.entries]);
-  const buckets = [
-    { key: 'new', label: L('৭ দিনের মধ্যে', 'Within 7 days'), test: (d: number) => d <= 7 },
-    { key: 'month', label: L('৮ থেকে ৩০ দিন', '8 to 30 days'), test: (d: number) => d > 7 && d <= 30 },
-    { key: 'old', label: L('৩০ দিনের বেশি', 'Over 30 days'), test: (d: number) => d > 30 },
-  ].map((b) => {
-    const rows = data.due.filter((r) => b.test(daysBetween(r.order.createdAt.slice(0, 10), today)));
-    return { ...b, rows, sum: rows.reduce((s, r) => s + r.balance, 0) };
-  });
-
+function CorrectButton({ onClick }: { onClick(): void }) {
+  const { t } = useI18n();
+  const can = useCan();
+  if (!can('payments.correct')) return null;
   return (
-    <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-xl font-bold">{t('payments.title')}</h1>
-        <SearchBox value={text} onChange={setText} className="ms-auto w-80" />
-      </div>
-      <div className="grid shrink-0 grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-2">
-        <Tile icon={HandCoins} tone="ok" label={L('আজ জমা', 'Taken today')} value={money(data.todayTotal)} sub={L(`${number(data.todayEntries.length)}টি লেনদেন`, `${number(data.todayEntries.length)} entries`)} />
-        <Tile icon={CalendarClock} tone="brand" label={L('গত ৭ দিন', 'Last 7 days')} value={money(week)} />
-        <Tile icon={Wallet} tone="warn" label={t('payments.dueTotal')} value={money(data.dueTotal)} sub={L(`${number(data.due.length)}টি অর্ডার`, `${number(data.due.length)} orders`)} />
-        <Tile icon={Undo2} tone="brand" label={t('payments.credit')} value={money(data.creditTotal)} sub={L(`${number(data.credit.length)}টি অর্ডার`, `${number(data.credit.length)} orders`)} />
-        <div className="flex items-center gap-3 rounded-xl bg-surface/60 px-3 py-2 ring-1 ring-inset ring-line">
-          <Banknote aria-hidden="true" size={18} className="text-muted" />
-          <dl className="m-0 grid grid-cols-4 gap-x-4">
-            {byMethod.map(({ m, sum }) => (
-              <div key={m} className="flex flex-col">
-                <dt className="text-xs text-muted">{t(`method.${m}`)}</dt>
-                <dd className="m-0 whitespace-nowrap font-semibold">{money(sum)}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
-      <div className="flex min-h-0 flex-1 gap-4">
-        <section aria-label={L('জমার খাতা', 'Cash book')} className={`${CARD} min-w-0 flex-1`}>
-          <h2 className="border-b border-line px-4 py-2.5 font-semibold">{L('জমার খাতা', 'Cash book')}</h2>
-          <div className="relative min-h-0 flex-1 overflow-auto">
-            {days.map(([day, list]) => (
-              <section key={day} aria-label={date(day)}>
-                <h3 className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface px-4 py-1.5 text-sm font-semibold">
-                  {day === today ? L('আজ', 'Today') : date(day)}
-                  <span className="ms-auto font-display">{money(list.reduce((s, e) => s + e.effect, 0))}</span>
-                </h3>
-                <ul className="m-0 list-none p-0">
-                  {list.map((e) => (
-                    <li key={e.payment.id}>
-                      <button
-                        type="button"
-                        onClick={() => pick(e.order.id)}
-                        className={`flex w-full items-center gap-3 border-b border-line px-4 py-2 text-start ${picked === e.order.id ? 'bg-brand-soft' : 'hover:bg-surface'}`}
-                      >
-                        <Avatar id={e.order.customerId} name={name(e.order.customerId)} size="sm" />
-                        <span className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate font-semibold">{name(e.order.customerId)}</span>
-                          <span className="text-xs text-muted">
-                            {e.order.number} · {t(`receipt.kind.${e.payment.kind}`)}
-                            {e.payment.reference && ` · ${e.payment.reference}`}
-                          </span>
-                        </span>
-                        <span className="rounded-full bg-surface px-2 text-xs">{t(`method.${e.payment.method}`)}</span>
-                        <span className={`w-28 text-end font-semibold ${e.effect < 0 ? 'text-warn' : 'text-ok'}`}>{money(e.effect)}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        </section>
-        {picked ? (
-          <MoneySide id={picked} onClose={() => pick(null)} />
-        ) : (
-          <section aria-label={t('payments.due')} className={`${CARD} w-[min(460px,40%)] shrink-0`}>
-            <h2 className="border-b border-line px-4 py-2.5 font-semibold">{L('কতদিনের বাকি', 'Dues by age')}</h2>
-            <div className="relative min-h-0 flex-1 overflow-auto">
-              {buckets.map((b) => (
-                <section key={b.key} aria-label={b.label}>
-                  <h3 className={`sticky top-0 z-10 flex items-center gap-2 border-b border-line px-4 py-1.5 text-sm font-semibold ${b.key === 'old' ? 'bg-warn-soft text-warn-ink' : 'bg-surface'}`}>
-                    {b.label}
-                    <span className="text-xs font-normal text-muted">{number(b.rows.length)}</span>
-                    <span className="ms-auto font-display">{money(b.sum)}</span>
-                  </h3>
-                  <ul className="m-0 list-none p-0">
-                    {b.rows.map(({ order, balance }) => (
-                      <li key={order.id}>
-                        <button type="button" onClick={() => pick(order.id)} className="flex w-full items-center gap-3 border-b border-line px-4 py-2 text-start hover:bg-surface">
-                          <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate font-semibold">{name(order.customerId)}</span>
-                            <span className="text-xs text-muted">
-                              {order.number} · {L(`${number(daysBetween(order.createdAt.slice(0, 10), today))} দিন আগের অর্ডার`, `ordered ${number(daysBetween(order.createdAt.slice(0, 10), today))} days ago`)}
-                            </span>
-                          </span>
-                          <span className="font-display font-bold text-warn">{money(balance)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+    <button type="button" aria-label={t('payments.correct')} title={t('payments.correct')} onClick={onClick} className="grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink">
+      <Pencil size={15} />
+    </button>
+  );
+}
+
+/** One line of money: a label, an optional note, and an amount on the right. */
+function MoneyLine({ label, note, amount, strong, tone }: { label: string; note?: string | undefined; amount: string; strong?: boolean; tone?: 'warn' | 'ok' }) {
+  return (
+    <div className={`flex items-baseline gap-3 py-1 ${strong ? 'font-semibold' : ''}`}>
+      <dt className="min-w-0 flex-1">
+        {label}
+        {note && <span className="ms-2 text-xs font-normal text-muted">{note}</span>}
+      </dt>
+      <dd className={`m-0 whitespace-nowrap ${strong ? 'font-display text-lg' : ''} ${tone === 'warn' ? 'text-warn' : tone === 'ok' ? 'text-ok' : ''}`}>{amount}</dd>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ E ------------------------------------------------------------------ */
+function Breakdown({ model }: { model: ReceiptModel }) {
+  const { t, money } = useI18n();
+  return (
+    <dl className="m-0 flex flex-col text-sm">
+      <MoneyLine label={t('money.subtotal')} amount={money(model.subtotal)} />
+      {model.discount && <MoneyLine label={t('money.discount')} note={model.discount.reason} amount={`− ${money(model.discount.amount)}`} />}
+      {model.adjustments.map((a, i) => (
+        <MoneyLine key={i} label={t('money.adjustments')} note={a.reason} amount={`${a.amount < 0 ? '− ' : '+ '}${money(Math.abs(a.amount))}`} />
+      ))}
+      <div className="my-1 border-t border-line" />
+      <MoneyLine label={t('money.total')} amount={money(model.total)} strong />
+      <MoneyLine label={t('money.paid')} amount={money(model.paid)} tone="ok" />
+      {model.creditDue > 0 ? <MoneyLine label={t('money.creditDue')} amount={money(model.creditDue)} strong tone="ok" /> : <MoneyLine label={t('money.balance')} amount={money(model.balance)} strong tone="warn" />}
+    </dl>
+  );
+}
 
-type MoneyDialog = { kind: 'take' | 'refund' | 'discount' | 'adjust'; order: Order } | { kind: 'correct'; order: Order; payment: Payment } | null;
+function EntryLine({ e, showOrder, onCorrect }: { e: Entry; showOrder: boolean; onCorrect(): void }) {
+  const { t, money, date } = useI18n();
+  return (
+    <li className="flex items-center gap-3 py-2">
+      <span aria-hidden="true" className={`grid size-8 shrink-0 place-items-center rounded-full ${e.effect < 0 ? 'bg-warn-soft text-warn' : 'bg-ok-soft text-ok'}`}>
+        {e.effect < 0 ? <Undo2 size={15} /> : <HandCoins size={15} />}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm font-semibold">
+          {t(`receipt.kind.${e.payment.kind}`)} · {t(`method.${e.payment.method}`)}
+          {e.payment.reference && <span className="font-normal text-muted"> · {e.payment.reference}</span>}
+        </span>
+        <span className="truncate text-xs text-muted">
+          {date(e.payment.at.slice(0, 10))}
+          {showOrder && ` · ${e.order.number}`}
+          {e.by && ` · ${e.by}`}
+          {e.payment.reason && ` · ${e.payment.reason}`}
+        </span>
+      </span>
+      <span className={`whitespace-nowrap font-display font-bold ${e.effect < 0 ? 'text-warn' : 'text-ok'}`}>{money(e.effect)}</span>
+      {e.payment.kind !== 'correction' ? <CorrectButton onClick={onCorrect} /> : <span className="size-8 shrink-0" />}
+    </li>
+  );
+}
 
-/** The customer of the picked order: every order with its money and buttons, then every payment with its date. */
-function CustomerMoneySide({ id, onClose }: { id: string; onClose(): void }) {
+/* ------------------------------------------------------------------ B ------------------------------------------------------------------ */
+
+function StackCard({ id }: { id: string }) {
   const { t, money, number, date } = useI18n();
   const L = useL();
-  const can = useCan();
-  const state = useScopedState();
-  const name = useCustomerName();
   const [, pick] = usePicked();
   const [dialog, setDialog] = useState<MoneyDialog>(null);
-  const picked = state.orders[id];
-  if (!picked) return null;
-  const customerId = picked.customerId;
-  const orders = Object.values(state.orders)
-    .filter((o) => o.customerId === customerId)
-    .sort((a, b) => balanceDue(b) - balanceDue(a) || b.createdAt.localeCompare(a.createdAt));
-  const owed = orders.reduce((s, o) => s + Math.max(0, balanceDue(o)), 0);
-  const credit = orders.reduce((s, o) => s + Math.max(0, -balanceDue(o)), 0);
-  const paidAll = orders.reduce((s, o) => s + netPaid(o.payments), 0);
-  const timeline = orders
-    .flatMap((order) => order.payments.map((payment) => ({ order, payment, effect: effectSign(payment, order.payments) * payment.amount })))
-    .sort((a, b) => b.payment.at.localeCompare(a.payment.at));
-  const close = () => setDialog(null);
-
+  const c = useCustomerMoney(id);
+  const pickedTimeline = c.timeline.filter((e) => e.order.id === id);
+  const others = c.timeline.filter((e) => e.order.id !== id);
   return (
-    <aside aria-label={name(customerId)} className={`${CARD} w-[min(600px,46%)] shrink-0`}>
-      <div className="flex items-center gap-3 border-b border-line p-4">
-        <Avatar id={customerId} name={name(customerId)} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-display text-xl font-bold">{name(customerId)}</h2>
-          <Link to={`/app/customers/${customerId}`} className="text-sm text-brand-strong underline">
-            {L('প্রোফাইল দেখুন', 'Open profile')}
-          </Link>
+    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
+      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)} />
+      <div className="flex flex-col gap-2 border-b border-line px-4 py-3">
+        <div className="flex items-end gap-4">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</span>
+            <span className="font-display text-3xl font-bold leading-none text-warn">{money(c.owed)}</span>
+          </div>
+          <div className="ms-auto flex gap-5 text-end text-sm">
+            <span className="flex flex-col">
+              <span className="text-xs text-muted">{L('মোট বিল', 'Billed')}</span>
+              <span className="font-semibold">{money(c.billed)}</span>
+            </span>
+            <span className="flex flex-col">
+              <span className="text-xs text-muted">{L('মোট জমা', 'Paid')}</span>
+              <span className="font-semibold text-ok">{money(c.paid)}</span>
+            </span>
+            {c.credit > 0 && (
+              <span className="flex flex-col">
+                <span className="text-xs text-muted">{t('payments.credit')}</span>
+                <span className="font-semibold">{money(c.credit)}</span>
+              </span>
+            )}
+          </div>
         </div>
-        <button type="button" aria-label={t('common.close')} onClick={onClose} className="grid size-9 place-items-center self-start rounded-lg hover:bg-surface">
-          <X size={18} />
-        </button>
+        <PaidBar paid={c.paid} total={c.billed} />
       </div>
-      <dl className="m-0 grid grid-cols-3 border-b border-line">
-        <div className="px-4 py-2.5">
-          <dt className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</dt>
-          <dd className="m-0 font-display text-xl font-bold text-warn">{money(owed)}</dd>
-        </div>
-        <div className="border-s border-line px-4 py-2.5">
-          <dt className="text-xs text-muted">{L('মোট জমা', 'Paid in all')}</dt>
-          <dd className="m-0 font-display text-xl font-bold text-ok">{money(paidAll)}</dd>
-        </div>
-        <div className="border-s border-line px-4 py-2.5">
-          <dt className="text-xs text-muted">{t('payments.credit')}</dt>
-          <dd className="m-0 font-display text-xl font-bold">{money(credit)}</dd>
-        </div>
-      </dl>
-      <div className="relative min-h-0 flex-1 overflow-auto">
-        <h3 className="sticky top-0 z-10 border-b border-line bg-surface px-4 py-1.5 text-sm font-semibold">
-          {L('অর্ডার', 'Orders')} <span className="font-normal text-muted">{number(orders.length)}</span>
+      <div className="relative min-h-0 flex-1 overflow-auto px-4 py-3">
+        <h3 className="mb-2 text-xs font-semibold text-muted">
+          {L('অর্ডার', 'Orders')} · {number(c.orders.length)}
         </h3>
-        <ul className="m-0 flex list-none flex-col gap-2 p-3">
-          {orders.map((o) => {
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {c.orders.map((o) => {
             const m = moneySummary(o);
             const open = o.id === id;
+            const model = c.models.get(o.id);
             return (
-              <li key={o.id} className={`rounded-xl border ${open ? 'border-brand ring-1 ring-brand' : 'border-line'}`}>
-                <button type="button" aria-expanded={open} onClick={() => pick(o.id)} className="flex w-full items-center gap-4 p-3 text-start">
-                  <span className="flex w-24 flex-col">
+              <li key={o.id} className={`overflow-hidden rounded-xl border ${open ? 'border-brand shadow-sm' : 'border-line'}`}>
+                <button type="button" aria-expanded={open} onClick={() => pick(o.id)} className={`flex w-full items-center gap-4 px-3 py-2.5 text-start ${open ? 'bg-brand-soft/50' : 'hover:bg-surface'}`}>
+                  <span className="flex w-24 shrink-0 flex-col">
                     <span className="font-semibold">{o.number}</span>
                     <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
                   </span>
@@ -634,43 +509,19 @@ function CustomerMoneySide({ id, onClose }: { id: string; onClose(): void }) {
                     {m.balance > 0 ? money(m.balance) : m.creditDue > 0 ? money(m.creditDue) : L('পরিশোধিত', 'Paid')}
                   </span>
                 </button>
-                {open && (
-                  <div className="flex flex-col gap-3 border-t border-line p-3">
-                    <dl className="m-0 grid grid-cols-4 gap-2 text-sm">
-                      <div>
-                        <dt className="text-xs text-muted">{t('money.total')}</dt>
-                        <dd className="m-0 font-semibold">{money(m.total)}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted">{t('money.discount')}</dt>
-                        <dd className="m-0 font-semibold">{o.discount ? money(o.discount.amount) : '-'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted">{t('money.paid')}</dt>
-                        <dd className="m-0 font-semibold text-ok">{money(m.paid)}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted">{m.creditDue > 0 ? t('money.creditDue') : t('money.balance')}</dt>
-                        <dd className={`m-0 font-semibold ${m.creditDue > 0 ? 'text-ok' : 'text-warn'}`}>{money(m.creditDue > 0 ? m.creditDue : m.balance)}</dd>
-                      </div>
-                    </dl>
-                    {m.creditDue > 0 && <p className="text-sm font-semibold">{t('payments.creditNote')}</p>}
-                    <div className="flex flex-wrap gap-2">
-                      {can('payments.record') && m.balance > 0 && <Button onClick={() => setDialog({ kind: 'take', order: o })}>{t('payments.take')}</Button>}
-                      {can('payments.refund') && netPaid(o.payments) > 0 && (
-                        <Button variant="secondary" onClick={() => setDialog({ kind: 'refund', order: o })}>
-                          {t('payments.refund')}
-                        </Button>
-                      )}
-                      {can('orders.edit') && (
-                        <>
-                          <Button variant="secondary" onClick={() => setDialog({ kind: 'discount', order: o })}>
-                            {t('payments.discount')}
-                          </Button>
-                          <Button variant="secondary" onClick={() => setDialog({ kind: 'adjust', order: o })}>
-                            {t('payments.adjust')}
-                          </Button>
-                        </>
+                {open && model && (
+                  <div className="flex flex-col gap-3 border-t border-line px-3 py-3">
+                    <Breakdown model={model} />
+                    <div className="flex min-w-0 flex-col border-t border-line pt-2">
+                      <h4 className="text-xs font-semibold text-muted">{L('এই অর্ডারের জমা', 'Paid on this order')}</h4>
+                      {pickedTimeline.length === 0 ? (
+                        <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
+                      ) : (
+                        <ul className="m-0 list-none divide-y divide-line p-0">
+                          {pickedTimeline.map((e) => (
+                            <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
+                          ))}
+                        </ul>
                       )}
                     </div>
                   </div>
@@ -679,46 +530,433 @@ function CustomerMoneySide({ id, onClose }: { id: string; onClose(): void }) {
             );
           })}
         </ul>
-        <h3 className="sticky top-0 z-10 border-y border-line bg-surface px-4 py-1.5 text-sm font-semibold">
-          {L('সব জমা ও ফেরত', 'Every payment and refund')} <span className="font-normal text-muted">{number(timeline.length)}</span>
-        </h3>
-        <ol className="m-0 flex list-none flex-col p-4">
-          {timeline.map((e) => (
-            <li key={e.payment.id} className="relative flex items-start gap-3 border-s-2 border-line pb-4 ps-4 last:pb-0">
-              <span aria-hidden="true" className={`absolute -start-[7px] top-1.5 size-3 rounded-full ${e.effect < 0 ? 'bg-warn' : 'bg-ok'}`} />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-baseline gap-2">
-                  <span className={`font-display text-lg font-bold ${e.effect < 0 ? 'text-warn' : 'text-ok'}`}>{money(e.effect)}</span>
-                  <span className="rounded-full bg-surface px-2 text-xs">{t(`method.${e.payment.method}`)}</span>
-                </span>
-                <span className="text-sm text-muted">
-                  {date(e.payment.at.slice(0, 10))} · {t(`receipt.kind.${e.payment.kind}`)} ·{' '}
-                  <button type="button" onClick={() => pick(e.order.id)} className="text-brand-strong underline">
-                    {e.order.number}
-                  </button>
-                  {e.payment.reference && ` · ${e.payment.reference}`}
-                </span>
-                {e.payment.reason && <span className="text-sm">{e.payment.reason}</span>}
-              </span>
-              {can('payments.correct') && e.payment.kind !== 'correction' && (
-                <Button variant="secondary" className="min-h-9!" onClick={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })}>
-                  {t('payments.correct')}
-                </Button>
-              )}
-            </li>
-          ))}
-          {timeline.length === 0 && <li className="text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</li>}
-        </ol>
+        {others.length > 0 && (
+          <>
+            <h3 className="mb-1 mt-4 text-xs font-semibold text-muted">{L('অন্য অর্ডারের জমা', 'Paid on other orders')}</h3>
+            <ul className="m-0 list-none divide-y divide-line p-0">
+              {others.map((e) => (
+                <EntryLine key={e.payment.id} e={e} showOrder onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
+              ))}
+            </ul>
+          </>
+        )}
       </div>
-      {dialog?.kind === 'take' && <TakePaymentDialog order={dialog.order} onClose={close} />}
-      {dialog?.kind === 'refund' && <RefundDialog order={dialog.order} onClose={close} />}
-      {dialog?.kind === 'discount' && <DiscountDialog order={dialog.order} onClose={close} />}
-      {dialog?.kind === 'adjust' && <PriceAdjustmentDialog order={dialog.order} onClose={close} />}
-      {dialog?.kind === 'correct' && <CorrectionDialog order={dialog.order} payment={dialog.payment} onClose={close} />}
+      <ActionBar order={c.picked} open={(kind) => setDialog({ kind, order: c.picked })} />
+      <DialogHost dialog={dialog} close={() => setDialog(null)} />
     </aside>
   );
 }
 
+/* ------------------------------------------------------------------ C ------------------------------------------------------------------ */
+
+interface StatementRow {
+  key: string;
+  at: string;
+  order: Order;
+  text: string;
+  note: string;
+  /** Positive: the customer owes more. Negative: less. */
+  change: number;
+  payment?: Payment;
+}
+
+function statementOf(orders: Order[], models: Map<string, ReceiptModel>, t: ReturnType<typeof useI18n>['t']): StatementRow[] {
+  const rows: StatementRow[] = [];
+  for (const o of orders) {
+    const model = models.get(o.id);
+    if (!model) continue;
+    rows.push({ key: `${o.id}-bill`, at: o.createdAt, order: o, text: t('money.subtotal'), note: model.lines.filter((l) => !l.cancelled).map((l) => l.garment).join(', '), change: model.subtotal });
+    if (o.discount) rows.push({ key: `${o.id}-disc`, at: o.createdAt, order: o, text: t('money.discount'), note: o.discount.reason, change: -o.discount.amount });
+    for (const a of o.priceAdjustments) rows.push({ key: a.id, at: a.at, order: o, text: t('money.adjustments'), note: a.reason, change: a.amount });
+    for (const p of o.payments)
+      rows.push({ key: p.id, at: p.at, order: o, text: `${t(`receipt.kind.${p.kind}`)} · ${t(`method.${p.method}`)}`, note: [p.reference, p.reason].filter(Boolean).join(' · '), change: -effectSign(p, o.payments) * p.amount, payment: p });
+  }
+  return rows.sort((a, b) => a.at.localeCompare(b.at));
+}
+
+function StatementCard({ id }: { id: string }) {
+  const { t, money, date } = useI18n();
+  const L = useL();
+  const [, pick] = usePicked();
+  const [all, setAll] = useState(false);
+  const [dialog, setDialog] = useState<MoneyDialog>(null);
+  const c = useCustomerMoney(id);
+  const rows = statementOf(all ? c.orders : [c.picked], c.models, t);
+  let running = 0;
+  const withBalance = rows.map((r) => ({ ...r, balance: (running += r.change) }));
+  const tab = (key: string, on: boolean, onClick: () => void, children: ReactNode) => (
+    <button
+      key={key}
+      type="button"
+      role="tab"
+      aria-selected={on}
+      onClick={onClick}
+      className={`-mb-px flex shrink-0 flex-col items-start border-b-[3px] px-3 py-2 text-start ${on ? 'border-brand' : 'border-transparent text-muted hover:text-ink'}`}
+    >
+      {children}
+    </button>
+  );
+  return (
+    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
+      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)}>
+        <div className="text-end">
+          <p className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</p>
+          <p className="font-display text-2xl font-bold leading-tight text-warn">{money(c.owed)}</p>
+        </div>
+      </CardHeader>
+      <div role="tablist" aria-label={L('অর্ডার', 'Orders')} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line px-2">
+        {c.orders.map((o) => {
+          const m = moneySummary(o);
+          return tab(
+            o.id,
+            !all && o.id === id,
+            () => {
+              setAll(false);
+              pick(o.id);
+            },
+            <>
+              <span className="text-sm font-semibold text-ink">{o.number}</span>
+              <span className={`text-xs ${m.balance > 0 ? 'text-warn-ink' : 'text-ok'}`}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
+            </>,
+          );
+        })}
+        {c.orders.length > 1 &&
+          tab(
+            'all',
+            all,
+            () => setAll(true),
+            <>
+              <span className="text-sm font-semibold text-ink">{L('সব অর্ডার', 'All orders')}</span>
+              <span className="text-xs text-muted">{L('পুরো খাতা', 'Whole ledger')}</span>
+            </>,
+          )}
+      </div>
+      <div className="relative min-h-0 flex-1 overflow-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th scope="col" className={HEAD}>{t('receipt.date')}</th>
+              <th scope="col" className={HEAD}>{L('বিবরণ', 'Details')}</th>
+              <th scope="col" className={`${HEAD} text-end`}>{L('টাকা', 'Amount')}</th>
+              <th scope="col" className={`${HEAD} text-end`}>{t('money.balance')}</th>
+              <th scope="col" className={HEAD}>
+                <span className="sr-only">{t('payments.correct')}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {withBalance.map((r) => (
+              <tr key={r.key} className="border-b border-line align-top">
+                <td className="whitespace-nowrap px-3 py-2 text-muted">{date(r.at.slice(0, 10))}</td>
+                <td className="px-3 py-2">
+                  <span className="font-semibold">{r.text}</span>
+                  {all && <span className="text-muted"> · {r.order.number}</span>}
+                  {r.note && <span className="block text-xs text-muted">{r.note}</span>}
+                </td>
+                <td className={`whitespace-nowrap px-3 py-2 text-end font-semibold ${r.change < 0 ? 'text-ok' : ''}`}>
+                  {r.change < 0 ? '− ' : '+ '}
+                  {money(Math.abs(r.change))}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-end font-display font-bold">{money(r.balance)}</td>
+                <td className="py-1 pe-2">{r.payment && r.payment.kind !== 'correction' && <CorrectButton onClick={() => setDialog({ kind: 'correct', order: r.order, payment: r.payment! })} />}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ActionBar order={c.picked} open={(kind) => setDialog({ kind, order: c.picked })} />
+      <DialogHost dialog={dialog} close={() => setDialog(null)} />
+    </aside>
+  );
+}
+
+/* ------------------------------------------------------------------ D ------------------------------------------------------------------ */
+
+function ReceiptCard({ id }: { id: string }) {
+  const { money, date } = useI18n();
+  const L = useL();
+  const [, pick] = usePicked();
+  const [dialog, setDialog] = useState<MoneyDialog>(null);
+  const c = useCustomerMoney(id);
+  const model = c.models.get(id);
+  const actions = useActions(c.picked);
+  const mine = c.timeline.filter((e) => e.order.id === id);
+  return (
+    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
+      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)} />
+      {c.orders.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2.5">
+          {c.orders.map((o) => {
+            const m = moneySummary(o);
+            const on = o.id === id;
+            return (
+              <button
+                key={o.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => pick(o.id)}
+                className={`inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm ${on ? 'border-brand bg-brand-soft font-semibold text-brand-strong ring-1 ring-brand' : 'border-line hover:bg-surface'}`}
+              >
+                {o.number}
+                <span className={m.balance > 0 ? 'text-warn-ink' : 'text-ok'}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
+              </button>
+            );
+          })}
+          <span className="ms-auto text-sm text-muted">
+            {L('মোট বাকি', 'Owes in all')} <b className="font-display text-warn">{money(c.owed)}</b>
+          </span>
+        </div>
+      )}
+      <div className="relative min-h-0 flex-1 overflow-auto bg-surface/50 p-4">
+        {model && (
+          <div className="mx-auto flex max-w-md flex-col gap-3 rounded-xl border border-line bg-panel p-4 shadow-sm">
+            <div className="flex items-baseline justify-between">
+              <span className="font-display text-lg font-bold">{model.orderNumber}</span>
+              <span className="text-sm text-muted">{date(model.createdAt.slice(0, 10))}</span>
+            </div>
+            <ul className="m-0 flex list-none flex-col border-y border-dashed border-line px-0 py-2 text-sm">
+              {model.lines.map((l) => (
+                <li key={l.itemId} className={`flex items-baseline gap-3 py-1 ${l.cancelled ? 'text-muted line-through' : ''}`}>
+                  <span className="min-w-0 flex-1">
+                    {l.garment}
+                    {l.wearer && <span className="text-xs text-muted"> · {l.wearer}</span>}
+                  </span>
+                  <span className="whitespace-nowrap">{money(l.price)}</span>
+                </li>
+              ))}
+            </ul>
+            <Breakdown model={model} />
+            <PaidBar paid={model.paid} total={model.total} />
+          </div>
+        )}
+        {actions.length > 0 && (
+          <div className="mx-auto mt-4 grid max-w-md grid-cols-2 gap-2">
+            {actions.map((a) => (
+              <button
+                key={a.kind}
+                type="button"
+                onClick={() => setDialog({ kind: a.kind, order: c.picked })}
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-start font-semibold ring-inset ${a.kind === 'take' ? 'col-span-2 bg-brand text-on-brand hover:bg-brand-strong' : 'bg-panel ring-1 ring-line hover:bg-surface'}`}
+              >
+                <span aria-hidden="true" className={`grid size-9 place-items-center rounded-lg ${a.kind === 'take' ? 'bg-white/15' : 'bg-surface'}`}>
+                  <a.icon size={18} />
+                </span>
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="mx-auto mt-4 max-w-md">
+          <h3 className="text-xs font-semibold text-muted">{L('জমার ইতিহাস', 'Payment history')}</h3>
+          {mine.length === 0 ? (
+            <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
+          ) : (
+            <ul className="m-0 list-none divide-y divide-line p-0">
+              {mine.map((e) => (
+                <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <DialogHost dialog={dialog} close={() => setDialog(null)} />
+    </aside>
+  );
+}
+
+/* ------------------------------------------------------------------ E ------------------------------------------------------------------ */
+
+/** Take money for the picked order without a dialog. Records only on the button, never on Enter. */
+function CollectForm({ order }: { order: Order }) {
+  const { t, money } = useI18n();
+  const L = useL();
+  const store = useStore();
+  const can = useCan();
+  const balance = moneySummary(order).balance;
+  const [id, setId] = useState(() => store.createId());
+  const [amount, setAmount] = useState<number | null>(balance > 0 ? balance : null);
+  const [method, setMethod] = useState<PaymentMethod>('cash');
+  const [reference, setReference] = useState('');
+  const [done, setDone] = useState<number | null>(null);
+  const [formKey, setFormKey] = useState(0);
+  const { problem, working, save } = useSave(() => {
+    setDone(amount);
+    setId(store.createId());
+    setReference('');
+    setFormKey((k) => k + 1);
+  });
+  if (!can('payments.record')) return null;
+  if (balance <= 0)
+    return (
+      <div className="flex items-center gap-3 rounded-xl bg-ok-soft px-4 py-3 text-ok">
+        <HandCoins aria-hidden="true" size={20} />
+        <span className="font-semibold">{done !== null ? L(`${money(done)} জমা হয়েছে। এই অর্ডারের সব টাকা জমা হয়েছে।`, `${money(done)} recorded. This order is fully paid.`) : L('এই অর্ডারের সব টাকা জমা হয়েছে', 'This order is fully paid')}</span>
+      </div>
+    );
+  const submit = () => {
+    if (amount === null || amount <= 0) return;
+    void save({
+      type: 'payment.recorded',
+      orderId: order.id,
+      payment: { id, amount, method, reference: reference.trim(), kind: order.payments.length === 0 ? 'advance' : 'payment', corrects: null, reason: '' },
+    });
+  };
+  return (
+    <section aria-label={t('payments.takeTitle')} className="flex flex-col gap-3 rounded-xl border-2 border-brand bg-brand-soft/30 p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="font-semibold">
+          {t('payments.takeTitle')} · {order.number}
+        </h3>
+        <span className="text-sm text-muted">
+          {t('money.balance')} <b className="font-display text-warn">{money(balance)}</b>
+        </span>
+      </div>
+      <div key={`${order.id}-${formKey}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+        <NumberField label={t('payments.amount')} kind="money" initialValue={balance} onValueChange={setAmount} />
+        <div role="radiogroup" aria-label={t('payment.method')} className="flex rounded-lg bg-panel p-1 ring-1 ring-line">
+          {METHODS.map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={method === m}
+              onClick={() => setMethod(m)}
+              className={`min-h-10 rounded-md px-3 text-sm font-semibold ${method === m ? 'bg-brand text-on-brand' : 'text-muted hover:text-ink'}`}
+            >
+              {t(`method.${m}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-end gap-3">
+        {method !== 'cash' && (
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
+            {t('payment.reference')}
+            <input value={reference} onChange={(e) => setReference(e.target.value)} autoComplete="off" className="min-h-11 rounded-lg border border-line bg-panel px-3 font-normal" />
+          </label>
+        )}
+        <Button onClick={submit} disabled={working || amount === null || amount <= 0} className="ms-auto min-w-40">
+          <HandCoins aria-hidden="true" size={16} />
+          {t('payments.record')}
+        </Button>
+      </div>
+      {problem && <p className="text-sm text-danger">{problem}</p>}
+      {done !== null && !problem && (
+        <p role="status" className="text-sm font-semibold text-ok">
+          {L(`${money(done)} জমা হয়েছে`, `${money(done)} recorded`)}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function CollectCard({ id }: { id: string }) {
+  const { money, number, date } = useI18n();
+  const L = useL();
+  const [, pick] = usePicked();
+  const [dialog, setDialog] = useState<MoneyDialog>(null);
+  const c = useCustomerMoney(id);
+  const model = c.models.get(id);
+  const others = useActions(c.picked).filter((a) => a.kind !== 'take');
+  return (
+    <aside aria-label={c.customer?.name ?? ''} className={SIDE}>
+      <CardHeader customerId={c.picked.customerId} phone={c.customer?.phone ?? null} onClose={() => pick(null)}>
+        <div className="text-end">
+          <p className="text-xs text-muted">{L('মোট বাকি', 'Owes in all')}</p>
+          <p className="font-display text-2xl font-bold leading-tight text-warn">{money(c.owed)}</p>
+        </div>
+      </CardHeader>
+      <div className="relative flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4">
+        <CollectForm key={id} order={c.picked} />
+        {model && (
+          <details className="rounded-xl border border-line">
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-2.5">
+              <span className="font-semibold">{L('হিসাবের খুঁটিনাটি', 'Price breakdown')}</span>
+              <span className="text-sm text-muted">
+                {money(model.paid)} / {money(model.total)}
+              </span>
+              <span className="ms-auto flex gap-1">
+                {others.map((a) => (
+                  <button
+                    key={a.kind}
+                    type="button"
+                    title={a.label}
+                    aria-label={a.label}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setDialog({ kind: a.kind, order: c.picked });
+                    }}
+                    className="grid size-9 place-items-center rounded-lg text-muted ring-1 ring-line hover:bg-surface hover:text-ink"
+                  >
+                    <a.icon size={16} />
+                  </button>
+                ))}
+              </span>
+            </summary>
+            <div className="border-t border-line px-3 py-2">
+              <Breakdown model={model} />
+            </div>
+          </details>
+        )}
+        {c.orders.length > 1 && (
+          <div className="flex flex-col gap-2">
+            <h3 className="text-xs font-semibold text-muted">
+              {L('এই কাস্টমারের অর্ডার', 'This customer’s orders')} · {number(c.orders.length)}
+            </h3>
+            <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
+              {c.orders.map((o) => {
+                const m = moneySummary(o);
+                const on = o.id === id;
+                return (
+                  <li key={o.id}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => pick(o.id)}
+                      className={`flex w-full flex-col gap-1.5 rounded-xl border p-3 text-start ${on ? 'border-brand bg-brand-soft/40 ring-1 ring-brand' : 'border-line hover:bg-surface'}`}
+                    >
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold">{o.number}</span>
+                        <span className={`font-display font-bold ${m.balance > 0 ? 'text-warn' : 'text-ok'}`}>{m.balance > 0 ? money(m.balance) : L('পরিশোধিত', 'Paid')}</span>
+                      </span>
+                      <PaidBar paid={m.paid} total={m.total} />
+                      <span className="text-xs text-muted">{date(o.createdAt.slice(0, 10))}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        <div className="flex flex-col">
+          <h3 className="text-xs font-semibold text-muted">{L('সব জমা ও ফেরত', 'Every payment and refund')}</h3>
+          {c.timeline.length === 0 ? (
+            <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
+          ) : (
+            <ul className="m-0 list-none divide-y divide-line p-0">
+              {c.timeline.map((e) => (
+                <EntryLine key={e.payment.id} e={e} showOrder onCorrect={() => setDialog({ kind: 'correct', order: e.order, payment: e.payment })} />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <DialogHost dialog={dialog} close={() => setDialog(null)} />
+    </aside>
+  );
+}
+
+/* ---------------------------------------------------------------- variants ---------------------------------------------------------------- */
+
+export function VariantB() {
+  return <DueList side={(id) => <StackCard id={id} />} />;
+}
+export function VariantC() {
+  return <DueList side={(id) => <StatementCard id={id} />} />;
+}
+export function VariantD() {
+  return <DueList side={(id) => <ReceiptCard id={id} />} />;
+}
 export function VariantE() {
-  return <VariantB side={(id, close) => <CustomerMoneySide id={id} onClose={close} />} />;
+  return <DueList side={(id) => <CollectCard id={id} />} />;
 }
