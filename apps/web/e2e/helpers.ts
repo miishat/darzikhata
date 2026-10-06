@@ -48,20 +48,22 @@ export async function takeFirstOrder(page: Page) {
     await next();
     await page.getByRole('button', { name: 'অর্ডার সেভ করুন' }).click();
   } else {
-    const left = page.getByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    const middle = page.getByRole('region', { name: 'মাপ ও ডিজাইন' });
+    const bar = page.getByRole('region', { name: 'কাস্টমার', exact: true });
+    const middle = page.getByRole('region', { name: 'পোশাক ও মাপ' });
     const right = page.getByRole('region', { name: 'অর্ডারের হিসাব' });
-    await left.getByRole('button', { name: 'নতুন কাস্টমার' }).click();
-    await left.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
-    await left.getByLabel('ফোন', { exact: true }).fill('01799887766');
+    await bar.getByRole('button', { name: 'নতুন কাস্টমার' }).click();
+    await bar.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
+    await bar.getByLabel('ফোন', { exact: true }).fill('01799887766');
 
-    // Shirt and panjabi share field labels, so fill only once the middle column shows the new garment.
+    // Shirt and panjabi share field labels, so fill only once the card shows the new garment.
     const showing = (name: string) => expect(middle.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
-    await left.getByRole('button', { name: '+ শার্ট' }).click();
+    await middle.getByRole('button', { name: '+ শার্ট' }).click();
     await showing('শার্ট ১');
     await middle.getByLabel('সংখ্যা').fill('২');
     await fill(middle, SHIRT);
-    await left.getByRole('button', { name: '+ পাঞ্জাবি' }).click();
+    // Once there is a garment, more are added from the "add garment" tile's list.
+    await middle.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
+    await middle.getByRole('button', { name: '+ পাঞ্জাবি' }).click();
     await showing('পাঞ্জাবি ২');
     await fill(middle, { ...SHIRT, 'ঝুল': '42' });
 

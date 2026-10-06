@@ -26,15 +26,15 @@ describe('Tour targets', () => {
 
   it('marks order entry, including the repeat-order confirmation', async () => {
     const { router, store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
-    await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
+    await screen.findByRole('region', { name: 'পোশাক ও মাপ' });
     expectMarked(['new-customer', 'add-garment', 'advance', 'save-order']);
     const earlier = Object.values(store.getSnapshot().state.orders).find((o) => o.items.some((i) => !i.cancelled && i.measurements))!;
     // The form keeps its draft on the same route, so leave it first; then open each line until one asks for confirmation.
     await act(() => router.navigate('/app/dashboard'));
     await screen.findByRole('region', { name: 'নেওয়ার জন্য রেডি' });
     await act(() => router.navigate(`/app/orders/new?repeat=${earlier.id}`));
-    const left = await screen.findByRole('region', { name: 'কাস্টমার ও পোশাক' });
-    for (const line of within(left).getAllByRole('button', { name: /^\S+ [০-৯]+$/ })) {
+    await screen.findByRole('region', { name: 'পোশাক ও মাপ' });
+    for (const line of within(screen.getByRole('group', { name: 'পোশাক' })).getAllByRole('button', { name: /^\S+ [০-৯]+$/ })) {
       await userEvent.click(line);
       if (screen.queryByRole('checkbox', { name: 'মাপ এখনো ঠিক আছে, কাস্টমার নিশ্চিত করেছেন' })) break;
     }
