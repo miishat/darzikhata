@@ -19,8 +19,9 @@ import { SyncButton, SyncDialog } from './SyncStatus';
 
 export const SIDEBAR_VARIANTS = {
   A: 'Current',
-  B: 'Bigger shop header, readable rail, a line before Accounts & Shop',
-  C: 'Rail names easier to read · shop name in place of the app name',
+  B: 'Shop header in line with the top bar, full-width line under it',
+  C: 'Shop header in line with the top bar, inset line under it',
+  D: 'As B, and the rail gets the line too',
 } as const;
 
 const SHOP_KEYS = new Set(['payments', 'settings']);
@@ -38,12 +39,15 @@ interface Look {
   /** Whether Payments and Settings sit under their own Accounts & Shop title. */
   sections: 'title' | 'line' | 'none';
   shop: 'plain' | 'header' | 'card' | 'footer';
-  big?: boolean;
+  /** The line under the shop header, level with the top bar's bottom edge. */
+  header: 'full' | 'inset';
+  railLine: boolean;
 }
 
-const LOOKS: Record<'B' | 'C', Look> = {
-  B: { railNames: 'readable', sections: 'line', shop: 'header', big: true },
-  C: { railNames: 'readable', sections: 'title', shop: 'header' },
+const LOOKS: Record<'B' | 'C' | 'D', Look> = {
+  B: { railNames: 'readable', sections: 'line', shop: 'header', header: 'full', railLine: false },
+  C: { railNames: 'readable', sections: 'line', shop: 'header', header: 'inset', railLine: false },
+  D: { railNames: 'readable', sections: 'line', shop: 'header', header: 'full', railLine: true },
 };
 
 function useScopeName() {
@@ -56,7 +60,7 @@ function useScopeName() {
 }
 
 /** The shop name in one of the looks; it opens the branch menu when there is more than one branch. */
-function ShopBlock({ look, big }: { look: Look['shop']; big?: boolean }) {
+function ShopBlock({ look }: { look: Look['shop'] }) {
   const { t } = useI18n();
   const { shopName, scopeName, canSwitch } = useScopeName();
   const [open, setOpen] = useState(false);
@@ -71,11 +75,11 @@ function ShopBlock({ look, big }: { look: Look['shop']; big?: boolean }) {
         {chevron}
       </span>
     ) : look === 'header' ? (
-      <span className={`flex w-full items-center px-1 ${big ? 'gap-3' : 'gap-2.5'}`}>
-        <BrandMark size={big ? 48 : 40} className="shrink-0" />
+      <span className="flex w-full items-center gap-2.5 px-1">
+        <BrandMark size={36} className="shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className={`block truncate font-display font-bold leading-tight ${big ? 'text-xl' : 'text-lg'}`}>{shopName}</span>
-          <span className={`block truncate text-muted ${big ? 'mt-0.5 text-sm' : 'text-xs'}`}>
+          <span className="block truncate font-display text-lg font-bold leading-tight">{shopName}</span>
+          <span className="block truncate text-xs text-muted">
             {scopeName} · {t('app.name')} <span className="font-semibold text-accent">{t('app.demo')}</span>
           </span>
         </span>
@@ -130,7 +134,7 @@ function ShopBlock({ look, big }: { look: Look['shop']; big?: boolean }) {
 // Kept outside the component so switching variants keeps the rail open or closed.
 let narrowMemory = false;
 
-export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C' }) {
+export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C' | 'D' }) {
   const look = LOOKS[variant];
   const { t, number, label } = useI18n();
   const l = useL();
@@ -252,9 +256,9 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
 
   if (narrow) {
     return (
-      <aside className={`no-print sticky top-0 flex h-dvh shrink-0 flex-col gap-3 border-r border-line bg-panel px-2 py-4 ${look.railNames === 'readable' ? 'w-28' : look.railNames === 'small' ? 'w-24' : 'w-20'}`}>
+      <aside className={`no-print sticky top-0 flex h-dvh shrink-0 flex-col gap-3 border-r border-line bg-panel px-2 pb-4 ${look.railNames === 'readable' ? 'w-28' : look.railNames === 'small' ? 'w-24' : 'w-20'}`}>
         {edgeToggle}
-        <div className="flex justify-center">
+        <div className={`flex h-14 shrink-0 items-center justify-center ${look.railLine ? '-mx-2 border-b border-line' : ''}`}>
           <BrandMark size={36} />
         </div>
         <nav aria-label={t('nav.main')} className={`-m-1 flex flex-1 flex-col overflow-y-auto p-1 pt-2 ${look.railNames === 'none' ? 'gap-2.5' : 'gap-2'}`}>
@@ -292,7 +296,7 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
   }
 
   return (
-    <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 py-4">
+    <aside className="no-print sticky top-0 flex h-dvh w-64 shrink-0 flex-col gap-3 border-r border-line bg-panel px-3 pb-4">
       {edgeToggle}
       {look.shop !== 'header' && (
         <div className="flex items-center gap-2.5 px-1">
@@ -301,8 +305,14 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
           <span className="rounded bg-accent/15 px-1.5 text-xs font-semibold text-accent">{t('app.demo')}</span>
         </div>
       )}
-      {look.shop !== 'footer' && <ShopBlock look={look.shop} big={look.big} />}
-      <nav aria-label={t('nav.main')} className="-m-1 flex flex-1 flex-col gap-1 overflow-y-auto p-1">
+      {look.shop !== 'footer' && (
+        <div className={`flex h-14 shrink-0 items-center border-b border-line ${look.header === 'full' ? '-mx-3 px-3' : 'mx-1'}`}>
+          <div className="min-w-0 flex-1">
+            <ShopBlock look={look.shop} />
+          </div>
+        </div>
+      )}
+      <nav aria-label={t('nav.main')} className="-m-1 mt-2 flex flex-1 flex-col gap-1 overflow-y-auto p-1">
         {main.map(wideLink)}
         {look.sections === 'title' && shop.length > 0 && <p className="mt-3 px-3 text-xs font-semibold text-muted">{t('nav.section.shop')}</p>}
         {look.sections === 'line' && shop.length > 0 && <hr className="mx-3 my-2 border-line" />}

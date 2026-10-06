@@ -35,7 +35,7 @@ export function DesktopShell({ role }: { role: Role }) {
   return (
     <div className="flex min-h-dvh">
       {variant === 'A' && <DesktopSidebar role={role} />}
-      {variant !== 'A' && <SidebarProto role={role} variant={variant as 'B' | 'C'} />}
+      {variant !== 'A' && <SidebarProto role={role} variant={variant as 'B' | 'C' | 'D'} />}
       <PrototypeSwitcher variants={SIDEBAR_VARIANTS} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
