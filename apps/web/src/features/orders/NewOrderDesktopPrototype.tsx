@@ -9,6 +9,11 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { TextField } from '../../ui/TextField';
+import { NumberField } from '../../ui/NumberField';
+import { SelectField } from '../../ui/SelectField';
+import { TextAreaField } from '../../ui/TextAreaField';
+import { directoryRows } from '../customers/directoryView';
+import { PhotoPicker } from './PhotoPicker';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import type { DraftItem } from './draft';
 import { CustomerPicker } from './entry/CustomerPicker';
@@ -24,10 +29,10 @@ import type { OrderEntry } from './useOrderEntry';
 
 export const NEW_ORDER_VARIANTS = {
   A: 'Current three columns',
-  B: 'Full-height cards',
-  C: 'Garment tabs + receipt',
-  D: 'Steps',
-  E: 'One long page',
+  B: 'Garment tabs + receipt (as picked)',
+  C: 'Tile tabs, split editor',
+  D: 'Customer facts, short receipt',
+  E: 'Pill tabs, section jumps, paper receipt',
 } as const;
 
 interface Props {
@@ -344,49 +349,6 @@ function GarmentRow({ f, item, compact = false }: { f: Form; item: DraftItem; co
   );
 }
 
-/** B: the current three columns, as full-height cards that scroll inside, money and save pinned at the bottom right. */
-export function VariantB(props: Props) {
-  const f = useForm(props);
-  const { t } = useI18n();
-  return (
-    <div className="flex flex-col gap-3">
-      <PageHead f={f} />
-      <div className={`grid grid-cols-[300px_minmax(0,1fr)_320px] gap-4 h-[calc(100dvh-9rem)] min-h-96`}>
-        <section aria-label={t('entry.left')} className={CARD}>
-          <div className="border-b border-line p-4">
-            <CustomerPicker entry={f.entry} errors={f.errors} card />
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto p-2">
-            <h2 className="px-2 pt-1 text-sm font-semibold text-muted">{t('entry.itemsHeading')}</h2>
-            {f.items.map((item) => (
-              <GarmentRow key={item.key} f={f} item={item} />
-            ))}
-          </div>
-          <div className="border-t border-line p-3">
-            <AddChips f={f} />
-          </div>
-        </section>
-        <section aria-label={t('entry.middle')} className={CARD}>
-          <div className="min-h-0 flex-1 overflow-auto p-5">
-            {f.chosen ? <GarmentEditor f={f} item={f.chosen} /> : <EmptyGarment f={f} />}
-          </div>
-        </section>
-        <section aria-label={t('entry.summary')} className={CARD}>
-          <div className="min-h-0 flex-1 overflow-auto p-4">
-            <MoneyFields entry={f.entry} errors={f.errors} />
-          </div>
-          <div className="flex flex-col gap-3 border-t border-line bg-surface/50 p-4">
-            <DraftSummary totals={f.entry.totals} desktop />
-            {f.alert}
-            <SaveButtons f={f} />
-          </div>
-        </section>
-      </div>
-      {f.discardDialog}
-    </div>
-  );
-}
-
 function EmptyGarment({ f }: { f: Form }) {
   return (
     <div className="grid h-full place-items-center">
@@ -401,8 +363,8 @@ function EmptyGarment({ f }: { f: Form }) {
   );
 }
 
-/** C: customer strip on top, garments as tabs over one big editor, and a receipt on the right that fills in as you type. */
-export function VariantC(props: Props) {
+/** B (was C): customer strip on top, garments as tabs over one big editor, and a receipt on the right that fills in as you type. */
+export function VariantB(props: Props) {
   const f = useForm(props);
   const { t, money, label } = useI18n();
   const [adding, setAdding] = useState(false);
@@ -514,184 +476,514 @@ export function VariantC(props: Props) {
   );
 }
 
-/** D: one card with steps down the side (customer, each garment, money); Back and Next at the bottom with the total always in view. */
-export function VariantD(props: Props) {
-  const f = useForm(props);
-  const { t, money, number } = useI18n();
-  const [step, setStep] = useState<string>(() => (props.entry.draft.customer ? (f.items[0]?.key ?? 'money') : 'customer'));
-  const order = ['customer', ...f.items.map((i) => i.key), 'money'];
-  // A garment just added becomes the step.
-  const current = step !== 'customer' && step !== 'money' && !f.items.some((i) => i.key === step) ? 'money' : step;
-  const at = order.indexOf(current);
-  const go = (key: string) => {
-    setStep(key);
-    if (key !== 'customer' && key !== 'money') f.setChosenKey(key);
-  };
-  const item = f.items.find((i) => i.key === current) ?? null;
-  const customer = f.entry.draft.customer;
-  const { state } = useSnapshot();
-  const customerName = customer?.kind === 'existing' ? state.customers[customer.customerId]?.name : customer?.kind === 'new' ? customer.name : '';
-  const stepButton = (key: string, n: number, name: string, sub: ReactNode, done: boolean) => (
-    <button
-      key={key}
-      type="button"
-      aria-current={key === current ? 'step' : undefined}
-      onClick={() => go(key)}
-      className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-start focus-visible:outline-2 focus-visible:outline-focus ${
-        key === current ? 'bg-brand-soft' : 'hover:bg-surface'
-      }`}
-    >
-      <span
-        className={`grid size-7 shrink-0 place-items-center rounded-full text-sm font-bold ${
-          done ? 'bg-ok text-white' : key === current ? 'bg-brand text-white' : 'bg-surface text-muted ring-1 ring-inset ring-line'
-        }`}
+/* ---------- Variations of the picked layout (B) ---------- */
+
+function AddMenu({ f, tone = 'link' }: { f: Form; tone?: 'link' | 'tile' }) {
+  const { t, label } = useI18n();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative" onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={
+          tone === 'tile'
+            ? 'flex h-full min-h-14 items-center gap-2 rounded-xl border-2 border-dashed border-line px-4 text-sm font-semibold text-brand-strong hover:border-brand hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus'
+            : 'inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-sm font-semibold text-brand-strong hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus'
+        }
       >
-        {done ? <Check aria-hidden="true" size={16} /> : number(n)}
-      </span>
-      <span className="flex min-w-0 flex-col">
-        <span className={`truncate font-semibold ${key === current ? 'text-brand-strong' : ''}`}>{name}</span>
-        <span className="truncate text-xs text-muted">{sub}</span>
-      </span>
-    </button>
+        <Plus aria-hidden="true" size={16} />
+        {t('entry.addGarment')}
+      </button>
+      {open && (
+        <div className="absolute start-0 top-full z-30 mt-1 flex w-48 flex-col rounded-xl border border-line bg-panel-raised p-1 shadow-lg">
+          {f.templates.map((tpl) => (
+            <button
+              key={tpl.id}
+              type="button"
+              onClick={() => {
+                f.add(tpl.id);
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-start hover:bg-surface"
+            >
+              <Shirt aria-hidden="true" size={16} className="text-muted" />
+              {label(tpl.name)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DOT = { ok: 'bg-ok', warn: 'bg-warn', none: 'bg-line' } as const;
+
+/** Garments as tiles: name, wearer, status and price, the chosen one outlined. */
+function TileTabs({ f }: { f: Form }) {
+  const { t, money } = useI18n();
+  return (
+    <div role="tablist" aria-label={t('entry.itemsHeading')} className="flex flex-wrap items-stretch gap-2 border-b border-line p-3">
+      {f.items.map((item) => {
+        const s = f.status(item);
+        const on = item.key === f.chosenKey;
+        return (
+          <button
+            key={item.key}
+            role="tab"
+            aria-selected={on}
+            onClick={() => f.setChosenKey(item.key)}
+            className={`flex min-w-44 items-center gap-3 rounded-xl px-3 py-2 text-start ring-inset focus-visible:outline-2 focus-visible:outline-focus ${
+              on ? 'bg-brand-soft ring-2 ring-brand' : 'bg-surface/60 ring-1 ring-line hover:bg-surface'
+            }`}
+          >
+            <span className={`grid size-9 shrink-0 place-items-center rounded-lg bg-panel ${on ? 'text-brand-strong' : 'text-muted'}`}>
+              <Shirt aria-hidden="true" size={18} />
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="flex items-baseline gap-2">
+                <span className={`truncate font-bold ${on ? 'text-brand-strong' : ''}`}>{f.title(item)}</span>
+                <span className="text-sm text-muted">{item.price === null ? '' : money(item.price * item.quantity)}</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-muted">
+                <span aria-hidden="true" className={`size-2 rounded-full ${DOT[s.tone]}`} />
+                {s.text}
+                {item.wearer && <span>· {item.wearer}</span>}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+      <AddMenu f={f} tone="tile" />
+    </div>
+  );
+}
+
+/** Garments as rounded pills in a soft track, like the view switches elsewhere. */
+function PillTabs({ f, trailing }: { f: Form; trailing?: ReactNode }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
+      <div role="tablist" aria-label={t('entry.itemsHeading')} className="flex flex-wrap gap-1 rounded-xl bg-surface p-1">
+        {f.items.map((item) => {
+          const s = f.status(item);
+          const on = item.key === f.chosenKey;
+          return (
+            <button
+              key={item.key}
+              role="tab"
+              aria-selected={on}
+              onClick={() => f.setChosenKey(item.key)}
+              className={`flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-focus ${
+                on ? 'bg-panel font-bold text-ink shadow-sm' : 'text-muted hover:text-ink'
+              }`}
+            >
+              <span aria-hidden="true" className={`size-2 rounded-full ${DOT[s.tone]}`} />
+              {f.title(item)}
+            </button>
+          );
+        })}
+      </div>
+      <AddMenu f={f} />
+      {trailing}
+    </div>
+  );
+}
+
+/** The editor in two columns: measurements on the left; wearer, dates, price, notes and photos on the right. */
+function SplitEditor({ f, item }: { f: Form; item: DraftItem }) {
+  const { t } = useI18n();
+  const { entry, errors } = f;
+  const errorText = useErrorText(errors);
+  const at = `items.${item.key}`;
+  return (
+    <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px]">
+      <div className="min-h-0 overflow-auto p-5">
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <h2 className="me-auto font-display text-xl font-bold">{f.title(item)}</h2>
+          {item.measurements.kind === 'new' && (
+            <SourceSwitch
+              value={item.measurements.source}
+              onChange={(source) => {
+                const m = item.measurements;
+                if (m.kind === 'new') entry.updateItem(item.key, { measurements: { ...m, source } });
+              }}
+            />
+          )}
+          <ItemHeader key={`${item.key}:header`} entry={entry} item={item} errors={errors} />
+        </div>
+        <ItemMeasurements key={`${item.key}:measurements`} entry={entry} item={item} errors={errors} />
+      </div>
+      <div className="flex min-h-0 flex-col gap-3 overflow-auto border-s border-line bg-surface/40 p-5">
+        <TextField label={t('entry.wearer')} value={item.wearer} onChange={(e) => entry.updateItem(item.key, { wearer: e.target.value })} autoComplete="off" />
+        <div className="grid grid-cols-2 gap-3">
+          <TextField
+            label={t('entry.deliveryDate')}
+            type="date"
+            value={item.deliveryDate}
+            onChange={(e) => entry.updateItem(item.key, { deliveryDate: e.target.value })}
+            error={errorText(`${at}.deliveryDate`)}
+          />
+          <TextField
+            label={t('entry.trialDate')}
+            type="date"
+            value={item.trialDate}
+            onChange={(e) => entry.updateItem(item.key, { trialDate: e.target.value })}
+            error={errorText(`${at}.trialDate`)}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <NumberField
+            label={t('entry.price')}
+            kind="money"
+            initialValue={item.price}
+            onValueChange={(price) => entry.updateItem(item.key, { price })}
+            error={errorText(`${at}.price`)}
+          />
+          {entry.canAssign && (
+            <SelectField
+              label={t('work.worker')}
+              value={item.assignedTo ?? ''}
+              onChange={(id) => entry.updateItem(item.key, { assignedTo: id === '' ? null : id })}
+              options={[{ value: '', label: t('work.nobody') }, ...entry.workers.map((w) => ({ value: w.id, label: w.name }))]}
+            />
+          )}
+        </div>
+        <TextAreaField label={t('entry.designNotes')} value={item.designNotes} onChange={(e) => entry.updateItem(item.key, { designNotes: e.target.value })} />
+        <TextField label={t('entry.fabricNote')} value={item.fabricNote} onChange={(e) => entry.updateItem(item.key, { fabricNote: e.target.value })} autoComplete="off" />
+        <PhotoPicker photoIds={item.photoIds} onChange={(photoIds) => entry.updateItem(item.key, { photoIds })} />
+      </div>
+    </div>
+  );
+}
+
+/** The receipt as in B, with the money fields passed in. */
+function Receipt({ f, children }: { f: Form; children: ReactNode }) {
+  const { t, money } = useI18n();
+  return (
+    <aside aria-label={t('entry.summary')} className={`${CARD} w-[340px] shrink-0`}>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <ul className="flex flex-col px-5 py-3">
+          {f.items.length === 0 && <li className="py-2 text-sm text-muted">{f.L('এখনো কোনো পোশাক নেই', 'No garments yet')}</li>}
+          {f.items.map((item) => (
+            <li key={item.key} className="flex items-baseline justify-between gap-2 border-b border-dotted border-line py-2 text-sm">
+              <span>
+                {f.title(item)}
+                {item.quantity > 1 && <span className="text-muted"> × {item.quantity}</span>}
+              </span>
+              <span className="font-semibold">{item.price === null ? '–' : money(item.price * item.quantity)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="px-5 pb-4">{children}</div>
+      </div>
+      <div className="flex flex-col gap-3 border-t border-line p-4">
+        <DraftSummary totals={f.entry.totals} desktop />
+        {f.alert}
+        <SaveButtons f={f} />
+      </div>
+    </aside>
+  );
+}
+
+/** Advance first, with the method as a switch; reference only for non-cash; discount and order notes only when asked for. */
+function ShortMoney({ f }: { f: Form }) {
+  const { t } = useI18n();
+  const { entry, errors } = f;
+  const errorText = useErrorText(errors);
+  const { discount, advance, notes } = entry.draft;
+  const [showDiscount, setShowDiscount] = useState(discount.amount !== null && discount.amount > 0);
+  const [showNotes, setShowNotes] = useState(notes !== '');
+  const methods = ['cash', 'bkash', 'nagad', 'bank'] as const;
+  const link = 'inline-flex items-center gap-1 text-sm font-semibold text-brand-strong hover:underline';
+  return (
+    <div className="flex flex-col gap-3">
+      <div data-tour="advance">
+        <NumberField
+          label={t('entry.advance')}
+          kind="money"
+          initialValue={advance.amount}
+          onValueChange={(amount) => entry.update({ advance: { ...entry.draft.advance, amount } })}
+          onInvalidChange={(bad) => entry.setUnreadable('advance', bad)}
+          error={errorText('advance.amount')}
+        />
+      </div>
+      <div role="group" aria-label={t('payment.method')} className="grid grid-cols-4 gap-1 rounded-xl bg-surface p-1">
+        {methods.map((m) => (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={advance.method === m}
+            onClick={() => entry.update({ advance: { ...entry.draft.advance, method: m } })}
+            className={`min-h-9 rounded-lg text-sm ${advance.method === m ? 'bg-panel font-bold shadow-sm' : 'text-muted hover:text-ink'}`}
+          >
+            {t(`method.${m}`)}
+          </button>
+        ))}
+      </div>
+      {advance.method !== 'cash' && (
+        <TextField
+          label={t('payment.reference')}
+          value={advance.reference}
+          onChange={(e) => entry.update({ advance: { ...entry.draft.advance, reference: e.target.value } })}
+          autoComplete="off"
+        />
+      )}
+      {showDiscount && (
+        <div className="grid grid-cols-2 gap-2">
+          <NumberField
+            label={t('entry.discount')}
+            kind="money"
+            initialValue={discount.amount}
+            onValueChange={(amount) => entry.update({ discount: { ...entry.draft.discount, amount } })}
+            onInvalidChange={(bad) => entry.setUnreadable('discount', bad)}
+            error={errorText('discount.amount')}
+          />
+          <TextField
+            label={f.L('কারণ', 'Reason')}
+            value={discount.reason}
+            onChange={(e) => entry.update({ discount: { ...entry.draft.discount, reason: e.target.value } })}
+            autoComplete="off"
+          />
+        </div>
+      )}
+      {showNotes && <TextAreaField label={t('entry.notes')} value={notes} onChange={(e) => entry.update({ notes: e.target.value })} />}
+      <div className="flex flex-wrap gap-4">
+        {!showDiscount && (
+          <button type="button" className={link} onClick={() => setShowDiscount(true)}>
+            <Plus aria-hidden="true" size={14} />
+            {f.L('ছাড় দিন', 'Add discount')}
+          </button>
+        )}
+        {!showNotes && (
+          <button type="button" className={link} onClick={() => setShowNotes(true)}>
+            <Plus aria-hidden="true" size={14} />
+            {f.L('অর্ডারের নোট', 'Order note')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** What the shop already knows about the chosen customer: what they owe, open orders, last visit. */
+function CustomerFacts({ f }: { f: Form }) {
+  const { money, number, date } = useI18n();
+  const scoped = useScopedState();
+  const customer = f.entry.draft.customer;
+  if (customer?.kind !== 'existing') return null;
+  const c = scoped.customers[customer.customerId];
+  if (!c) return null;
+  const [row] = directoryRows([c], Object.values(scoped.orders));
+  if (!row) return null;
+  const fact = (label: string, value: string, tone = '') => (
+    <div className="flex flex-col rounded-xl bg-surface px-3 py-1.5">
+      <span className="text-xs text-muted">{label}</span>
+      <span className={`font-display font-bold ${tone}`}>{value}</span>
+    </div>
   );
   return (
+    <div className="ms-auto flex gap-2">
+      {fact(f.L('আগের বাকি', 'Owes'), money(row.owed), row.owed > 0 ? 'text-warn' : 'text-ok')}
+      {fact(f.L('চলমান অর্ডার', 'Open orders'), number(row.openCount))}
+      {fact(f.L('শেষ এসেছেন', 'Last visit'), row.lastVisit ? date(row.lastVisit.slice(0, 10)) : '–')}
+    </div>
+  );
+}
+
+function TopStrip({ f, children }: { f: Form; children?: ReactNode }) {
+  const { t } = useI18n();
+  return (
+    <section aria-label={t('entry.step.customer')} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+      <Link to="/app/orders" aria-label={t('entry.backToOrders')} className="grid size-9 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink">
+        <ArrowLeft aria-hidden="true" size={18} />
+      </Link>
+      <h1 className="font-display text-xl font-bold">{t('nav.newOrder')}</h1>
+      <span className="h-8 w-px bg-line" />
+      <CustomerStrip f={f} />
+      {children}
+    </section>
+  );
+}
+
+/** C: garments as tiles with status and price; the editor splits measurements from the rest so both are in view. */
+export function VariantC(props: Props) {
+  const f = useForm(props);
+  const { t } = useI18n();
+  return (
     <div className={`flex flex-col gap-3 ${FULL}`}>
-      <PageHead f={f} />
-      <section className={`${CARD} min-h-0 flex-1 flex-row`}>
-        <nav aria-label={f.L('ধাপ', 'Steps')} className="flex w-72 shrink-0 flex-col gap-1 overflow-auto border-e border-line bg-surface/40 p-3">
-          {stepButton('customer', 1, t('entry.step.customer'), customerName || f.L('বেছে নিন', 'Choose'), !!customerName)}
-          {f.items.map((it, i) => {
-            const s = f.status(it);
-            return stepButton(it.key, i + 2, f.title(it), <StatusPill {...s} />, s.tone === 'ok')
-          })}
-          <div className="px-3 py-2">
-            <AddChips f={{ ...f, add: (id) => { const key = f.entry.addItem(id); if (key) go(key); } }} />
-          </div>
-          {stepButton('money', f.items.length + 2, f.L('টাকা ও সেভ', 'Money and Save'), money(f.entry.totals.total), false)}
-        </nav>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-auto p-6">
-            <p className="mb-1 text-sm text-muted">{t('entry.stepOf', { n: number(at + 1), total: number(order.length) })}</p>
-            {current === 'customer' && (
-              <div className="flex max-w-xl flex-col gap-4">
-                <h2 className="font-display text-2xl font-bold">{t('entry.step.customer')}</h2>
-                <CustomerPicker entry={f.entry} errors={f.errors} card />
-              </div>
-            )}
-            {item && <GarmentEditor f={f} item={item} />}
-            {current === 'money' && (
-              <div className="grid max-w-4xl gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="flex flex-col gap-4">
-                  <h2 className="font-display text-2xl font-bold">{f.L('টাকা ও সেভ', 'Money and Save')}</h2>
-                  <MoneyFields entry={f.entry} errors={f.errors} />
-                </div>
-                <div className="flex flex-col gap-3 self-start rounded-xl bg-surface p-4">
-                  <DraftSummary totals={f.entry.totals} desktop />
-                  {f.alert}
-                  <SaveButtons f={f} />
-                </div>
-              </div>
-            )}
-          </div>
-          <footer className="flex items-center gap-3 border-t border-line px-6 py-3">
-            <Button variant="secondary" disabled={at <= 0} onClick={() => go(order[at - 1]!)}>
-              <ChevronLeft aria-hidden="true" size={16} />
-              {t('entry.back')}
-            </Button>
-            <span className="ms-auto flex items-center gap-2 text-sm text-muted">
-              <Wallet aria-hidden="true" size={16} />
-              {t('money.total')} <strong className="font-display text-lg text-ink">{money(f.entry.totals.total)}</strong>
-              <span className="mx-1">·</span>
-              {t('entry.balanceLeft')} <strong className="font-display text-lg text-warn">{money(f.entry.totals.balance)}</strong>
-            </span>
-            {current === 'money' ? (
-              <Button disabled={f.entry.saving} onClick={() => void f.save()}>
-                {t('entry.save')}
-              </Button>
-            ) : (
-              <Button onClick={() => go(order[at + 1]!)}>
-                {t('entry.next')}
-                <ChevronRight aria-hidden="true" size={16} />
-              </Button>
-            )}
-          </footer>
-        </div>
-      </section>
+      <TopStrip f={f} />
+      <div className="flex min-h-0 flex-1 gap-4">
+        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
+          <TileTabs f={f} />
+          {f.chosen ? (
+            <SplitEditor key={f.chosen.key} f={f} item={f.chosen} />
+          ) : (
+            <div className="min-h-0 flex-1 p-5">
+              <EmptyGarment f={f} />
+            </div>
+          )}
+        </section>
+        <Receipt f={f}>
+          <MoneyFields entry={f.entry} errors={f.errors} />
+        </Receipt>
+      </div>
       {f.discardDialog}
     </div>
   );
 }
 
-/** E: everything on one scrolling page, every garment open in its own card, with a summary card that stays in view. */
+/** D: the customer bar shows what they owe and their open orders; the receipt asks for the advance first and hides discount and notes until needed. */
+export function VariantD(props: Props) {
+  const f = useForm(props);
+  const { t } = useI18n();
+  return (
+    <div className={`flex flex-col gap-3 ${FULL}`}>
+      <TopStrip f={f}>
+        <CustomerFacts f={f} />
+      </TopStrip>
+      <div className="flex min-h-0 flex-1 gap-4">
+        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
+          <PillTabs f={f} />
+          <div className="min-h-0 flex-1 overflow-auto p-5">{f.chosen ? <GarmentEditor f={f} item={f.chosen} /> : <EmptyGarment f={f} />}</div>
+        </section>
+        <Receipt f={f}>
+          <ShortMoney f={f} />
+        </Receipt>
+      </div>
+      {f.discardDialog}
+    </div>
+  );
+}
+
+/** E: pill tabs with jump links to each part of the garment, and a paper-style receipt with the balance large at the bottom. */
 export function VariantE(props: Props) {
   const f = useForm(props);
   const { t, money } = useI18n();
   const id = useId();
+  const parts = [
+    { key: 'measure', label: f.L('মাপ', 'Measurements') },
+    { key: 'design', label: f.L('ডিজাইন ও ছবি', 'Design and photos') },
+    { key: 'dates', label: f.L('তারিখ ও দাম', 'Dates and price') },
+  ];
+  const jump = (key: string) => document.getElementById(`${id}-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const item = f.chosen;
+  const heading = 'text-sm font-bold text-muted';
   return (
-    <div className={`flex gap-4 ${FULL}`}>
-      <div className={`${CARD} min-w-0 flex-1`}>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-line bg-panel/95 px-6 py-4 backdrop-blur">
-            <PageHead f={f} />
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-muted">
-                <UserRound aria-hidden="true" size={18} />
-              </span>
-              <CustomerStrip f={f} />
+    <div className={`flex flex-col gap-3 ${FULL}`}>
+      <TopStrip f={f} />
+      <div className="flex min-h-0 flex-1 gap-4">
+        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
+          <PillTabs
+            f={f}
+            trailing={
+              item && (
+                <nav aria-label={f.L('এই পোশাকের অংশ', 'Parts of this garment')} className="ms-auto flex gap-1">
+                  {parts.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => jump(p.key)}
+                      className="rounded-full px-3 py-1 text-sm text-muted ring-1 ring-inset ring-line hover:bg-surface hover:text-ink"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </nav>
+              )
+            }
+          />
+          <div className="min-h-0 flex-1 overflow-auto p-5">
+            {item ? (
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-wrap items-end gap-3">
+                  <h2 className="me-auto font-display text-xl font-bold">{f.title(item)}</h2>
+                  <TextField
+                    label={t('entry.wearer')}
+                    className="w-56"
+                    value={item.wearer}
+                    onChange={(e) => f.entry.updateItem(item.key, { wearer: e.target.value })}
+                    autoComplete="off"
+                  />
+                  {item.measurements.kind === 'new' && (
+                    <SourceSwitch
+                      value={item.measurements.source}
+                      onChange={(source) => {
+                        const m = item.measurements;
+                        if (m.kind === 'new') f.entry.updateItem(item.key, { measurements: { ...m, source } });
+                      }}
+                    />
+                  )}
+                  <ItemHeader key={`${item.key}:header`} entry={f.entry} item={item} errors={f.errors} />
+                </div>
+                <section id={`${id}-measure`} className="flex scroll-mt-2 flex-col gap-3">
+                  <h3 className={heading}>{parts[0]!.label}</h3>
+                  <ItemMeasurements key={`${item.key}:measurements`} entry={f.entry} item={item} errors={f.errors} />
+                </section>
+                <section id={`${id}-design`} className="flex scroll-mt-2 flex-col gap-3 border-t border-line pt-5">
+                  <h3 className={heading}>{parts[1]!.label}</h3>
+                  <ItemDetails key={`${item.key}:details`} entry={f.entry} item={item} desktop />
+                </section>
+                <section id={`${id}-dates`} className="flex scroll-mt-2 flex-col gap-3 border-t border-line pt-5">
+                  <h3 className={heading}>{parts[2]!.label}</h3>
+                  <ItemSchedule key={`${item.key}:schedule`} entry={f.entry} item={item} errors={f.errors} />
+                </section>
+              </div>
+            ) : (
+              <EmptyGarment f={f} />
+            )}
+          </div>
+        </section>
+        <aside aria-label={t('entry.summary')} className="flex w-[340px] shrink-0 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-line bg-panel shadow-sm">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <div className="border-b-2 border-dashed border-line px-5 py-4 text-center">
+                <p className="font-display text-lg font-bold">{f.L('রসিদ', 'Receipt')}</p>
+                <p className="text-xs text-muted">{f.L('অর্ডার নম্বর সেভ করলে দেওয়া হবে', 'Order number given on save')}</p>
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {f.items.map((it) => (
+                    <tr key={it.key} className="border-b border-dotted border-line">
+                      <td className="px-5 py-2">{f.title(it)}</td>
+                      <td className="py-2 text-center text-muted">×{it.quantity}</td>
+                      <td className="px-5 py-2 text-end font-semibold">{it.price === null ? '–' : money(it.price * it.quantity)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="p-5">
+                <ShortMoney f={f} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 border-t-2 border-dashed border-line px-5 py-3 text-sm">
+              <div className="flex justify-between">
+                <span>{t('money.total')}</span>
+                <span className="font-semibold">{money(f.entry.totals.total)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{t('money.advance')}</span>
+                <span>{money(f.entry.totals.advance)}</span>
+              </div>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="font-semibold">{t('entry.balanceLeft')}</span>
+                <span className="font-display text-2xl font-bold text-warn">{money(f.entry.totals.balance)}</span>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 p-6">
-            {f.items.map((item) => (
-              <section key={item.key} aria-labelledby={`${id}-${item.key}`} className="rounded-2xl border border-line">
-                <div className="flex items-center gap-3 rounded-t-2xl border-b border-line bg-surface/60 px-5 py-3">
-                  <Shirt aria-hidden="true" size={20} className="text-muted" />
-                  <h2 id={`${id}-${item.key}`} className="font-display text-lg font-bold">
-                    {f.title(item)}
-                  </h2>
-                  <StatusPill {...f.status(item)} />
-                  <span className="ms-auto font-semibold">{item.price === null ? '' : money(item.price * item.quantity)}</span>
-                </div>
-                <div className="p-5" onFocusCapture={() => f.setChosenKey(item.key)}>
-                  <GarmentEditor f={f} item={item} heading={false} />
-                </div>
-              </section>
-            ))}
-            <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-line p-6">
-              <p className="font-semibold text-muted">{f.items.length ? t('entry.addAnother') : f.L('কোন পোশাক বানাবেন?', 'What are we making?')}</p>
-              <AddChips f={f} className="justify-center" />
-            </div>
+          {/* A torn paper edge under the receipt. */}
+          <div
+            aria-hidden="true"
+            className="h-3 bg-[length:12px_12px] bg-repeat-x"
+            style={{ backgroundImage: 'linear-gradient(135deg, var(--color-panel) 50%, transparent 50%), linear-gradient(225deg, var(--color-panel) 50%, transparent 50%)' }}
+          />
+          <div className="mt-3 flex flex-col gap-2">
+            {f.alert}
+            <SaveButtons f={f} />
           </div>
-        </div>
+        </aside>
       </div>
-      <aside aria-label={t('entry.summary')} className={`${CARD} w-[320px] shrink-0`}>
-        <div className="flex flex-col gap-1 border-b border-line p-4">
-          {f.items.map((item) => (
-            <a
-              key={item.key}
-              href={`#${id}-${item.key}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(`${id}-${item.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-surface"
-            >
-              <span className="flex items-center gap-2">
-                <span className={`size-2 rounded-full ${f.status(item).tone === 'ok' ? 'bg-ok' : f.status(item).tone === 'warn' ? 'bg-warn' : 'bg-line'}`} />
-                {f.title(item)}
-              </span>
-              <span>{item.price === null ? '–' : money(item.price * item.quantity)}</span>
-            </a>
-          ))}
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto p-4">
-          <MoneyFields entry={f.entry} errors={f.errors} />
-        </div>
-        <div className="flex flex-col gap-3 border-t border-line p-4">
-          <DraftSummary totals={f.entry.totals} desktop />
-          {f.alert}
-          <SaveButtons f={f} />
-        </div>
-      </aside>
       {f.discardDialog}
     </div>
   );
