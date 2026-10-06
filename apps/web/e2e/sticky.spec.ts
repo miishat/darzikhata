@@ -6,7 +6,7 @@ test.beforeEach(({ page }) => {
   test.skip(isPhone(page), 'laptop layout only');
 });
 
-test('the selection bar is on screen as soon as a garment is selected on a long work list', async ({ page }) => {
+test('the selection bar stays in the work card while a long list scrolls inside it', async ({ page }) => {
   await openShop(page, 'রহমান টেইলার্স');
   await page.goto('/app/work?view=list');
   const checkboxes = page.getByRole('tabpanel').getByRole('checkbox');
@@ -21,8 +21,12 @@ test('the selection bar is on screen as soon as a garment is selected on a long 
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(height);
 
+  const list = page.getByRole('tabpanel');
+  await list.hover();
   await page.mouse.wheel(0, 600);
-  await expect.poll(async () => (await bar.boundingBox())!.y + box.height).toBeLessThanOrEqual(height);
+  await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(300);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  expect((await bar.boundingBox())!.y).toBe(box.y);
 });
 
 test('the orders table scrolls inside its card while the page and the panel stay put', async ({ page }) => {
