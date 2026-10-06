@@ -29,8 +29,11 @@ const DOT: Record<string, string> = {
   'needs-attention': 'bg-warn',
 };
 
-/** The header's sync status. It opens the sync dialog: online switch, waiting changes, review and the demo's other device. */
-export function SyncButton({ block = false }: { block?: boolean }) {
+/**
+ * The sync status: a pill, a full-width block (sidebar) or a coloured dot (the folded sidebar rail).
+ * It opens the sync dialog: online switch, waiting changes, review and the demo's other device.
+ */
+export function SyncButton({ block = false, dot = false }: { block?: boolean; dot?: boolean }) {
   const { t, number, dateTime } = useI18n();
   const { sync } = useSnapshot();
   const status = useSyncStatus();
@@ -42,15 +45,18 @@ export function SyncButton({ block = false }: { block?: boolean }) {
         type="button"
         data-tour="sync-status"
         onClick={() => setOpen(true)}
-        aria-label={block ? label : undefined}
+        aria-label={block || dot ? label : undefined}
+        title={dot ? label : undefined}
         className={
-          block
+          dot
+            ? `grid size-11 shrink-0 place-items-center rounded-full ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
+            : block
             ? `flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
             : `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
         }
       >
-        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${DOT[status]}`} />
-        {block ? (
+        <span aria-hidden="true" className={`shrink-0 rounded-full ${dot ? 'size-3' : 'size-2'} ${DOT[status]}`} />
+        {dot ? null : block ? (
           <span className="min-w-0">
             <span className="block truncate">{label}</span>
             <span className="block truncate font-normal">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>

@@ -14,7 +14,48 @@ describe('Desktop sidebar and top bar', () => {
     expect(model.openOrders).toBeGreaterThan(0);
     const orders = nav.getByRole('link', { name: 'অর্ডার' });
     expect(orders.textContent).toContain(toBanglaDigits(String(model.openOrders)));
-    expect(nav.getByText('হিসাব ও দোকান')).toBeTruthy();
+    // Payments and Settings sit below a plain line, with no section title.
+    expect(nav.queryByText('হিসাব ও দোকান')).toBeNull();
+    expect(nav.getAllByRole('separator')).toHaveLength(1);
+  });
+
+  it('shows the shop name, branch and app name in the header above the menu', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    const nav = await screen.findByRole('navigation', { name: 'প্রধান মেনু' });
+    const side = nav.closest('aside')!;
+    expect(side.textContent).toMatch(/দর্জিখাতা/);
+    expect(within(side).getByText(/দর্জিখাতা/).closest('span')!.textContent).toMatch(/·/);
+  });
+
+  it('folds to a rail of icons and short names, keeps every link and count, and remembers it', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    await userEvent.click(await screen.findByRole('button', { name: 'মেনু ছোট করুন' }));
+    expect(screen.getByRole('button', { name: 'মেনু বড় করুন' }).getAttribute('aria-expanded')).toBe('false');
+    expect(window.localStorage.getItem('dk.sidebar.rail')).toBe('1');
+
+    const nav = within(screen.getByRole('navigation', { name: 'প্রধান মেনু' }));
+    // Links keep their full names; the short names are what shows.
+    const work = nav.getByRole('link', { name: 'কাজের তালিকা' });
+    expect(work.textContent).toContain('কাজ');
+    const counts = navCounts(store.getSnapshot().state, new Date().toISOString().slice(0, 10));
+    const late = document.getElementById(work.getAttribute('aria-describedby')!)!;
+    expect(late.textContent).toBe(toBanglaDigits(String(counts.lateGarments)) + ' দেরি');
+    expect(nav.getAllByRole('separator')).toHaveLength(1);
+
+    const side = within(nav.getByRole('link', { name: 'অর্ডার' }).closest('aside')!);
+    expect(side.getByRole('button', { name: /অনলাইন|অফলাইন|দেখতে হবে/ })).toBeTruthy();
+    expect(side.getByRole('button', { name: /ইউজার বদলান/ })).toBeTruthy();
+    expect(side.getByRole('button', { name: 'অ্যাকাউন্ট ও আরও' })).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: 'মেনু বড় করুন' }));
+    expect(window.localStorage.getItem('dk.sidebar.rail')).toBe('0');
+    expect(screen.getByRole('button', { name: 'মেনু ছোট করুন' }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('opens as a rail when it was left folded on this device', async () => {
+    window.localStorage.setItem('dk.sidebar.rail', '1');
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    expect(await screen.findByRole('button', { name: 'মেনু বড় করুন' })).toBeTruthy();
   });
 
   it('keeps only search, language, theme, New Customer and New Order in the top bar', async () => {

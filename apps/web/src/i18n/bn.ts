@@ -30,7 +30,8 @@ export const bn = {
   'nav.newOrder': 'নতুন অর্ডার',
   'nav.main': 'প্রধান মেনু',
   'nav.late': '{count} দেরি',
-  'nav.section.shop': 'হিসাব ও দোকান',
+  'nav.collapse': 'মেনু ছোট করুন',
+  'nav.expand': 'মেনু বড় করুন',
   'nav.branchMenu': 'দোকান ও শাখা',
 
   'sync.online': 'অনলাইন',
