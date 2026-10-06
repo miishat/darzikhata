@@ -19,10 +19,8 @@ import { SyncButton, SyncDialog } from './SyncStatus';
 
 export const SIDEBAR_VARIANTS = {
   A: 'Current',
-  B: 'Rail icons only · shop name under the logo',
+  B: 'Bigger shop header, readable rail, a line before Accounts & Shop',
   C: 'Rail names easier to read · shop name in place of the app name',
-  D: 'One list, no Accounts & Shop · shop in a tinted card',
-  E: 'Readable rail + one list · shop beside you at the bottom',
 } as const;
 
 const SHOP_KEYS = new Set(['payments', 'settings']);
@@ -38,15 +36,14 @@ function useL() {
 interface Look {
   railNames: 'none' | 'small' | 'readable';
   /** Whether Payments and Settings sit under their own Accounts & Shop title. */
-  sections: boolean;
+  sections: 'title' | 'line' | 'none';
   shop: 'plain' | 'header' | 'card' | 'footer';
+  big?: boolean;
 }
 
-const LOOKS: Record<'B' | 'C' | 'D' | 'E', Look> = {
-  B: { railNames: 'none', sections: true, shop: 'plain' },
-  C: { railNames: 'readable', sections: true, shop: 'header' },
-  D: { railNames: 'small', sections: false, shop: 'card' },
-  E: { railNames: 'readable', sections: false, shop: 'footer' },
+const LOOKS: Record<'B' | 'C', Look> = {
+  B: { railNames: 'readable', sections: 'line', shop: 'header', big: true },
+  C: { railNames: 'readable', sections: 'title', shop: 'header' },
 };
 
 function useScopeName() {
@@ -59,7 +56,7 @@ function useScopeName() {
 }
 
 /** The shop name in one of the looks; it opens the branch menu when there is more than one branch. */
-function ShopBlock({ look }: { look: Look['shop'] }) {
+function ShopBlock({ look, big }: { look: Look['shop']; big?: boolean }) {
   const { t } = useI18n();
   const { shopName, scopeName, canSwitch } = useScopeName();
   const [open, setOpen] = useState(false);
@@ -74,11 +71,11 @@ function ShopBlock({ look }: { look: Look['shop'] }) {
         {chevron}
       </span>
     ) : look === 'header' ? (
-      <span className="flex w-full items-center gap-2.5 px-1">
-        <BrandMark size={40} className="shrink-0" />
+      <span className={`flex w-full items-center px-1 ${big ? 'gap-3' : 'gap-2.5'}`}>
+        <BrandMark size={big ? 48 : 40} className="shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-display text-lg font-bold leading-tight">{shopName}</span>
-          <span className="block truncate text-xs text-muted">
+          <span className={`block truncate font-display font-bold leading-tight ${big ? 'text-xl' : 'text-lg'}`}>{shopName}</span>
+          <span className={`block truncate text-muted ${big ? 'mt-0.5 text-sm' : 'text-xs'}`}>
             {scopeName} · {t('app.name')} <span className="font-semibold text-accent">{t('app.demo')}</span>
           </span>
         </span>
@@ -133,7 +130,7 @@ function ShopBlock({ look }: { look: Look['shop'] }) {
 // Kept outside the component so switching variants keeps the rail open or closed.
 let narrowMemory = false;
 
-export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C' | 'D' | 'E' }) {
+export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C' }) {
   const look = LOOKS[variant];
   const { t, number, label } = useI18n();
   const l = useL();
@@ -262,7 +259,7 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
         </div>
         <nav aria-label={t('nav.main')} className={`-m-1 flex flex-1 flex-col overflow-y-auto p-1 pt-2 ${look.railNames === 'none' ? 'gap-2.5' : 'gap-2'}`}>
           {main.map(railLink)}
-          {look.sections && shop.length > 0 && <hr className="mx-3 my-1 border-line" />}
+          {look.sections !== 'none' && shop.length > 0 && <hr className="mx-3 my-1 border-line" />}
           {shop.map(railLink)}
         </nav>
         <div className="flex flex-col items-center gap-2 border-t border-line pt-3">
@@ -304,10 +301,11 @@ export function SidebarProto({ role, variant }: { role: Role; variant: 'B' | 'C'
           <span className="rounded bg-accent/15 px-1.5 text-xs font-semibold text-accent">{t('app.demo')}</span>
         </div>
       )}
-      {look.shop !== 'footer' && <ShopBlock look={look.shop} />}
+      {look.shop !== 'footer' && <ShopBlock look={look.shop} big={look.big} />}
       <nav aria-label={t('nav.main')} className="-m-1 flex flex-1 flex-col gap-1 overflow-y-auto p-1">
         {main.map(wideLink)}
-        {look.sections && shop.length > 0 && <p className="mt-3 px-3 text-xs font-semibold text-muted">{t('nav.section.shop')}</p>}
+        {look.sections === 'title' && shop.length > 0 && <p className="mt-3 px-3 text-xs font-semibold text-muted">{t('nav.section.shop')}</p>}
+        {look.sections === 'line' && shop.length > 0 && <hr className="mx-3 my-2 border-line" />}
         {shop.map(wideLink)}
       </nav>
       <div className="flex flex-col gap-2 border-t border-line pt-3">
