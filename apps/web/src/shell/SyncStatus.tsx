@@ -71,7 +71,7 @@ const ROW = 'flex min-h-14 w-full items-center gap-3 px-3 py-2 text-start focus-
 const TILE = 'flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong';
 
 /** The sync sheet: online switch, sync now, changes to review, and the demo's other device, as settings-style rows. */
-function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
+export function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
   const { t, number, dateTime } = useI18n();
   const store = useStore();
   const { sync, state } = useSnapshot();

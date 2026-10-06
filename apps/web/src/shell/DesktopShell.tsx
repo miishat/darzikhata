@@ -6,6 +6,8 @@ import { Loading } from '../app/guards';
 import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { DesktopSidebar } from './DesktopSidebar';
+import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
+import { SIDEBAR_VARIANTS, SidebarB, SidebarC, SidebarD, SidebarE } from './SidebarPrototype';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitch, ThemeButton } from './ShellParts';
 import { useShortcuts } from './useShortcuts';
@@ -15,6 +17,7 @@ export function DesktopShell({ role }: { role: Role }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const searchInput = useRef<HTMLInputElement>(null);
+  const variant = useVariant(Object.keys(SIDEBAR_VARIANTS));
 
   useShortcuts({
     onSearch: () => {
@@ -31,7 +34,12 @@ export function DesktopShell({ role }: { role: Role }) {
 
   return (
     <div className="flex min-h-dvh">
-      <DesktopSidebar role={role} />
+      {variant === 'A' && <DesktopSidebar role={role} />}
+      {variant === 'B' && <SidebarB role={role} />}
+      {variant === 'C' && <SidebarC role={role} />}
+      {variant === 'D' && <SidebarD role={role} />}
+      {variant === 'E' && <SidebarE role={role} />}
+      <PrototypeSwitcher variants={SIDEBAR_VARIANTS} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
           <GlobalSearch role={role} inputRef={searchInput} />

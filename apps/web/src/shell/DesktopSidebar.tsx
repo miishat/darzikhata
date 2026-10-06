@@ -21,7 +21,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-brand-soft font-semibold text-brand-strong' : 'font-medium text-ink hover:bg-surface'
   }`;
 
-function BranchButton() {
+export function BranchButton() {
   const { t, label } = useI18n();
   const { shopName, branchName } = useShopHeader();
   const { allowed, choice } = useBranchScope();
@@ -66,7 +66,7 @@ function BranchButton() {
   );
 }
 
-function PersonButton() {
+export function PersonButton() {
   const { t, label } = useI18n();
   const current = useCurrentStaff();
   const navigate = useNavigate();
