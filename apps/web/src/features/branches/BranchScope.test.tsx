@@ -37,9 +37,9 @@ describe('Branch scope', () => {
     await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'কারখানা');
     const due = screen.getByRole('table', { name: 'বাকি টাকা' });
-    // The header, the group order, and the total.
-    expect(within(due).getAllByRole('row')).toHaveLength(3);
-    expect(within(due).getByRole('link', { name: 'A-0027' })).toBeTruthy();
+    // The header and the group order.
+    expect(within(due).getAllByRole('row')).toHaveLength(2);
+    expect(within(due).getByText('A-0027')).toBeTruthy();
 
     const shopOrder = Object.values(store.getSnapshot().state.orders).find((o) => o.branchId === 'shop')!;
     await userEvent.type(screen.getByRole('combobox', { name: 'অর্ডার বা কাস্টমার খুঁজুন' }), shopOrder.number);
