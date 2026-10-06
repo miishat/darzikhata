@@ -112,11 +112,11 @@ function DesktopWorkPage() {
               segmented
               label={t('work.view')}
               views={[
-                { value: 'board', label: t('work.view.board'), icon: Columns3 },
                 { value: 'list', label: t('work.view.list'), icon: List },
+                { value: 'board', label: t('work.view.board'), icon: Columns3 },
               ]}
               value={view}
-              onChange={(next) => setView(next === 'list' ? 'list' : 'board')}
+              onChange={(next) => setView(next === 'board' ? 'board' : 'list')}
               panelId={panelId}
             />
             <Link to={`/print/work${printSearch ? `?${printSearch}` : ''}`} className={`${buttonClasses('secondary')} min-h-9!`}>

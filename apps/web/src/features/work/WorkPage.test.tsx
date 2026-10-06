@@ -17,7 +17,7 @@ describe('Work lists', () => {
     expect(within(region('কারিগর ঠিক হয়নি')).getAllByRole('row')).toHaveLength(refs.length + 1);
 
     await userEvent.selectOptions(screen.getByLabelText('ভাগ করুন'), 'ধাপ অনুযায়ী');
-    expect(router.state.location.search).toBe('?by=stage&view=list');
+    expect(router.state.location.search).toBe('?by=stage');
     const stitching = refs.filter((r) => r.item.stageKey === 'stitching').length;
     expect(within(await screen.findByRole('region', { name: 'সেলাই' })).getAllByRole('row')).toHaveLength(stitching + 1);
   });

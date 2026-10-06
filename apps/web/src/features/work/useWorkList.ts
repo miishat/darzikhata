@@ -54,11 +54,12 @@ export function useWorkList(): WorkList {
   const { stage } = parsed;
   const query = useMemo<WorkQuery>(() => ({ by, worker, stage }), [by, worker, stage]);
 
-  const view: WorkView = params.get('view') === 'list' ? 'list' : 'board';
+  // The list is the default; only the board is written to the address (an old `view=list` still opens the list).
+  const view: WorkView = params.get('view') === 'board' ? 'board' : 'list';
   const setQuery = useCallback(
     (next: WorkQuery) => {
       const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
-      if (view === 'list') written.set('view', 'list');
+      if (view === 'board') written.set('view', 'board');
       setParams(written, { replace: true });
     },
     [setParams, seesAll, view],
@@ -66,7 +67,7 @@ export function useWorkList(): WorkList {
   const setView = useCallback(
     (next: WorkView) => {
       const written = new URLSearchParams(params);
-      if (next === 'list') written.set('view', 'list');
+      if (next === 'board') written.set('view', 'board');
       else written.delete('view');
       setParams(written, { replace: true });
     },
