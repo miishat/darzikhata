@@ -493,7 +493,7 @@ function CustomerCard({ id, body }: { id: string; body: (c: Customer, open: Open
 }
 
 /** The picked order laid flat: its garments, the price breakdown, and what was paid on it. */
-function OrderDetail({ c, open, title = true }: { c: Customer; open: OpenDialog; title?: boolean }) {
+function OrderDetail({ c, open, title = true, payments = true }: { c: Customer; open: OpenDialog; title?: boolean; payments?: boolean }) {
   const { money, date } = useI18n();
   const L = useL();
   const model = c.models.get(c.picked.id);
@@ -524,18 +524,28 @@ function OrderDetail({ c, open, title = true }: { c: Customer; open: OpenDialog;
       <div className="rounded-xl bg-surface/60 px-3 py-2">
         <Breakdown model={model} />
       </div>
-      <div className="flex flex-col">
-        <h4 className="text-xs font-semibold text-muted">{L('এই অর্ডারের জমা', 'Paid on this order')}</h4>
-        {entries.length === 0 ? (
-          <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
-        ) : (
-          <ul className="m-0 list-none divide-y divide-line p-0">
-            {entries.map((e) => (
-              <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => open({ kind: 'correct', order: e.order, payment: e.payment })} />
-            ))}
-          </ul>
-        )}
-      </div>
+      {payments && <PickedPayments c={c} open={open} entries={entries} />}
+    </div>
+  );
+}
+
+/** What was paid on the picked order, with a correct button on each. */
+function PickedPayments({ c, open, entries = c.timeline.filter((e) => e.order.id === c.picked.id) }: { c: Customer; open: OpenDialog; entries?: Entry[] }) {
+  const L = useL();
+  return (
+    <div className="flex flex-col">
+      <h4 className="text-xs font-semibold text-muted">
+        {L('এই অর্ডারের জমা', 'Paid on this order')} · {c.picked.number}
+      </h4>
+      {entries.length === 0 ? (
+        <p className="py-2 text-sm text-muted">{L('এখনো কিছু জমা হয়নি', 'Nothing paid yet')}</p>
+      ) : (
+        <ul className="m-0 list-none divide-y divide-line p-0">
+          {entries.map((e) => (
+            <EntryLine key={e.payment.id} e={e} showOrder={false} onCorrect={() => open({ kind: 'correct', order: e.order, payment: e.payment })} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -661,7 +671,7 @@ function HeroBody({ c, open }: { c: Customer; open: OpenDialog }) {
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-auto">
       <div className="border-b border-line p-4">
-        <OrderDetail c={c} open={open} />
+        <OrderDetail c={c} open={open} payments={false} />
       </div>
       {rest.length > 0 && (
         <div className="flex flex-col gap-1.5 p-4">
@@ -687,7 +697,8 @@ function HeroBody({ c, open }: { c: Customer; open: OpenDialog }) {
           </ul>
         </div>
       )}
-      <div className="px-4 pb-4">
+      <div className={`flex flex-col gap-5 px-4 pb-4 ${rest.length > 0 ? 'border-t border-line pt-4' : 'pt-4'}`}>
+        <PickedPayments c={c} open={open} />
         <OtherPayments c={c} open={open} />
       </div>
     </div>
