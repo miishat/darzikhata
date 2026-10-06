@@ -13,10 +13,26 @@ import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
-import { DASHBOARD_VARIANTS, VariantB, VariantC, VariantD, VariantE } from './DashboardDesktopPrototype';
+import { DASHBOARD_VARIANTS, LOOKS, type Look } from './DashboardDesktopPrototype';
 import { dashboardModel, dayPart, todoRows, firstTrialTime, METHODS } from './dashboard';
 
-function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null }) {
+function Tile({ to, label, count, icon: Icon, late, sub, slim }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null; slim?: boolean }) {
+  if (slim)
+    return (
+      <Link
+        to={to}
+        className={`flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 focus-visible:outline-2 focus-visible:outline-focus ${
+          late ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-navy-raised text-on-navy'
+        }`}
+      >
+        <Icon aria-hidden="true" size={18} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className={`truncate text-sm ${late ? 'font-semibold' : 'text-on-navy-muted'}`}>{label}</span>
+          {sub && <span className={`truncate text-xs ${late ? '' : 'text-on-navy-muted'}`}>{sub}</span>}
+        </span>
+        <span className="font-display text-2xl font-bold leading-none">{count}</span>
+      </Link>
+    );
   return (
     <Link
       to={to}
@@ -58,16 +74,6 @@ export function DashboardPage() {
 
   const { kind } = useShell();
   const variant = useVariant(Object.keys(DASHBOARD_VARIANTS));
-  if (kind !== 'mobile' && variant !== 'A')
-    return (
-      <>
-        {variant === 'B' && <VariantB />}
-        {variant === 'C' && <VariantC />}
-        {variant === 'D' && <VariantD />}
-        {variant === 'E' && <VariantE />}
-        <PrototypeSwitcher variants={DASHBOARD_VARIANTS} />
-      </>
-    );
   if (kind === 'mobile') {
     const rows = todoRows(model);
     return (
@@ -138,7 +144,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} />
+      <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} look={LOOKS[variant]} />
       <PrototypeSwitcher variants={DASHBOARD_VARIANTS} />
     </>
   );
@@ -147,6 +153,9 @@ export function DashboardPage() {
 const ROW_LIMIT = 5;
 
 interface ListProps {
+  icon: LucideIcon;
+  look?: Look;
+  total?: number;
   title: string;
   count: number;
   seeAll: string;
@@ -157,28 +166,74 @@ interface ListProps {
 }
 
 /** One of the four lists: title, count badge, "see all", and at most five rows. */
-function TodoList({ title, count, seeAll, late, tour, empty, children }: ListProps) {
-  const { t, number } = useI18n();
+function TodoList({ icon: Icon, look, total, title, count, seeAll, late, tour, empty, children }: ListProps) {
+  const { t, number, language } = useI18n();
+  const L = (bn: string, en: string) => (language === 'bn' ? bn : en);
+  const badge = (
+    <span
+      className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
+        late && count > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
+      }`}
+    >
+      {number(count)}
+    </span>
+  );
+  const seeAllLink = (
+    <Link to={seeAll} className="ms-auto shrink-0 text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
+      {t('dashboard.seeAll')}
+      <span className="sr-only"> {title}</span>
+    </Link>
+  );
+  const warn = late && count > 0;
+  if (!look)
+    return (
+      <section aria-label={title} data-tour={tour} className="flex min-w-0 flex-col rounded-2xl border border-line bg-panel">
+        <div className="flex items-center gap-2 px-4 pb-2 pt-3">
+          <h2 className="font-display text-base font-semibold">{title}</h2>
+          {badge}
+          {seeAllLink}
+        </div>
+        {children.length === 0 ? (
+          <p className="border-t border-line px-4 py-3 text-muted">{empty}</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line border-t border-line">{children}</ul>
+        )}
+      </section>
+    );
+
+  const head = {
+    tint: `bg-surface px-4 py-3 ${warn ? 'bg-warn-soft/60' : ''}`,
+    band: `px-4 py-3 ${warn ? 'bg-warn-soft text-warn-ink' : 'bg-brand-soft text-brand-strong'}`,
+    accent: 'px-4 pb-2.5 pt-3.5',
+  }[look.header];
+  const tile = {
+    tint: warn ? 'bg-warn-soft text-warn-ink ring-1 ring-inset ring-warn-line' : 'bg-brand-soft text-brand-strong',
+    band: 'bg-panel shadow-sm',
+    accent: warn ? 'bg-warn-soft text-warn-ink' : 'bg-brand-soft text-brand-strong',
+  }[look.header];
+  const edge = look.header === 'accent' ? (warn ? 'border-s-4 border-s-warn' : 'border-s-4 border-s-brand') : '';
+  const hidden = (total ?? count) - children.length;
   return (
-    <section aria-label={title} data-tour={tour} className="flex min-w-0 flex-col rounded-2xl border border-line bg-panel">
-      <div className="flex items-center gap-2 px-4 pb-2 pt-3">
-        <h2 className="font-display text-base font-semibold">{title}</h2>
-        <span
-          className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
-            late && count > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
-          }`}
-        >
-          {number(count)}
+    <section
+      aria-label={title}
+      data-tour={tour}
+      className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm ${edge} ${look.fill ? 'min-h-0' : ''}`}
+    >
+      <div className={`flex items-center gap-2.5 border-b border-line ${head}`}>
+        <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${tile}`}>
+          <Icon aria-hidden="true" size={18} />
         </span>
-        <Link to={seeAll} className="ms-auto text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
-          {t('dashboard.seeAll')}
-          <span className="sr-only"> {title}</span>
-        </Link>
+        <h2 className="truncate font-display text-lg font-bold">{title}</h2>
+        {badge}
+        {seeAllLink}
       </div>
-      {children.length === 0 ? (
-        <p className="border-t border-line px-4 py-3 text-muted">{empty}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-line border-t border-line">{children}</ul>
+      <div className={look.fill ? 'min-h-0 flex-1 overflow-auto' : ''}>
+        {children.length === 0 ? <p className="px-4 py-3 text-muted">{empty}</p> : <ul className="flex flex-col divide-y divide-line">{children}</ul>}
+      </div>
+      {look.more && hidden > 0 && (
+        <Link to={seeAll} className="mt-auto border-t border-line px-4 py-2 text-center text-sm font-semibold text-brand-strong hover:bg-surface">
+          {L(`আরও ${number(hidden)}টি দেখুন`, `${number(hidden)} more`)}
+        </Link>
       )}
     </section>
   );
@@ -204,10 +259,13 @@ interface DesktopHomeProps {
   today: string;
   showMoney: boolean;
   customerName: (order: Order) => string;
+  look?: Look;
 }
 
 /** The laptop and desktop Home: today's panel and money card on top, the four lists below. */
-function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps) {
+function DesktopHome({ model, today, showMoney, customerName, look }: DesktopHomeProps) {
+  const limit = look?.limit ?? ROW_LIMIT;
+  const slim = look?.slimTop;
   const { t, language, money, number, date } = useI18n();
   const current = useCurrentStaff();
   const name = current?.staff.name;
@@ -247,7 +305,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
   );
 
   return (
-    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-3">
+    <section className={`mx-auto flex w-full max-w-[1240px] flex-col gap-3 ${look?.fill ? 'h-[calc(100dvh-6.5rem)] min-h-96' : ''}`}>
       <h1 className="sr-only">{t('nav.dashboard')}</h1>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col">
@@ -264,13 +322,13 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <section aria-label={t('dashboard.title')} className="flex min-w-72 flex-[2_1_520px] flex-col gap-3 rounded-3xl ring-1 ring-inset ring-navy-line bg-navy p-3.5 text-on-navy">
-          <h2 className="font-display text-lg font-semibold">{t('dashboard.title')}</h2>
+        <section aria-label={t('dashboard.title')} className={`flex min-w-72 flex-[2_1_520px] flex-col gap-3 ring-1 ring-inset ring-navy-line bg-navy text-on-navy ${slim ? 'rounded-2xl p-2.5' : 'rounded-3xl p-3.5'}`}>
+          {!slim && <h2 className="font-display text-lg font-semibold">{t('dashboard.title')}</h2>}
           <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
-            <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} sub={trialSub} />
-            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} sub={deliverySub} />
-            <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} sub={readySub} />
-            <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late sub={lateSub} />
+            <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} sub={trialSub} slim={slim} />
+            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} sub={deliverySub} slim={slim} />
+            <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} sub={readySub} slim={slim} />
+            <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late sub={lateSub} slim={slim} />
           </div>
         </section>
         {showMoney && (
@@ -287,33 +345,33 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
                 <span className="text-sm text-muted">{t('dashboard.dueOrders', { n: number(model.dueOrders) })}</span>
               </Link>
             </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-line pt-2.5 text-sm">
+            {!slim && <dl className="grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-line pt-2.5 text-sm">
               {METHODS.map((method) => (
                 <div key={method} className="flex justify-between gap-2">
                   <dt className="text-muted">{t(`method.${method}`)}</dt>
                   <dd className="font-semibold">{money(model.collectedByMethod[method])}</dd>
                 </div>
               ))}
-            </dl>
+            </dl>}
           </section>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <TodoList title={t('dashboard.trialsToday')} count={model.trialsToday.length} seeAll="/app/orders?status=trial&sort=delivery" empty={t('dashboard.none')}>
-          {model.trialsToday.slice(0, ROW_LIMIT).map((ref) => {
+      <div className={`grid grid-cols-2 gap-3 ${look?.fill ? 'min-h-0 flex-1 grid-rows-2' : ''}`}>
+        <TodoList icon={Scissors} look={look} title={t('dashboard.trialsToday')} count={model.trialsToday.length} seeAll="/app/orders?status=trial&sort=delivery" empty={t('dashboard.none')}>
+          {model.trialsToday.slice(0, limit).map((ref) => {
             const time = firstTrialTime([ref]);
             return garmentRow(ref, time ? <span className="shrink-0 text-sm font-semibold">{toScript(time, language)}</span> : stagePill(ref));
           })}
         </TodoList>
-        <TodoList title={t('dashboard.deliveriesToday')} count={model.deliveriesToday.length} seeAll="/app/orders?status=open&sort=delivery" empty={t('dashboard.none')}>
-          {model.deliveriesToday.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, owed(ref.order) ?? stagePill(ref)))}
+        <TodoList icon={ShoppingBag} look={look} title={t('dashboard.deliveriesToday')} count={model.deliveriesToday.length} seeAll="/app/orders?status=open&sort=delivery" empty={t('dashboard.none')}>
+          {model.deliveriesToday.slice(0, limit).map((ref) => garmentRow(ref, owed(ref.order) ?? stagePill(ref)))}
         </TodoList>
-        <TodoList title={t('dashboard.overdue')} count={model.overdue.length} seeAll="/app/orders?status=overdue" late empty={t('dashboard.none')}>
-          {model.overdue.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, ref.item.deliveryDate ? <DueLabel date={ref.item.deliveryDate} /> : stagePill(ref)))}
+        <TodoList icon={TriangleAlert} look={look} title={t('dashboard.overdue')} count={model.overdue.length} seeAll="/app/orders?status=overdue" late empty={t('dashboard.none')}>
+          {model.overdue.slice(0, limit).map((ref) => garmentRow(ref, ref.item.deliveryDate ? <DueLabel date={ref.item.deliveryDate} /> : stagePill(ref)))}
         </TodoList>
-        <TodoList title={t('dashboard.ready')} count={model.ready.length} seeAll="/app/orders?status=ready" tour="ready-list" empty={t('dashboard.none')}>
-          {readyFirst.slice(0, ROW_LIMIT).map(({ order, readyCount }) => (
+        <TodoList icon={CheckCheck} look={look} title={t('dashboard.ready')} count={model.ready.length} total={model.ready.length} seeAll="/app/orders?status=ready" tour="ready-list" empty={t('dashboard.none')}>
+          {readyFirst.slice(0, limit).map(({ order, readyCount }) => (
             <RowLink
               key={order.id}
               to={`/app/orders/${order.id}`}
