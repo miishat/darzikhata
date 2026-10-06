@@ -5,7 +5,7 @@ import { useCan } from '../common/hooks';
 import { SETTINGS_SECTIONS } from './sections';
 import { useShell } from '../../shell/ShellPreference';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
-import { SETTINGS_VARIANTS, VariantB, VariantC, VariantD } from './SettingsDesktopPrototype';
+import { SETTINGS_VARIANTS, VariantB, VariantC, VariantD, VariantE, VariantF } from './SettingsDesktopPrototype';
 
 /** The settings frame: a menu of the sections this role may use, then the chosen section. */
 export function SettingsPage() {
@@ -20,6 +20,8 @@ export function SettingsPage() {
         {variant === 'B' && <VariantB />}
         {variant === 'C' && <VariantC />}
         {variant === 'D' && <VariantD />}
+        {variant === 'E' && <VariantE />}
+        {variant === 'F' && <VariantF />}
         <PrototypeSwitcher variants={SETTINGS_VARIANTS} />
       </RequireCapability>
     );

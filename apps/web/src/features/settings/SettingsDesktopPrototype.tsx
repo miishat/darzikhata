@@ -19,8 +19,10 @@ import { StaffDialog } from './StaffSettings';
 export const SETTINGS_VARIANTS = {
   A: 'Current (top buttons)',
   B: 'Side rail + section card',
-  C: 'One page, all sections',
-  D: 'List + inspector',
+  C: 'B with section tiles on top',
+  D: 'B in one card, tinted rail',
+  E: 'B in one card, header tabs',
+  F: 'B with a slim icon rail',
 } as const;
 
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
@@ -418,482 +420,242 @@ function SectionAction({ k, editors }: { k: SectionKey; editors: ReturnType<type
   return null;
 }
 
+/* ---------- The chosen section's card body, the same in every variant ---------- */
+
+/** The section heading strip (icon, name, summary, main button) and the section itself. */
+function SectionBody({ heading = true }: { heading?: boolean }) {
+  const { t } = useI18n();
+  const summary = useSummary();
+  const { key, editor } = useSection();
+  const editors = useEditors();
+  const Icon = ICONS[key];
+  if (editor)
+    return (
+      <div className="relative min-h-0 flex-1 overflow-auto p-5">
+        <Outlet />
+      </div>
+    );
+  const title = t(SETTINGS_SECTIONS.find((s) => s.path === key)!.label);
+  return (
+    <>
+      {heading ? (
+        <div className="flex items-center gap-3 border-b border-line p-4">
+          <span aria-hidden="true" className="grid size-10 place-items-center rounded-lg bg-brand-soft text-brand-strong">
+            <Icon size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id="settings-section" className="font-display text-xl font-bold">
+              {title}
+            </h2>
+            <p className="text-sm text-muted">{summary(key)}</p>
+          </div>
+          <SectionAction k={key} editors={editors} />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 border-b border-line px-5 py-2.5">
+          <h2 id="settings-section" className="sr-only">
+            {title}
+          </h2>
+          <p className="text-sm text-muted">{summary(key)}</p>
+          <span className="ms-auto">
+            <SectionAction k={key} editors={editors} />
+          </span>
+        </div>
+      )}
+      {key === 'shop' ? (
+        <ShopForm />
+      ) : (
+        <div className="relative min-h-0 flex-1 overflow-auto">
+          {key === 'templates' && <GarmentCards />}
+          {key === 'staff' && <StaffCards onEdit={editors.editStaff} />}
+          {key === 'branches' && <BranchBoard onEdit={editors.editBranch} />}
+        </div>
+      )}
+      {editors.dialogs}
+    </>
+  );
+}
+
+/** The sections this person may open, each with its icon, address and whether it is the open one. */
+function useNav() {
+  const sections = useSections();
+  const { key } = useSection();
+  const to = useTo();
+  return sections.map((s) => ({ ...s, Icon: ICONS[s.key], on: s.key === key, href: to(s.path) }));
+}
+
 /* ---------- B: side rail + one card for the chosen section ---------- */
 
 export function VariantB() {
   const { t } = useI18n();
-  const sections = useSections();
   const summary = useSummary();
-  const { key, editor } = useSection();
-  const to = useTo();
-  const editors = useEditors();
-  const Icon = ICONS[key];
+  const nav = useNav();
   return (
     <div className={PAGE}>
       <nav aria-label={t('settings.sections')} className={`${CARD} w-72 shrink-0`}>
         <h1 className="border-b border-line p-4 font-display text-xl font-bold">{t('nav.settings')}</h1>
         <ul className="flex flex-col gap-1 p-2">
-          {sections.map((s) => {
-            const SIcon = ICONS[s.key];
-            const on = s.key === key;
-            return (
+          {nav.map((s) => (
+            <li key={s.key}>
+              <Link
+                to={s.href}
+                aria-current={s.on ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${s.on ? 'bg-brand-soft ring-1 ring-brand' : 'hover:bg-surface'}`}
+              >
+                <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-lg ${s.on ? 'bg-brand text-on-brand' : 'bg-surface text-muted'}`}>
+                  <s.Icon size={18} />
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-semibold">{t(s.label)}</span>
+                  <span className="truncate text-xs text-muted">{summary(s.key)}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <section aria-labelledby="settings-section" className={`${CARD} min-w-0 flex-1`}>
+        <SectionBody />
+      </section>
+    </div>
+  );
+}
+
+/* ---------- C: the same section tiles, in a row above the card ---------- */
+
+export function VariantC() {
+  const { t } = useI18n();
+  const summary = useSummary();
+  const nav = useNav();
+  return (
+    <div className={`${PAGE} flex-col`}>
+      <h1 className="sr-only">{t('nav.settings')}</h1>
+      <nav aria-label={t('settings.sections')}>
+        <ul className="grid grid-cols-4 gap-3">
+          {nav.map((s) => (
+            <li key={s.key}>
+              <Link
+                to={s.href}
+                aria-current={s.on ? 'page' : undefined}
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-sm ${s.on ? 'border-brand bg-brand-soft ring-1 ring-brand' : 'border-line bg-panel hover:bg-surface'}`}
+              >
+                <span aria-hidden="true" className={`grid size-10 shrink-0 place-items-center rounded-lg ${s.on ? 'bg-brand text-on-brand' : 'bg-surface text-muted'}`}>
+                  <s.Icon size={20} />
+                </span>
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-semibold">{t(s.label)}</span>
+                  <span className="truncate text-xs text-muted">{summary(s.key)}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <section aria-labelledby="settings-section" className={`${CARD} min-h-0 flex-1`}>
+        <SectionBody />
+      </section>
+    </div>
+  );
+}
+
+/* ---------- D: one card, the section list as a tinted column inside it ---------- */
+
+export function VariantD() {
+  const { t } = useI18n();
+  const summary = useSummary();
+  const nav = useNav();
+  return (
+    <div className={PAGE}>
+      <div className={`${CARD} min-w-0 flex-1 !flex-row`}>
+        <nav aria-label={t('settings.sections')} className="flex w-64 shrink-0 flex-col border-e border-line bg-surface/50">
+          <h1 className="px-5 pb-3 pt-5 font-display text-xl font-bold">{t('nav.settings')}</h1>
+          <ul className="flex flex-col">
+            {nav.map((s) => (
               <li key={s.key}>
                 <Link
-                  to={to(s.path)}
-                  aria-current={on ? 'page' : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${on ? 'bg-brand-soft ring-1 ring-brand' : 'hover:bg-surface'}`}
+                  to={s.href}
+                  aria-current={s.on ? 'page' : undefined}
+                  className={`flex items-center gap-3 border-s-4 py-3 pe-4 ps-4 ${s.on ? 'border-brand bg-panel' : 'border-transparent hover:bg-panel/60'}`}
                 >
-                  <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-lg ${on ? 'bg-brand text-on-brand' : 'bg-surface text-muted'}`}>
-                    <SIcon size={18} />
-                  </span>
+                  <s.Icon aria-hidden="true" size={20} className={s.on ? 'text-brand-strong' : 'text-muted'} />
                   <span className="flex min-w-0 flex-col">
-                    <span className="font-semibold">{t(s.label)}</span>
+                    <span className={s.on ? 'font-semibold' : ''}>{t(s.label)}</span>
                     <span className="truncate text-xs text-muted">{summary(s.key)}</span>
                   </span>
                 </Link>
               </li>
-            );
-          })}
+            ))}
+          </ul>
+        </nav>
+        <section aria-labelledby="settings-section" className="flex min-w-0 flex-1 flex-col">
+          <SectionBody />
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- E: one card, the sections as tabs in its header ---------- */
+
+export function VariantE() {
+  const { t } = useI18n();
+  const nav = useNav();
+  return (
+    <div className={PAGE}>
+      <section aria-labelledby="settings-section" className={`${CARD} min-w-0 flex-1`}>
+        <div className="flex items-end gap-6 border-b border-line px-5 pt-4">
+          <h1 className="pb-3 font-display text-xl font-bold">{t('nav.settings')}</h1>
+          <nav aria-label={t('settings.sections')}>
+            <ul className="flex gap-1">
+              {nav.map((s) => (
+                <li key={s.key}>
+                  <Link
+                    to={s.href}
+                    aria-current={s.on ? 'page' : undefined}
+                    className={`-mb-px flex items-center gap-2 border-b-2 px-3 pb-3 pt-1 ${s.on ? 'border-brand font-semibold text-brand-strong' : 'border-transparent text-muted hover:text-ink'}`}
+                  >
+                    <s.Icon aria-hidden="true" size={18} /> {t(s.label)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        <SectionBody heading={false} />
+      </section>
+    </div>
+  );
+}
+
+/* ---------- F: a slim icon rail, so the section gets the most room ---------- */
+
+export function VariantF() {
+  const { t } = useI18n();
+  const nav = useNav();
+  return (
+    <div className={PAGE}>
+      <nav aria-label={t('settings.sections')} className={`${CARD} w-24 shrink-0`}>
+        <h1 className="sr-only">{t('nav.settings')}</h1>
+        <ul className="flex flex-col gap-1 p-2">
+          {nav.map((s) => (
+            <li key={s.key}>
+              <Link
+                to={s.href}
+                aria-current={s.on ? 'page' : undefined}
+                className={`flex flex-col items-center gap-1 rounded-xl px-1 py-3 text-center text-xs leading-tight ${s.on ? 'bg-brand-soft font-semibold text-brand-strong ring-1 ring-brand' : 'text-muted hover:bg-surface hover:text-ink'}`}
+              >
+                <span aria-hidden="true" className={`grid size-10 place-items-center rounded-lg ${s.on ? 'bg-brand text-on-brand' : 'bg-surface'}`}>
+                  <s.Icon size={20} />
+                </span>
+                {t(s.label)}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
       <section aria-labelledby="settings-section" className={`${CARD} min-w-0 flex-1`}>
-        {editor ? (
-          <div className="relative min-h-0 flex-1 overflow-auto p-5">
-            <Outlet />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-3 border-b border-line p-4">
-              <span aria-hidden="true" className="grid size-10 place-items-center rounded-lg bg-brand-soft text-brand-strong">
-                <Icon size={20} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 id="settings-section" className="font-display text-xl font-bold">
-                  {t(SETTINGS_SECTIONS.find((s) => s.path === key)!.label)}
-                </h2>
-                <p className="text-sm text-muted">{summary(key)}</p>
-              </div>
-              <SectionAction k={key} editors={editors} />
-            </div>
-            {key === 'shop' ? (
-              <ShopForm />
-            ) : (
-              <div className="relative min-h-0 flex-1 overflow-auto">
-                {key === 'templates' && <GarmentCards />}
-                {key === 'staff' && <StaffCards onEdit={editors.editStaff} />}
-                {key === 'branches' && <BranchBoard onEdit={editors.editBranch} />}
-              </div>
-            )}
-          </>
-        )}
-        {editors.dialogs}
+        <SectionBody />
       </section>
-    </div>
-  );
-}
-
-/* ---------- C: one card, every section on one scrolling page ---------- */
-
-export function VariantC() {
-  const { t, language, money } = useI18n();
-  const sections = useSections();
-  const summary = useSummary();
-  const { key, editor } = useSection();
-  const { config } = useSnapshot();
-  const editors = useEditors();
-  const to = useTo();
-  const navigate = useNavigate();
-  const scroller = useRef<HTMLDivElement>(null);
-  const [seen, setSeen] = useState<SectionKey>(key);
-
-  // Opens at the section in the address, then follows the scroll.
-  useEffect(() => {
-    if (editor) return;
-    document.getElementById(`sec-${key}`)?.scrollIntoView({ block: 'start' });
-  }, [key, editor]);
-  const follow = () => {
-    const root = scroller.current;
-    if (!root) return;
-    const top = root.getBoundingClientRect().top + 48;
-    let current = sections[0]?.key ?? 'shop';
-    root.querySelectorAll<HTMLElement>('[id^="sec-"]').forEach((el) => {
-      if (el.getBoundingClientRect().top <= top) current = el.id.slice(4) as SectionKey;
-    });
-    if (root.scrollTop + root.clientHeight >= root.scrollHeight - 4) current = sections[sections.length - 1]?.key ?? current;
-    setSeen(current);
-  };
-
-  if (editor)
-    return (
-      <div className={PAGE}>
-        <section className={`${CARD} flex-1`}>
-          <div className="relative min-h-0 flex-1 overflow-auto p-5">
-            <Outlet />
-          </div>
-        </section>
-      </div>
-    );
-
-  const block = (k: SectionKey, body: ReactNode) => {
-    const Icon = ICONS[k];
-    return (
-      <section id={`sec-${k}`} aria-labelledby={`h-${k}`} className="scroll-mt-2 border-b border-line last:border-b-0">
-        <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-panel/95 px-5 py-3 backdrop-blur">
-          <Icon aria-hidden="true" size={20} className="text-brand-strong" />
-          <h2 id={`h-${k}`} className="font-display text-lg font-bold">
-            {t(SETTINGS_SECTIONS.find((s) => s.path === k)!.label)}
-          </h2>
-          <span className="text-sm text-muted">{summary(k)}</span>
-          <span className="ms-auto">
-            <SectionAction k={k} editors={editors} />
-          </span>
-        </div>
-        {body}
-      </section>
-    );
-  };
-  const role = (id: string) => config!.roles.find((r) => r.id === id)?.name[language] ?? id;
-
-  return (
-    <div className={PAGE}>
-      <section aria-labelledby="settings-title" className={`${CARD} min-w-0 flex-1`}>
-        <div className="flex items-center gap-4 border-b border-line px-5 py-3">
-          <h1 id="settings-title" className="font-display text-xl font-bold">
-            {t('nav.settings')}
-          </h1>
-          <nav aria-label={t('settings.sections')} className="flex rounded-lg bg-surface p-1">
-            {sections.map((s) => {
-              const Icon = ICONS[s.key];
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  aria-current={seen === s.key ? 'true' : undefined}
-                  onClick={() => {
-                    navigate(to(s.path), { replace: true });
-                    document.getElementById(`sec-${s.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className={`inline-flex min-h-8 items-center gap-1.5 rounded-md px-3 text-sm ${seen === s.key ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
-                >
-                  <Icon aria-hidden="true" size={15} /> {t(s.label)}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-        <div ref={scroller} onScroll={follow} className="relative min-h-0 flex-1 overflow-auto">
-          {sections.some((s) => s.key === 'shop') && block('shop', <ShopForm inline />)}
-          {sections.some((s) => s.key === 'templates') &&
-            block(
-              'templates',
-              <table className="w-full border-collapse">
-                <tbody>
-                  {config!.templates.map((tp) => (
-                    <tr key={tp.id} className="border-b border-line last:border-b-0 hover:bg-surface">
-                      <td className="px-5 py-3 font-semibold">
-                        <Link to={to(`templates/${tp.id}`)} className="text-brand-strong underline">
-                          {tp.name[language]}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-3"><StagePipe template={tp} /></td>
-                      <td className="whitespace-nowrap px-3 py-3">{money(tp.defaultPrice)}</td>
-                      <td className="px-5 py-3 text-end"><StatusDot on={tp.active} label={tp.active ? t('settings.template.inUse') : t('settings.template.retired')} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>,
-            )}
-          {sections.some((s) => s.key === 'staff') &&
-            block(
-              'staff',
-              <table className="w-full border-collapse">
-                <tbody>
-                  {config!.staff.map((s) => (
-                    <tr key={s.id} className="border-b border-line last:border-b-0 hover:bg-surface">
-                      <td className="px-5 py-2.5">
-                        <span className="flex items-center gap-2.5 font-semibold">
-                          <Avatar id={s.id} name={s.name} size="sm" /> {s.name}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">{role(s.roleId)}</td>
-                      <td className="px-3 py-2.5 text-sm">{branchText(s, config!.branches, language, t('branch.all'))}</td>
-                      <td className="px-3 py-2.5"><StatusDot on={s.active} label={s.active ? t('settings.staff.active') : t('settings.staff.inactive')} /></td>
-                      <td className="px-5 py-2.5 text-end">
-                        <Button variant="ghost" aria-label={t('settings.editItem', { name: s.name })} onClick={() => editors.editStaff(s)}>
-                          <Pencil aria-hidden="true" size={16} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>,
-            )}
-          {sections.some((s) => s.key === 'branches') && block('branches', <BranchBoard onEdit={editors.editBranch} />)}
-        </div>
-        {editors.dialogs}
-      </section>
-    </div>
-  );
-}
-
-/* ---------- D: tabs and a list in one card, the picked row in an inspector beside it ---------- */
-
-export function VariantD() {
-  const { t, language, money, number } = useI18n();
-  const L = useL();
-  const sections = useSections();
-  const summary = useSummary();
-  const { key, editor } = useSection();
-  const { config } = useSnapshot();
-  const editors = useEditors();
-  const to = useTo();
-  const [params, setParams] = useSearchParams();
-  const picked = params.get('item');
-  const pick = (id: string | null) =>
-    setParams(
-      (prev) => {
-        const p = new URLSearchParams(prev);
-        if (id) p.set('item', id);
-        else p.delete('item');
-        return p;
-      },
-      { replace: true },
-    );
-  if (!config) return null;
-
-  const tabs = (
-    <nav aria-label={t('settings.sections')} className="flex rounded-lg bg-surface p-1">
-      {sections.map((s) => {
-        const Icon = ICONS[s.key];
-        const on = s.key === key;
-        return (
-          <Link
-            key={s.key}
-            to={to(s.path)}
-            aria-current={on ? 'page' : undefined}
-            className={`inline-flex min-h-8 items-center gap-1.5 rounded-md px-3 text-sm ${on ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
-          >
-            <Icon aria-hidden="true" size={15} /> {t(s.label)}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
-  const rowClass = (id: string) => `cursor-pointer border-b border-line ${picked === id ? 'bg-brand-soft' : 'hover:bg-surface'}`;
-  const role = (id: string) => config.roles.find((r) => r.id === id)?.name[language] ?? id;
-  const template = key === 'templates' ? config.templates.find((x) => x.id === picked) : undefined;
-  const person = key === 'staff' ? config.staff.find((x) => x.id === picked) : undefined;
-  const branch = key === 'branches' ? config.branches.find((x) => x.id === picked) : undefined;
-
-  const list = (
-    <table className="w-full border-collapse">
-      {key === 'templates' && (
-        <>
-          <thead>
-            <tr>
-              <th scope="col" className={head}>{t('settings.col.name')}</th>
-              <th scope="col" className={head}>{L('মাপ', 'Measurements')}</th>
-              <th scope="col" className={head}>{t('receipt.price')}</th>
-              <th scope="col" className={head}>{t('settings.col.status')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {config.templates.map((tp) => (
-              <tr key={tp.id} aria-selected={picked === tp.id} onClick={() => pick(tp.id)} className={rowClass(tp.id)}>
-                <td className="px-4 py-3 font-semibold">{tp.name[language]}</td>
-                <td className="px-4 py-3 text-muted">{number(tp.fields.length)}</td>
-                <td className="px-4 py-3">{money(tp.defaultPrice)}</td>
-                <td className="px-4 py-3"><StatusDot on={tp.active} label={tp.active ? t('settings.template.inUse') : t('settings.template.retired')} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </>
-      )}
-      {key === 'staff' && (
-        <>
-          <thead>
-            <tr>
-              <th scope="col" className={head}>{t('settings.col.name')}</th>
-              <th scope="col" className={head}>{t('settings.staff.role')}</th>
-              {!picked && <th scope="col" className={head}>{t('branch.label')}</th>}
-              <th scope="col" className={head}>{t('settings.col.status')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {config.staff.map((s) => (
-              <tr key={s.id} aria-selected={picked === s.id} onClick={() => pick(s.id)} className={rowClass(s.id)}>
-                <td className="px-4 py-2.5">
-                  <span className="flex items-center gap-2.5 font-semibold">
-                    <Avatar id={s.id} name={s.name} size="sm" /> {s.name}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5">{role(s.roleId)}</td>
-                {!picked && <td className="px-4 py-2.5 text-sm">{branchText(s, config.branches, language, t('branch.all'))}</td>}
-                <td className="px-4 py-2.5"><StatusDot on={s.active} label={s.active ? t('settings.staff.active') : t('settings.staff.inactive')} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </>
-      )}
-      {key === 'branches' && (
-        <>
-          <thead>
-            <tr>
-              <th scope="col" className={head}>{t('settings.col.name')}</th>
-              <th scope="col" className={head}>{t('settings.branch.kind')}</th>
-              <th scope="col" className={head}>{t('settings.devices.list')}</th>
-              {!picked && <th scope="col" className={head}>{t('settings.shop.address')}</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {config.branches.map((b) => (
-              <tr key={b.id} aria-selected={picked === b.id} onClick={() => pick(b.id)} className={rowClass(b.id)}>
-                <td className="px-4 py-3 font-semibold">{b.name[language]}</td>
-                <td className="px-4 py-3">{t(`branchKind.${b.kind}`)}</td>
-                <td className="px-4 py-3">{number(config.devices.filter((d) => d.branchId === b.id).length)}</td>
-                {!picked && <td className="px-4 py-3 text-sm">{b.address}</td>}
-              </tr>
-            ))}
-          </tbody>
-        </>
-      )}
-    </table>
-  );
-
-  const inspector = (title: string, sub: string, avatar: ReactNode, body: ReactNode, actions: ReactNode) => (
-    <aside aria-label={title} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
-      <div className="flex items-start gap-3 border-b border-line p-4">
-        {avatar}
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-xl font-bold">{title}</p>
-          <p className="text-sm text-muted">{sub}</p>
-        </div>
-        <Button variant="ghost" aria-label={L('বন্ধ করুন', 'Close')} onClick={() => pick(null)}>
-          <X aria-hidden="true" size={18} />
-        </Button>
-      </div>
-      <div className="relative min-h-0 flex-1 overflow-auto p-4">{body}</div>
-      <div className="flex gap-2 border-t border-line bg-surface/60 p-3">{actions}</div>
-    </aside>
-  );
-
-  const fact = (label: string, value: ReactNode) => (
-    <div className="flex justify-between gap-3 border-b border-line py-2 last:border-b-0">
-      <span className="text-muted">{label}</span>
-      <span className="text-end font-semibold">{value}</span>
-    </div>
-  );
-
-  return (
-    <div className={PAGE}>
-      <section aria-labelledby="settings-title" className={`${CARD} min-w-0 flex-1`}>
-        <div className="flex flex-wrap items-center gap-4 border-b border-line px-4 py-3">
-          <h1 id="settings-title" className="font-display text-xl font-bold">
-            {t('nav.settings')}
-          </h1>
-          {tabs}
-          <span className="ms-auto">{!editor && <SectionAction k={key} editors={editors} />}</span>
-        </div>
-        {editor ? (
-          <div className="relative min-h-0 flex-1 overflow-auto p-5">
-            <Outlet />
-          </div>
-        ) : key === 'shop' ? (
-          <ShopForm />
-        ) : (
-          <>
-            <div className="relative min-h-0 flex-1 overflow-auto">{list}</div>
-            <p className="border-t border-line px-4 py-2 text-sm text-muted">{summary(key)}</p>
-          </>
-        )}
-        {editors.dialogs}
-      </section>
-
-      {template &&
-        inspector(
-          template.name[language],
-          `${money(template.defaultPrice)} · ${template.active ? t('settings.template.inUse') : t('settings.template.retired')}`,
-          <span aria-hidden="true" className="grid size-12 place-items-center rounded-xl bg-brand-soft text-brand-strong"><Shirt size={24} /></span>,
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 font-semibold">{t('settings.template.stages')}</p>
-              <StagePipe template={template} />
-            </div>
-            <div>
-              <p className="mb-2 font-semibold">{t('settings.template.fields')}</p>
-              <FieldGroups template={template} />
-            </div>
-          </div>,
-          <Link to={to(`templates/${template.id}`)} className={buttonClasses('primary')}>
-            <Pencil aria-hidden="true" size={16} /> {L('মাপ ও ধাপ বদলান', 'Edit Measurements and Stages')}
-          </Link>,
-        )}
-      {person &&
-        inspector(
-          person.name,
-          role(person.roleId),
-          <Avatar id={person.id} name={person.name} size="lg" />,
-          <div className="flex flex-col gap-4">
-            <div>
-              {fact(t('settings.staff.role'), role(person.roleId))}
-              {fact(t('branch.label'), branchText(person, config.branches, language, t('branch.all')))}
-              {fact(t('settings.col.status'), <StatusDot on={person.active} label={person.active ? t('settings.staff.active') : t('settings.staff.inactive')} />)}
-              {fact(t('pin.label'), '••••')}
-            </div>
-            <div>
-              <p className="mb-2 font-semibold">{L('এই ভূমিকা যা পারে', 'What This Role Can Do')}</p>
-              <ul className="flex flex-wrap gap-1.5">
-                {[...new Set(config.roles.find((r) => r.id === person.roleId)?.capabilities.map((c) => c.split('.')[0]!) ?? [])].map((area) => (
-                  <li key={area} className="rounded-md bg-ok-soft px-2 py-0.5 text-sm text-ok">
-                    {AREAS[area]?.[language === 'bn' ? 0 : 1] ?? area}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>,
-          <Button onClick={() => editors.editStaff(person)}>
-            <Pencil aria-hidden="true" size={16} /> {t('settings.editItem', { name: person.name })}
-          </Button>,
-        )}
-      {branch &&
-        inspector(
-          branch.name[language],
-          `${t(`branchKind.${branch.kind}`)} · ${branch.address}`,
-          <span aria-hidden="true" className="grid size-12 place-items-center rounded-xl bg-surface">{branch.kind === 'shop' ? <Store size={24} /> : <Building2 size={24} />}</span>,
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 font-semibold">{t('settings.devices.list')}</p>
-              <ul className="flex flex-col gap-2">
-                {config.devices
-                  .filter((d) => d.branchId === branch.id)
-                  .map((d) => (
-                    <li key={d.id} className="flex items-center gap-3 rounded-lg bg-surface/60 px-3 py-2">
-                      <MonitorSmartphone aria-hidden="true" size={18} className="text-muted" />
-                      <span className="flex-1 font-semibold">{d.name}</span>
-                      <span className="font-mono text-sm">{d.series}</span>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-            <div>
-              <p className="mb-2 font-semibold">{t('settings.staff')}</p>
-              <ul className="flex flex-wrap gap-2">
-                {config.staff
-                  .filter((s) => s.branchIds === 'all' || s.branchIds.includes(branch.id))
-                  .map((s) => (
-                    <li key={s.id} className="flex items-center gap-2 rounded-full bg-surface py-1 pe-3 ps-1 text-sm">
-                      <Avatar id={s.id} name={s.name} size="sm" /> {s.name}
-                    </li>
-                  ))}
-              </ul>
-            </div>
-            <p className="text-sm text-muted">{t('settings.devices.note')}</p>
-          </div>,
-          <Button onClick={() => editors.editBranch(branch)}>
-            <Pencil aria-hidden="true" size={16} /> {t('settings.editItem', { name: branch.name[language] })}
-          </Button>,
-        )}
     </div>
   );
 }
