@@ -7,7 +7,7 @@ import { useI18n } from '../i18n/I18nProvider';
 import { buttonClasses } from '../ui/Button';
 import { DesktopSidebar } from './DesktopSidebar';
 import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
-import { SIDEBAR_VARIANTS, SidebarB, SidebarC, SidebarD, SidebarE } from './SidebarPrototype';
+import { SIDEBAR_VARIANTS, SidebarProto } from './SidebarPrototype';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitch, ThemeButton } from './ShellParts';
 import { useShortcuts } from './useShortcuts';
@@ -35,10 +35,7 @@ export function DesktopShell({ role }: { role: Role }) {
   return (
     <div className="flex min-h-dvh">
       {variant === 'A' && <DesktopSidebar role={role} />}
-      {variant === 'B' && <SidebarB role={role} />}
-      {variant === 'C' && <SidebarC role={role} />}
-      {variant === 'D' && <SidebarD role={role} />}
-      {variant === 'E' && <SidebarE role={role} />}
+      {variant !== 'A' && <SidebarProto role={role} variant={variant as 'B' | 'C' | 'D' | 'E'} />}
       <PrototypeSwitcher variants={SIDEBAR_VARIANTS} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print flex h-14 items-center gap-3 border-b border-line bg-panel px-6">
