@@ -1,6 +1,6 @@
 import { balanceDue, itemSummaryGroup, labelIn, stageByKey, toScript, type ItemRef, type Order } from '@darzikhata/domain';
 import { CheckCheck, Printer, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useScopedState } from '../branches/BranchScopeProvider';
@@ -169,6 +169,18 @@ interface ListProps {
 function TodoList({ icon: Icon, look, total, title, count, seeAll, late, tour, empty, children }: ListProps) {
   const { t, number, language } = useI18n();
   const L = (bn: string, en: string) => (language === 'bn' ? bn : en);
+  // PROTOTYPE fit: how many rows the card's body holds without scrolling.
+  const body = useRef<HTMLDivElement>(null);
+  const [room, setRoom] = useState(0);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el || !look?.fit) return;
+    const measure = () => setRoom(el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [look?.fit]);
   const badge = (
     <span
       className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
@@ -212,7 +224,11 @@ function TodoList({ icon: Icon, look, total, title, count, seeAll, late, tour, e
     accent: warn ? 'bg-warn-soft text-warn-ink' : 'bg-brand-soft text-brand-strong',
   }[look.header];
   const edge = look.header === 'accent' ? (warn ? 'border-s-4 border-s-warn' : 'border-s-4 border-s-brand') : '';
-  const hidden = (total ?? count) - children.length;
+  const ROW = 53;
+  const FOOT = 37;
+  let shown = children;
+  if (look.fit && room > 0 && children.length * ROW > room) shown = children.slice(0, Math.max(1, Math.floor((room - FOOT) / ROW)));
+  const hidden = (total ?? count) - shown.length;
   return (
     <section
       aria-label={title}
@@ -227,14 +243,14 @@ function TodoList({ icon: Icon, look, total, title, count, seeAll, late, tour, e
         {badge}
         {seeAllLink}
       </div>
-      <div className={look.fill ? 'min-h-0 flex-1 overflow-auto' : ''}>
-        {children.length === 0 ? <p className="px-4 py-3 text-muted">{empty}</p> : <ul className="flex flex-col divide-y divide-line">{children}</ul>}
-      </div>
-      {look.more && hidden > 0 && (
-        <Link to={seeAll} className="mt-auto border-t border-line px-4 py-2 text-center text-sm font-semibold text-brand-strong hover:bg-surface">
+      <div ref={body} className={look.fit ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : look.fill ? 'min-h-0 flex-1 overflow-auto' : 'flex flex-1 flex-col'}>
+        {shown.length === 0 ? <p className="px-4 py-3 text-muted">{empty}</p> : <ul className="flex flex-col divide-y divide-line">{shown}</ul>}
+      {(look.more || look.fit) && hidden > 0 && (
+        <Link to={seeAll} className="mt-auto shrink-0 border-t border-line px-4 py-2 text-center text-sm font-semibold text-brand-strong hover:bg-surface">
           {L(`আরও ${number(hidden)}টি দেখুন`, `${number(hidden)} more`)}
         </Link>
       )}
+      </div>
     </section>
   );
 }
