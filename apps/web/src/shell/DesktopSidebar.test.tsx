@@ -17,12 +17,13 @@ describe('Desktop sidebar and top bar', () => {
     expect(nav.getByText('হিসাব ও দোকান')).toBeTruthy();
   });
 
-  it('keeps only search, language and New Order in the top bar', async () => {
+  it('keeps only search, language, theme, New Customer and New Order in the top bar', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     const header = within(await screen.findByRole('banner'));
     expect(header.getAllByRole('combobox')).toHaveLength(1);
-    expect(header.getAllByRole('button')).toHaveLength(1);
-    expect(header.getByRole('link', { name: 'নতুন অর্ডার' })).toBeTruthy();
+    expect(header.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['বাংলা', 'English', 'রঙের থিম: হালকা']);
+    // New Order's text ends in its N shortcut key.
+    expect(header.getAllByRole('link').map((l) => l.textContent)).toEqual(['নতুন কাস্টমার', 'নতুন অর্ডারN']);
     expect(header.queryByRole('button', { name: /অনলাইন|অফলাইন|দেখতে হবে/ })).toBeNull();
   });
 

@@ -551,7 +551,7 @@ export const en: Messages = {
   'payments.nothingYet': 'Nothing Paid Yet',
 
   'search.label': 'Search Orders or Customers',
-  'search.placeholder': 'Search',
+  'search.placeholder': 'Search order number, customer name or phone',
   'search.none': 'Nothing found',
   'settings.problem.shopName': 'Enter the shop name.',
   'settings.problem.noManager': 'At least one active person must be able to manage staff.',
