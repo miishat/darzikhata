@@ -691,8 +691,6 @@ export const bn = {
   'work.view.list': 'তালিকা',
   'work.workerFilter': 'কারিগর অনুযায়ী দেখুন',
   'work.noWorker': 'কারিগর নেই',
-  'work.more': '+{n}টি আরও',
-  'work.fewer': 'কম দেখান',
   'work.board': 'কাজের বোর্ড',
   'work.column': '{stage}, {n}টি পোশাক',
   'work.columnEmpty': 'এই ধাপে কিছু নেই',

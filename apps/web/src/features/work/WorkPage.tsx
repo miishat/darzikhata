@@ -1,11 +1,10 @@
 import type { ItemRef } from '@darzikhata/domain';
 import { useEffect, useMemo, useState } from 'react';
-import { Printer } from 'lucide-react';
+import { Columns3, List, Printer } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
-import { SelectField } from '../../ui/SelectField';
 import { SelectionBar } from '../../ui/SelectionBar';
 import { ViewTabs, viewTabId } from '../../ui/ViewTabs';
 import { useBranchScope } from '../branches/BranchScopeProvider';
@@ -14,7 +13,7 @@ import { useShell } from '../../shell/ShellPreference';
 import { BatchAssignDialog, BatchStageDialog } from './batchDialogs';
 import { MobileWorkPage } from './MobileWorkPage';
 import { useWorkList } from './useWorkList';
-import { WorkBoard, WorkerChips } from './BoardView';
+import { WorkBoard, WorkerChips, isLate } from './BoardView';
 import { WorkGroupTable } from './WorkGroupTable';
 import { assignees, filterWork, stageOptions } from './workList';
 
@@ -65,15 +64,20 @@ function DesktopWorkPage() {
   };
 
   const today = useToday();
-  const lateCount = all.filter((r) => r.item.deliveryDate !== null && r.item.deliveryDate < today).length;
-  const chipCounts = useMemo(() => {
+  const { chipCounts, lateCounts } = useMemo(() => {
     const counts: Record<string, number> = { all: all.length, none: 0 };
-    for (const { item } of all) {
-      const key = item.assignedTo ?? 'none';
+    const late: Record<string, number> = { all: 0 };
+    for (const ref of all) {
+      const key = ref.item.assignedTo ?? 'none';
       counts[key] = (counts[key] ?? 0) + 1;
+      if (isLate(ref, today)) {
+        late.all! += 1;
+        late[key] = (late[key] ?? 0) + 1;
+      }
     }
-    return counts;
-  }, [all]);
+    return { chipCounts: counts, lateCounts: late };
+  }, [all, today]);
+  const lateCount = lateCounts.all ?? 0;
   const boardRows = useMemo(() => filterWork(all, { ...query, stage: 'all' }), [all, query]);
   const panelId = 'work-view';
 
@@ -89,59 +93,74 @@ function DesktopWorkPage() {
   if (view === 'board') printParams.delete('stage');
   const printSearch = printParams.toString();
 
+  const select = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus';
+  const empty = view === 'board' ? boardRows.length === 0 : groups.length === 0;
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h1 className="text-xl font-semibold">{t('nav.work')}</h1>
+    // One card the height of the window less the shell header (3.5rem) and the page padding (2 × 1.5rem):
+    // the board's columns and the list scroll inside it, and the selection sits in its footer.
+    <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-line p-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="font-display text-xl font-bold">{t('nav.work')}</h1>
           <p className="flex items-center gap-3 text-sm text-muted">
             <span>{t('work.inProgress', { n: number(all.length) })}</span>
             {lateCount > 0 && <span className="font-semibold text-warn-ink">{t('work.lateCount', { n: number(lateCount) })}</span>}
           </p>
-        </div>
-        <Link to={`/print/work${printSearch ? `?${printSearch}` : ''}`} className={buttonClasses('secondary')}>
-          <Printer aria-hidden="true" size={16} />
-          {t('work.print')}
-        </Link>
-      </div>
-      <ViewTabs
-        label={t('work.view')}
-        views={[
-          { value: 'board', label: t('work.view.board') },
-          { value: 'list', label: t('work.view.list') },
-        ]}
-        value={view}
-        onChange={(next) => setView(next === 'list' ? 'list' : 'board')}
-        panelId={panelId}
-      />
-      {viewer.seesAll && (
-        <WorkerChips workers={workers} counts={chipCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
-      )}
-      {view === 'list' && (
-        <div className="flex flex-wrap items-end gap-3">
-          {viewer.seesAll && (
-            <SelectField
-              label={t('work.groupBy')}
-              value={query.by}
-              options={[
-                { value: 'worker', label: t('work.byWorker') },
-                { value: 'stage', label: t('work.byStage') },
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            <ViewTabs
+              segmented
+              label={t('work.view')}
+              views={[
+                { value: 'board', label: t('work.view.board'), icon: Columns3 },
+                { value: 'list', label: t('work.view.list'), icon: List },
               ]}
-              onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
+              value={view}
+              onChange={(next) => setView(next === 'list' ? 'list' : 'board')}
+              panelId={panelId}
             />
-          )}
-          <SelectField
-            label={t('work.stage')}
-            value={query.stage}
-            options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
-            onChange={(stage) => setQuery({ ...query, stage })}
-          />
+            <Link to={`/print/work${printSearch ? `?${printSearch}` : ''}`} className={`${buttonClasses('secondary')} min-h-9!`}>
+              <Printer aria-hidden="true" size={16} />
+              {t('work.print')}
+            </Link>
+          </div>
         </div>
-      )}
-      <div role="tabpanel" id={panelId} aria-labelledby={viewTabId(panelId, view)} className="flex flex-col gap-3">
-        {view === 'list' && <p className="text-sm text-muted">{t('work.count', { n: number(shown.length) })}</p>}
-        {(view === 'board' ? boardRows.length === 0 : groups.length === 0) ? (
-          <p className="text-muted">{t('work.empty')}</p>
+        {viewer.seesAll && (
+          <WorkerChips workers={workers} counts={chipCounts} late={lateCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
+        )}
+        {view === 'list' && (
+          <div className="flex flex-wrap items-center gap-2">
+            {viewer.seesAll && (
+              <select
+                aria-label={t('work.groupBy')}
+                value={query.by}
+                onChange={(event) => setQuery({ ...query, by: event.target.value === 'stage' ? 'stage' : 'worker' })}
+                className={select}
+              >
+                <option value="worker">{t('work.byWorker')}</option>
+                <option value="stage">{t('work.byStage')}</option>
+              </select>
+            )}
+            <select aria-label={t('work.stage')} value={query.stage} onChange={(event) => setQuery({ ...query, stage: event.target.value })} className={select}>
+              <option value="all">{t('work.allStages')}</option>
+              {stages.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {label(s.label)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+      {/* relative: keeps absolutely placed screen-reader text inside this scroll area, so the page itself never scrolls. */}
+      <div
+        role="tabpanel"
+        id={panelId}
+        aria-labelledby={viewTabId(panelId, view)}
+        className={`relative min-h-0 flex-1 ${view === 'board' ? 'bg-surface/40' : 'overflow-auto'}`}
+      >
+        {empty ? (
+          <p className="p-4 text-muted">{t('work.empty')}</p>
         ) : view === 'board' ? (
           <WorkBoard rows={boardRows} selected={selectable ? selected : null} onToggle={toggle} />
         ) : (
@@ -157,11 +176,13 @@ function DesktopWorkPage() {
           ))
         )}
       </div>
-      {selectable && (
-        <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+      {selectable && selected.size > 0 ? (
+        <SelectionBar docked count={selected.size} onClear={() => setSelected(new Set())}>
           {canAssign && <Button onClick={() => openDialog('assign')}>{t('work.assign')}</Button>}
           {canMove && <Button onClick={() => openDialog('stage')}>{t('item.changeStage')}</Button>}
         </SelectionBar>
+      ) : (
+        <p className="border-t border-line px-4 py-2 text-sm text-muted">{t('work.count', { n: number(visible.length) })}</p>
       )}
       {open?.kind === 'assign' && <BatchAssignDialog refs={open.refs} onClose={closeDialog} />}
       {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}

@@ -7,7 +7,7 @@ export interface ViewTab {
   value: string;
   label: string;
   count?: number | undefined;
-  /** Tiles only: an icon beside the count, shown when the tile is wide enough. */
+  /** Tiles and segments only: an icon beside the label (on tiles, shown when the tile is wide enough). */
   icon?: LucideIcon;
   /** Tiles only: an amber tile, for views that need attention. */
   warn?: boolean;
@@ -25,6 +25,8 @@ export interface ViewTabsProps {
   panelId?: string;
   /** A row of tiles with a large count each, instead of underlined tabs. */
   tiles?: boolean;
+  /** A compact segmented control, for a choice of two or three views in a header. */
+  segmented?: boolean;
 }
 
 /** The DOM id of a tab, for a tabpanel's aria-labelledby. */
@@ -33,7 +35,7 @@ export function viewTabId(panelId: string, value: string): string {
 }
 
 /** A row of view tabs with a count badge each; the selected one has a brand underline. Arrow keys move between tabs. */
-export function ViewTabs({ label, views, value, onChange, panelId, tiles = false }: ViewTabsProps) {
+export function ViewTabs({ label, views, value, onChange, panelId, tiles = false, segmented = false }: ViewTabsProps) {
   const { number } = useI18n();
   const base = useId();
   const idOf = (key: string) => (panelId ? viewTabId(panelId, key) : `${base}-${key}`);
@@ -44,7 +46,7 @@ export function ViewTabs({ label, views, value, onChange, panelId, tiles = false
       role="tablist"
       aria-label={label}
       onKeyDown={rovingTabsKeyDown(keys, anySelected ? value : (keys[0] ?? value), onChange, idOf)}
-      className={tiles ? 'grid gap-2' : 'flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line'}
+      className={tiles ? 'grid gap-2' : segmented ? 'flex rounded-lg bg-surface p-1' : 'flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line'}
       style={tiles ? { gridTemplateColumns: `repeat(${views.length}, minmax(0, 1fr))` } : undefined}
     >
       {views.map((view) => {
@@ -87,6 +89,21 @@ export function ViewTabs({ label, views, value, onChange, panelId, tiles = false
                 </span>
                 {view.count !== undefined && <span className="font-display text-lg font-bold leading-tight">{number(view.count)}</span>}
               </span>
+            </button>
+          );
+        }
+        if (segmented) {
+          const Icon = view.icon;
+          return (
+            <button
+              key={view.value}
+              {...tab}
+              className={`inline-flex min-h-8 items-center gap-1.5 rounded-md px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-focus ${
+                selected ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink'
+              }`}
+            >
+              {Icon && <Icon aria-hidden="true" size={16} />}
+              {view.label}
             </button>
           );
         }

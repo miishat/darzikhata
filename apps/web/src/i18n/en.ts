@@ -692,8 +692,6 @@ export const en: Messages = {
   'work.view.list': 'List',
   'work.workerFilter': 'Show by Worker',
   'work.noWorker': 'No Worker',
-  'work.more': '+{n} More',
-  'work.fewer': 'Show Fewer',
   'work.board': 'Work Board',
   'work.column': '{stage}, {n} Garments',
   'work.columnEmpty': 'Nothing in this stage',

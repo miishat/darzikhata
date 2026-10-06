@@ -61,15 +61,21 @@ describe('Work board', () => {
     expect((await screen.findByRole('link', { name: 'তালিকা প্রিন্ট করুন' })).getAttribute('href')).toContain('stage=cutting');
   });
 
-  it('shows ten cards in a column, then a button for the rest', async () => {
+  it('shows every card in a long column, which scrolls on its own', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work' });
     const board = await screen.findByRole('region', { name: 'কাজের বোর্ড' });
     const column = within(board).getByRole('region', { name: 'সেলাই, ১৬টি পোশাক' });
-    expect(within(column).getAllByRole('listitem')).toHaveLength(10);
-    await userEvent.click(within(column).getByRole('button', { name: '+৬টি আরও' }));
     expect(within(column).getAllByRole('listitem')).toHaveLength(16);
-    await userEvent.click(within(column).getByRole('button', { name: 'কম দেখান' }));
-    expect(within(column).getAllByRole('listitem')).toHaveLength(10);
+    expect(within(column).getByRole('list').className).toContain('overflow-y-auto');
+  });
+
+  it('ticks a garment when its card is clicked, but not when its order link is', async () => {
+    await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work', as: supervisor });
+    const board = await screen.findByRole('region', { name: 'কাজের বোর্ড' });
+    const card = within(board).getAllByRole('listitem')[0]!;
+    await userEvent.click(card);
+    expect(within(card).getByRole('checkbox')).toHaveProperty('checked', true);
+    expect(screen.getByRole('region', { name: 'বাছাই করা পোশাক' })).toBeTruthy();
   });
 
   it('assigns three garments to a worker from the board with a preview and a confirmation', async () => {
