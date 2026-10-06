@@ -1,7 +1,7 @@
 import type { OrderItem } from '@darzikhata/domain';
 import { makeItem, makeOrder, makePayment } from '@darzikhata/domain/testing';
 import { describe, expect, it } from 'vitest';
-import { dashboardModel, dayPart, firstTrialTime, todoRows } from './dashboard';
+import { dashboardModel, dayPart, firstTrialTime, LIST_ROW_PX, rowsThatFit, todoRows } from './dashboard';
 
 const TODAY = '2026-10-03';
 /** 00:30 on 3 October in Dhaka, and 23:59 on 2 October. */
@@ -247,5 +247,21 @@ describe('dayPart', () => {
     ['2026-10-02T18:00:00Z', 'morning'],
   ])('%s is %s in Dhaka', (iso, part) => {
     expect(dayPart(new Date(iso))).toBe(part);
+  });
+});
+
+describe('rowsThatFit', () => {
+  it('shows every row when they fit, or before the card is measured', () => {
+    expect(rowsThatFit(0, 9)).toBe(9);
+    expect(rowsThatFit(5 * LIST_ROW_PX, 5)).toBe(5);
+  });
+
+  it('keeps room for the more link when they do not', () => {
+    expect(rowsThatFit(5 * LIST_ROW_PX, 6)).toBe(4);
+    expect(rowsThatFit(202, 9)).toBe(3);
+  });
+
+  it('always shows at least one row', () => {
+    expect(rowsThatFit(40, 3)).toBe(1);
   });
 });

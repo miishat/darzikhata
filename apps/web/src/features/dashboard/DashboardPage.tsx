@@ -1,6 +1,6 @@
 import { balanceDue, itemSummaryGroup, labelIn, stageByKey, toScript, type ItemRef, type Order } from '@darzikhata/domain';
 import { CheckCheck, Printer, Scissors, ShoppingBag, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useScopedState } from '../branches/BranchScopeProvider';
@@ -12,7 +12,10 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
-import { dashboardModel, dayPart, todoRows, firstTrialTime, METHODS } from './dashboard';
+import { dashboardModel, dayPart, todoRows, firstTrialTime, rowsThatFit, METHODS } from './dashboard';
+
+/** Today's deliveries in Orders: open orders due today, soonest first. */
+const deliveriesLink = (today: string) => `/app/orders?status=open&sort=delivery&from=${today}&to=${today}`;
 
 function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null }) {
   return (
@@ -67,7 +70,7 @@ export function DashboardPage() {
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} />
-            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} />
+            <Tile to={deliveriesLink(today)} label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} />
             <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} />
             <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late />
           </div>
@@ -126,9 +129,8 @@ export function DashboardPage() {
   return <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} />;
 }
 
-const ROW_LIMIT = 5;
-
 interface ListProps {
+  icon: LucideIcon;
   title: string;
   count: number;
   seeAll: string;
@@ -138,30 +140,62 @@ interface ListProps {
   children: ReactNode[];
 }
 
-/** One of the four lists: title, count badge, "see all", and at most five rows. */
-function TodoList({ title, count, seeAll, late, tour, empty, children }: ListProps) {
+/** The height of an element, kept current as it resizes. 0 until measured, and where nothing is laid out. */
+function useHeight(ref: RefObject<HTMLElement | null>): number {
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setHeight(el.clientHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return height;
+}
+
+/**
+ * One of the four lists: a coloured header with its icon, count and "see all", then as many rows as fit
+ * the card. Nothing scrolls; a list that does not fit ends in a link to the rest.
+ */
+function TodoList({ icon: Icon, title, count, seeAll, late, tour, empty, children }: ListProps) {
   const { t, number } = useI18n();
+  const body = useRef<HTMLDivElement>(null);
+  const shown = children.slice(0, rowsThatFit(useHeight(body), children.length));
+  const hidden = children.length - shown.length;
+  const warn = late && count > 0;
   return (
-    <section aria-label={title} data-tour={tour} className="flex min-w-0 flex-col rounded-2xl border border-line bg-panel">
-      <div className="flex items-center gap-2 px-4 pb-2 pt-3">
-        <h2 className="font-display text-base font-semibold">{title}</h2>
+    <section aria-label={title} data-tour={tour} className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+      <div className={`flex items-center gap-2.5 border-b border-line px-4 py-3 ${warn ? 'bg-warn-soft text-warn-ink' : 'bg-brand-soft text-brand-strong'}`}>
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-panel shadow-sm">
+          <Icon aria-hidden="true" size={18} />
+        </span>
+        <h2 className="truncate font-display text-lg font-bold">{title}</h2>
         <span
           className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 text-sm font-semibold ${
-            late && count > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : 'bg-surface text-muted'
+            warn ? 'ring-1 ring-inset ring-warn-line bg-panel text-warn-ink' : 'bg-panel text-muted'
           }`}
         >
           {number(count)}
         </span>
-        <Link to={seeAll} className="ms-auto text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
+        <Link to={seeAll} className="ms-auto shrink-0 text-sm font-semibold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus">
           {t('dashboard.seeAll')}
           <span className="sr-only"> {title}</span>
         </Link>
       </div>
-      {children.length === 0 ? (
-        <p className="border-t border-line px-4 py-3 text-muted">{empty}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-line border-t border-line">{children}</ul>
-      )}
+      <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {shown.length === 0 ? <p className="px-4 py-3 text-muted">{empty}</p> : <ul className="flex flex-col divide-y divide-line">{shown}</ul>}
+        {hidden > 0 && (
+          <Link
+            to={seeAll}
+            className="mt-auto shrink-0 border-t border-line px-4 py-2 text-center text-sm font-semibold text-brand-strong hover:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+          >
+            {t('dashboard.more', { n: number(hidden) })}
+            <span className="sr-only"> {title}</span>
+          </Link>
+        )}
+      </div>
     </section>
   );
 }
@@ -188,7 +222,7 @@ interface DesktopHomeProps {
   customerName: (order: Order) => string;
 }
 
-/** The laptop and desktop Home: today's panel and money card on top, the four lists below. */
+/** The laptop and desktop Home: today's panel and money card on top, the four lists filling the rest of the screen. */
 function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps) {
   const { t, language, money, number, date } = useI18n();
   const current = useCurrentStaff();
@@ -201,7 +235,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
   const readySub = showMoney && model.readyOwed > 0 ? t('dashboard.sub.readyOwed', { amount: money(model.readyOwed) }) : null;
   const lateSub = model.oldestLateDays === null ? null : t(model.oldestLateDays === 1 ? 'dashboard.sub.lateAgeOne' : 'dashboard.sub.lateAge', { n: number(model.oldestLateDays) });
 
-  // The biggest pick-ups first, so a customer waiting on several garments is never hidden below the five rows.
+  // The biggest pick-ups first, so a customer waiting on several garments is never hidden behind "more".
   const readyFirst = model.ready
     .map((order) => ({ order, readyCount: order.items.filter((i) => itemSummaryGroup(i) === 'ready').length }))
     .sort((a, b) => b.readyCount - a.readyCount);
@@ -229,7 +263,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
   );
 
   return (
-    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-3">
+    <section className="mx-auto flex h-[calc(100dvh-6.5rem)] min-h-96 w-full max-w-[1240px] flex-col gap-3">
       <h1 className="sr-only">{t('nav.dashboard')}</h1>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col">
@@ -250,7 +284,7 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
           <h2 className="font-display text-lg font-semibold">{t('dashboard.title')}</h2>
           <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
             <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} sub={trialSub} />
-            <Tile to="/app/orders?status=open&sort=delivery" label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} sub={deliverySub} />
+            <Tile to={deliveriesLink(today)} label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} sub={deliverySub} />
             <Tile to="/app/orders?status=ready" label={t('dashboard.tile.ready')} count={number(model.readyGarments)} icon={CheckCheck} sub={readySub} />
             <Tile to="/app/orders?status=overdue" label={t('dashboard.tile.late')} count={number(model.overdueGarments)} icon={TriangleAlert} late sub={lateSub} />
           </div>
@@ -281,21 +315,21 @@ function DesktopHome({ model, today, showMoney, customerName }: DesktopHomeProps
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <TodoList title={t('dashboard.trialsToday')} count={model.trialsToday.length} seeAll="/app/orders?status=trial&sort=delivery" empty={t('dashboard.none')}>
-          {model.trialsToday.slice(0, ROW_LIMIT).map((ref) => {
+      <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3">
+        <TodoList icon={Scissors} title={t('dashboard.trialsToday')} count={model.trialsToday.length} seeAll="/app/orders?status=trial&sort=delivery" empty={t('dashboard.none')}>
+          {model.trialsToday.map((ref) => {
             const time = firstTrialTime([ref]);
             return garmentRow(ref, time ? <span className="shrink-0 text-sm font-semibold">{toScript(time, language)}</span> : stagePill(ref));
           })}
         </TodoList>
-        <TodoList title={t('dashboard.deliveriesToday')} count={model.deliveriesToday.length} seeAll="/app/orders?status=open&sort=delivery" empty={t('dashboard.none')}>
-          {model.deliveriesToday.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, owed(ref.order) ?? stagePill(ref)))}
+        <TodoList icon={ShoppingBag} title={t('dashboard.deliveriesToday')} count={model.deliveriesToday.length} seeAll={deliveriesLink(today)} empty={t('dashboard.none')}>
+          {model.deliveriesToday.map((ref) => garmentRow(ref, owed(ref.order) ?? stagePill(ref)))}
         </TodoList>
-        <TodoList title={t('dashboard.overdue')} count={model.overdue.length} seeAll="/app/orders?status=overdue" late empty={t('dashboard.none')}>
-          {model.overdue.slice(0, ROW_LIMIT).map((ref) => garmentRow(ref, ref.item.deliveryDate ? <DueLabel date={ref.item.deliveryDate} /> : stagePill(ref)))}
+        <TodoList icon={TriangleAlert} title={t('dashboard.overdue')} count={model.overdue.length} seeAll="/app/orders?status=overdue" late empty={t('dashboard.none')}>
+          {model.overdue.map((ref) => garmentRow(ref, ref.item.deliveryDate ? <DueLabel date={ref.item.deliveryDate} /> : stagePill(ref)))}
         </TodoList>
-        <TodoList title={t('dashboard.ready')} count={model.ready.length} seeAll="/app/orders?status=ready" tour="ready-list" empty={t('dashboard.none')}>
-          {readyFirst.slice(0, ROW_LIMIT).map(({ order, readyCount }) => (
+        <TodoList icon={CheckCheck} title={t('dashboard.ready')} count={model.ready.length} seeAll="/app/orders?status=ready" tour="ready-list" empty={t('dashboard.none')}>
+          {readyFirst.map(({ order, readyCount }) => (
             <RowLink
               key={order.id}
               to={`/app/orders/${order.id}`}

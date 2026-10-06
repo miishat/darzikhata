@@ -681,6 +681,7 @@ export const en: Messages = {
   'dashboard.sub.lateAge': 'Oldest {n} days',
   'dashboard.sub.lateAgeOne': 'Oldest {n} day',
   'dashboard.paymentsCount': '{n} Payments',
+  'dashboard.more': 'See {n} More',
   'dashboard.dueOrders': 'Across {n} Orders',
   'work.count': '{n} Garments',
   'work.groupBy': 'Group by',

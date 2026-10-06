@@ -27,10 +27,10 @@ describe('Dashboard', () => {
     expect(moneyBlock().getByText('আজ জমা').closest('a')!.textContent).toContain(formatTaka(m.collectedToday, 'bn'));
     expect(moneyBlock().getByText('মোট বাকি').closest('a')!.textContent).toContain(formatTaka(m.dueTotal, 'bn'));
     expect(moneyBlock().getByText('ক্যাশ')).toBeTruthy();
-    expect(rows('আজ ট্রায়াল')).toHaveLength(Math.min(5, m.trialsToday.length));
-    expect(rows('আজ ডেলিভারি')).toHaveLength(Math.min(5, m.deliveriesToday.length));
-    expect(rows('দেরি হয়েছে')).toHaveLength(Math.min(5, m.overdue.length));
-    expect(rows('নেওয়ার জন্য রেডি')).toHaveLength(Math.min(5, m.ready.length));
+    expect(rows('আজ ট্রায়াল')).toHaveLength(m.trialsToday.length);
+    expect(rows('আজ ডেলিভারি')).toHaveLength(m.deliveriesToday.length);
+    expect(rows('দেরি হয়েছে')).toHaveLength(m.overdue.length);
+    expect(rows('নেওয়ার জন্য রেডি')).toHaveLength(m.ready.length);
   });
 
   it('greets the signed-in person and offers the work list print', async () => {
@@ -48,9 +48,19 @@ describe('Dashboard', () => {
       n: order.items.filter((i) => itemSummaryGroup(i) === 'ready').length,
     }));
     expect(new Set(counted.map((c) => c.n)).size).toBeGreaterThan(1);
-    const expected = [...counted].sort((a, b) => b.n - a.n).slice(0, 5);
+    const expected = [...counted].sort((a, b) => b.n - a.n);
     const shown = rows('নেওয়ার জন্য রেডি');
     expected.forEach((row, i) => expect(shown[i]!.textContent).toContain(row.number));
+  });
+
+  it('opens today’s deliveries in Orders with today’s date set', async () => {
+    const { router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    const deliveries = await screen.findByRole('region', { name: 'আজ ডেলিভারি' });
+    const today = todayInDhaka(new Date());
+    const href = `/app/orders?status=open&sort=delivery&from=${today}&to=${today}`;
+    expect(panelTile(/ডেলিভারি/).getAttribute('href')).toBe(href);
+    await userEvent.click(within(deliveries).getByRole('link', { name: /^সব দেখুন/ }));
+    expect(router.state.location.search).toBe(`?status=open&sort=delivery&from=${today}&to=${today}`);
   });
 
   it('opens an order from a list', async () => {

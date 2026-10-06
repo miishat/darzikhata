@@ -680,6 +680,7 @@ export const bn = {
   'dashboard.sub.lateAge': 'সবচেয়ে পুরনো {n} দিন',
   'dashboard.sub.lateAgeOne': 'সবচেয়ে পুরনো {n} দিন',
   'dashboard.paymentsCount': '{n}টি পেমেন্ট',
+  'dashboard.more': 'আরও {n}টি দেখুন',
   'dashboard.dueOrders': '{n}টি অর্ডারে',
   'work.count': '{n}টি পোশাক',
   'work.groupBy': 'ভাগ করুন',
