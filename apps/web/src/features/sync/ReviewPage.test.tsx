@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -60,7 +60,8 @@ describe('Review queue', () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
     await userEvent.click(within(await entry()).getByRole('button', { name: 'এখন যা আছে রাখুন' }));
     const status = await screen.findByRole('status');
-    expect(document.activeElement).toBe(status);
+    // The message can be found as soon as it renders; the focus moves in an effect just after.
+    await waitFor(() => expect(document.activeElement).toBe(status));
   });
 
   it('starts from the current choices again after cancelling a merge', async () => {
