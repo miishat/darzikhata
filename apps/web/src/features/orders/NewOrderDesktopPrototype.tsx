@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): desktop new order layouts behind ?variant=. Lives on prototype/neworder-desktop only.
 import { profileKey, searchCustomers, templateById } from '@darzikhata/domain';
-import { AlertCircle, ArrowLeft, Check, ChevronLeft, ChevronRight, Plus, Search, Shirt, UserRound, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowLeftRight, CalendarDays, ChevronsUpDown, ClipboardList, Plus, Search, Shirt, UserRound, UserRoundPlus, Wallet } from 'lucide-react';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -30,9 +30,9 @@ import type { OrderEntry } from './useOrderEntry';
 export const NEW_ORDER_VARIANTS = {
   A: 'Current three columns',
   B: 'Garment tabs + receipt (as picked)',
-  C: 'Tile tabs, split editor',
-  D: 'Customer facts, short receipt',
-  E: 'Pill tabs, section jumps, paper receipt',
+  C: 'B + tiles, Change Customer button',
+  D: 'B + tiles, customer card is the switch',
+  E: 'B + tiles, Profile and Change links',
 } as const;
 
 interface Props {
@@ -664,6 +664,10 @@ function Receipt({ f, children }: { f: Form; children: ReactNode }) {
   return (
     <aside aria-label={t('entry.summary')} className={`${CARD} w-[340px] shrink-0`}>
       <div className="min-h-0 flex-1 overflow-auto">
+        <div className="border-b border-dashed border-line px-5 py-4 text-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">{f.L('রসিদ', 'Receipt')}</p>
+          <p className="font-display text-lg font-bold">{t('nav.newOrder')}</p>
+        </div>
         <ul className="flex flex-col px-5 py-3">
           {f.items.length === 0 && <li className="py-2 text-sm text-muted">{f.L('এখনো কোনো পোশাক নেই', 'No garments yet')}</li>}
           {f.items.map((item) => (
@@ -807,183 +811,292 @@ function TopStrip({ f, children }: { f: Form; children?: ReactNode }) {
   );
 }
 
-/** C: garments as tiles with status and price; the editor splits measurements from the rest so both are in view. */
+/* ---------- Round 3: B with C's garment tiles and D's customer facts, three ways to change the customer ---------- */
+
+/** Search results for picking a customer, shared by the menus below. */
+function CustomerSearch({ f, onPicked, autoFocus = false }: { f: Form; onPicked(): void; autoFocus?: boolean }) {
+  const { t } = useI18n();
+  const { state } = useSnapshot();
+  const [query, setQuery] = useState('');
+  const matches = useMemo(() => (query.trim() ? searchCustomers(Object.values(state.customers), query, 6) : []), [state.customers, query]);
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-panel px-3 focus-within:outline-2 focus-within:outline-focus">
+        <Search aria-hidden="true" size={16} className="text-muted" />
+        <input
+          type="search"
+          autoFocus={autoFocus}
+          aria-label={t('customers.search')}
+          placeholder={t('customers.search')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="min-w-0 flex-1 bg-transparent outline-none"
+        />
+      </label>
+      {query.trim() && matches.length === 0 && <p className="px-1 text-sm text-muted">{t('customers.none')}</p>}
+      {matches.length > 0 && (
+        <ul className="flex max-h-72 flex-col overflow-auto">
+          {matches.map((m) => (
+            <li key={m.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  f.entry.setCustomer({ kind: 'existing', customerId: m.id });
+                  onPicked();
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-start hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                <Avatar id={m.id} name={m.name} size="sm" />
+                <span className="font-semibold">{m.name}</span>
+                <span className="ms-auto text-sm text-muted">{m.phone}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          f.entry.setCustomer({ kind: 'new', name: '', nameAlt: '', phone: '', gender: null });
+          onPicked();
+        }}
+        className="flex items-center gap-2 rounded-lg border-t border-line px-2 pt-3 pb-1 text-sm font-semibold text-brand-strong hover:underline"
+      >
+        <UserRoundPlus aria-hidden="true" size={16} />
+        {t('customers.new')}
+      </button>
+    </div>
+  );
+}
+
+/** A small popover anchored under its button; closes on Escape or when focus leaves. */
+function Popover({ open, setOpen, button, children, width = 'w-96', align = 'start' }: { open: boolean; setOpen(v: boolean): void; button: ReactNode; children: ReactNode; width?: string; align?: 'start' | 'end' }) {
+  return (
+    <div
+      className="relative"
+      onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}
+    >
+      {button}
+      {open && (
+        <div className={`absolute top-full z-40 mt-2 ${align === 'start' ? 'start-0' : 'end-0'} ${width} rounded-xl border border-line bg-panel-raised p-3 shadow-lg`}>{children}</div>
+      )}
+    </div>
+  );
+}
+
+function useChosenCustomer(f: Form) {
+  const { state } = useSnapshot();
+  const scoped = useScopedState();
+  const customer = f.entry.draft.customer;
+  if (customer?.kind !== 'existing') return null;
+  const c = state.customers[customer.customerId];
+  if (!c) return null;
+  const [row] = directoryRows([c], Object.values(scoped.orders));
+  return row ?? null;
+}
+
+/** Facts as tiles with icons, like the payments page tiles. */
+function FactTiles({ f }: { f: Form }) {
+  const { money, number, date } = useI18n();
+  const row = useChosenCustomer(f);
+  if (!row) return null;
+  const tile = (Icon: typeof Wallet, label: string, value: string, tone: string) => (
+    <div className="flex items-center gap-2.5 rounded-xl bg-surface/70 px-3 py-1.5">
+      <span aria-hidden="true" className={`grid size-8 place-items-center rounded-lg ${tone}`}>
+        <Icon size={16} />
+      </span>
+      <span className="flex flex-col">
+        <span className="text-xs text-muted">{label}</span>
+        <span className="font-display font-bold leading-tight">{value}</span>
+      </span>
+    </div>
+  );
+  return (
+    <div className="ms-auto flex gap-2">
+      {tile(Wallet, f.L('আগের বাকি', 'Owes'), money(row.owed), row.owed > 0 ? 'bg-warn-soft text-warn' : 'bg-ok-soft text-ok')}
+      {tile(ClipboardList, f.L('চলমান অর্ডার', 'Open orders'), number(row.openCount), 'bg-brand-soft text-brand-strong')}
+      {tile(CalendarDays, f.L('শেষ এসেছেন', 'Last visit'), row.lastVisit ? date(row.lastVisit.slice(0, 10)) : '–', 'bg-surface text-muted')}
+    </div>
+  );
+}
+
+function BarFrame({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+  return (
+    <section aria-label={t('entry.step.customer')} className="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
+      <Link to="/app/orders" aria-label={t('entry.backToOrders')} className="grid size-9 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink">
+        <ArrowLeft aria-hidden="true" size={18} />
+      </Link>
+      <h1 className="font-display text-xl font-bold">{t('nav.newOrder')}</h1>
+      <span className="h-8 w-px bg-line" />
+      {children}
+    </section>
+  );
+}
+
+/** C's bar: name and phone, a clear "Change Customer" button that opens a search menu, and D's facts on the right. */
+function BarButton({ f }: { f: Form }) {
+  const { t, number } = useI18n();
+  const row = useChosenCustomer(f);
+  const [open, setOpen] = useState(false);
+  if (!row) return (<BarFrame><CustomerStrip f={f} /></BarFrame>);
+  return (
+    <BarFrame>
+      <div className="flex items-center gap-3">
+        <Avatar id={row.customer.id} name={row.customer.name} />
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate font-display text-lg font-bold leading-tight">{row.customer.name}</span>
+          <span className="truncate text-sm text-muted">
+            {row.customer.phone} · {t('entry.earlierOrders', { n: number(row.orderCount) })}
+          </span>
+        </div>
+        <Popover
+          open={open}
+          setOpen={setOpen}
+          button={
+            <Button variant="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <ArrowLeftRight aria-hidden="true" size={16} />
+              {f.L('কাস্টমার বদলান', 'Change Customer')}
+            </Button>
+          }
+        >
+          <CustomerSearch f={f} autoFocus onPicked={() => setOpen(false)} />
+        </Popover>
+      </div>
+      <CustomerFacts f={f} />
+    </BarFrame>
+  );
+}
+
+/** D's bar: the customer itself is the switch: a card with a chevron that opens the search; facts as icon tiles. */
+function BarCard({ f }: { f: Form }) {
+  const { t, number } = useI18n();
+  const row = useChosenCustomer(f);
+  const [open, setOpen] = useState(false);
+  if (!row) return (<BarFrame><CustomerStrip f={f} /></BarFrame>);
+  return (
+    <BarFrame>
+      <Popover
+        open={open}
+        setOpen={setOpen}
+        button={
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={`${row.customer.name} · ${f.L('কাস্টমার বদলান', 'Change Customer')}`}
+            onClick={() => setOpen(!open)}
+            className={`flex items-center gap-3 rounded-xl py-1.5 ps-1.5 pe-3 text-start ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-focus ${
+              open ? 'bg-brand-soft ring-brand' : 'ring-line hover:bg-surface'
+            }`}
+          >
+            <Avatar id={row.customer.id} name={row.customer.name} />
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate font-display text-lg font-bold leading-tight">{row.customer.name}</span>
+              <span className="truncate text-sm text-muted">
+                {row.customer.phone} · {t('entry.earlierOrders', { n: number(row.orderCount) })}
+              </span>
+            </span>
+            <ChevronsUpDown aria-hidden="true" size={18} className="ms-2 text-muted" />
+          </button>
+        }
+      >
+        <p className="mb-2 text-sm font-semibold text-muted">{f.L('অন্য কাস্টমার বেছে নিন', 'Pick another customer')}</p>
+        <CustomerSearch f={f} autoFocus onPicked={() => setOpen(false)} />
+      </Popover>
+      <FactTiles f={f} />
+    </BarFrame>
+  );
+}
+
+/** E's bar: name with links to open their profile or change them, written out; facts as icon tiles. */
+function BarLinks({ f }: { f: Form }) {
+  const { number } = useI18n();
+  const row = useChosenCustomer(f);
+  const [open, setOpen] = useState(false);
+  if (!row) return (<BarFrame><CustomerStrip f={f} /></BarFrame>);
+  const action = 'inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-brand-strong hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus';
+  return (
+    <BarFrame>
+      <div className="flex items-center gap-3">
+        <Avatar id={row.customer.id} name={row.customer.name} size="lg" />
+        <div className="flex min-w-0 flex-col">
+          <span className="flex items-baseline gap-2">
+            <span className="truncate font-display text-lg font-bold leading-tight">{row.customer.name}</span>
+            <span className="text-sm text-muted">{row.customer.phone}</span>
+          </span>
+          <span className="-ms-2 flex items-center gap-1">
+            <Link to={`/app/customers/${row.customer.id}`} className={action}>
+              <UserRound aria-hidden="true" size={15} />
+              {f.L(`প্রোফাইল · ${number(row.orderCount)}টি অর্ডার`, `Profile · ${row.orderCount} orders`)}
+            </Link>
+            <Popover
+              open={open}
+              setOpen={setOpen}
+              button={
+                <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className={action}>
+                  <ArrowLeftRight aria-hidden="true" size={15} />
+                  {f.L('কাস্টমার বদলান', 'Change Customer')}
+                </button>
+              }
+            >
+              <CustomerSearch f={f} autoFocus onPicked={() => setOpen(false)} />
+            </Popover>
+          </span>
+        </div>
+      </div>
+      <FactTiles f={f} />
+    </BarFrame>
+  );
+}
+
+/** B's body with C's garment tiles: status pill, the editor, and the receipt with the full money fields. */
+function TiledBody({ f }: { f: Form }) {
+  const { t } = useI18n();
+  return (
+    <div className="flex min-h-0 flex-1 gap-4">
+      <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
+        <TileTabs f={f} />
+        <div className="min-h-0 flex-1 overflow-auto p-5">{f.chosen ? <GarmentEditor f={f} item={f.chosen} /> : <EmptyGarment f={f} />}</div>
+      </section>
+      <Receipt f={f}>
+        <MoneyFields entry={f.entry} errors={f.errors} />
+      </Receipt>
+    </div>
+  );
+}
+
+/** C: B with garment tiles; the customer has a "Change Customer" button with a search menu, and what they owe beside. */
 export function VariantC(props: Props) {
   const f = useForm(props);
-  const { t } = useI18n();
   return (
     <div className={`flex flex-col gap-3 ${FULL}`}>
-      <TopStrip f={f} />
-      <div className="flex min-h-0 flex-1 gap-4">
-        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
-          <TileTabs f={f} />
-          {f.chosen ? (
-            <SplitEditor key={f.chosen.key} f={f} item={f.chosen} />
-          ) : (
-            <div className="min-h-0 flex-1 p-5">
-              <EmptyGarment f={f} />
-            </div>
-          )}
-        </section>
-        <Receipt f={f}>
-          <MoneyFields entry={f.entry} errors={f.errors} />
-        </Receipt>
-      </div>
+      <BarButton f={f} />
+      <TiledBody f={f} />
       {f.discardDialog}
     </div>
   );
 }
 
-/** D: the customer bar shows what they owe and their open orders; the receipt asks for the advance first and hides discount and notes until needed. */
+/** D: B with garment tiles; the customer card itself opens the switch, facts as icon tiles. */
 export function VariantD(props: Props) {
   const f = useForm(props);
-  const { t } = useI18n();
   return (
     <div className={`flex flex-col gap-3 ${FULL}`}>
-      <TopStrip f={f}>
-        <CustomerFacts f={f} />
-      </TopStrip>
-      <div className="flex min-h-0 flex-1 gap-4">
-        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
-          <PillTabs f={f} />
-          <div className="min-h-0 flex-1 overflow-auto p-5">{f.chosen ? <GarmentEditor f={f} item={f.chosen} /> : <EmptyGarment f={f} />}</div>
-        </section>
-        <Receipt f={f}>
-          <ShortMoney f={f} />
-        </Receipt>
-      </div>
+      <BarCard f={f} />
+      <TiledBody f={f} />
       {f.discardDialog}
     </div>
   );
 }
 
-/** E: pill tabs with jump links to each part of the garment, and a paper-style receipt with the balance large at the bottom. */
+/** E: B with garment tiles; Profile and Change Customer as links under the name, facts as icon tiles. */
 export function VariantE(props: Props) {
   const f = useForm(props);
-  const { t, money } = useI18n();
-  const id = useId();
-  const parts = [
-    { key: 'measure', label: f.L('মাপ', 'Measurements') },
-    { key: 'design', label: f.L('ডিজাইন ও ছবি', 'Design and photos') },
-    { key: 'dates', label: f.L('তারিখ ও দাম', 'Dates and price') },
-  ];
-  const jump = (key: string) => document.getElementById(`${id}-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const item = f.chosen;
-  const heading = 'text-sm font-bold text-muted';
   return (
     <div className={`flex flex-col gap-3 ${FULL}`}>
-      <TopStrip f={f} />
-      <div className="flex min-h-0 flex-1 gap-4">
-        <section aria-label={t('entry.middle')} className={`${CARD} min-w-0 flex-1`}>
-          <PillTabs
-            f={f}
-            trailing={
-              item && (
-                <nav aria-label={f.L('এই পোশাকের অংশ', 'Parts of this garment')} className="ms-auto flex gap-1">
-                  {parts.map((p) => (
-                    <button
-                      key={p.key}
-                      type="button"
-                      onClick={() => jump(p.key)}
-                      className="rounded-full px-3 py-1 text-sm text-muted ring-1 ring-inset ring-line hover:bg-surface hover:text-ink"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </nav>
-              )
-            }
-          />
-          <div className="min-h-0 flex-1 overflow-auto p-5">
-            {item ? (
-              <div className="flex flex-col gap-6">
-                <div className="flex flex-wrap items-end gap-3">
-                  <h2 className="me-auto font-display text-xl font-bold">{f.title(item)}</h2>
-                  <TextField
-                    label={t('entry.wearer')}
-                    className="w-56"
-                    value={item.wearer}
-                    onChange={(e) => f.entry.updateItem(item.key, { wearer: e.target.value })}
-                    autoComplete="off"
-                  />
-                  {item.measurements.kind === 'new' && (
-                    <SourceSwitch
-                      value={item.measurements.source}
-                      onChange={(source) => {
-                        const m = item.measurements;
-                        if (m.kind === 'new') f.entry.updateItem(item.key, { measurements: { ...m, source } });
-                      }}
-                    />
-                  )}
-                  <ItemHeader key={`${item.key}:header`} entry={f.entry} item={item} errors={f.errors} />
-                </div>
-                <section id={`${id}-measure`} className="flex scroll-mt-2 flex-col gap-3">
-                  <h3 className={heading}>{parts[0]!.label}</h3>
-                  <ItemMeasurements key={`${item.key}:measurements`} entry={f.entry} item={item} errors={f.errors} />
-                </section>
-                <section id={`${id}-design`} className="flex scroll-mt-2 flex-col gap-3 border-t border-line pt-5">
-                  <h3 className={heading}>{parts[1]!.label}</h3>
-                  <ItemDetails key={`${item.key}:details`} entry={f.entry} item={item} desktop />
-                </section>
-                <section id={`${id}-dates`} className="flex scroll-mt-2 flex-col gap-3 border-t border-line pt-5">
-                  <h3 className={heading}>{parts[2]!.label}</h3>
-                  <ItemSchedule key={`${item.key}:schedule`} entry={f.entry} item={item} errors={f.errors} />
-                </section>
-              </div>
-            ) : (
-              <EmptyGarment f={f} />
-            )}
-          </div>
-        </section>
-        <aside aria-label={t('entry.summary')} className="flex w-[340px] shrink-0 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-line bg-panel shadow-sm">
-            <div className="min-h-0 flex-1 overflow-auto">
-              <div className="border-b-2 border-dashed border-line px-5 py-4 text-center">
-                <p className="font-display text-lg font-bold">{f.L('রসিদ', 'Receipt')}</p>
-                <p className="text-xs text-muted">{f.L('অর্ডার নম্বর সেভ করলে দেওয়া হবে', 'Order number given on save')}</p>
-              </div>
-              <table className="w-full text-sm">
-                <tbody>
-                  {f.items.map((it) => (
-                    <tr key={it.key} className="border-b border-dotted border-line">
-                      <td className="px-5 py-2">{f.title(it)}</td>
-                      <td className="py-2 text-center text-muted">×{it.quantity}</td>
-                      <td className="px-5 py-2 text-end font-semibold">{it.price === null ? '–' : money(it.price * it.quantity)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="p-5">
-                <ShortMoney f={f} />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 border-t-2 border-dashed border-line px-5 py-3 text-sm">
-              <div className="flex justify-between">
-                <span>{t('money.total')}</span>
-                <span className="font-semibold">{money(f.entry.totals.total)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{t('money.advance')}</span>
-                <span>{money(f.entry.totals.advance)}</span>
-              </div>
-              <div className="mt-1 flex items-baseline justify-between">
-                <span className="font-semibold">{t('entry.balanceLeft')}</span>
-                <span className="font-display text-2xl font-bold text-warn">{money(f.entry.totals.balance)}</span>
-              </div>
-            </div>
-          </div>
-          {/* A torn paper edge under the receipt. */}
-          <div
-            aria-hidden="true"
-            className="h-3 bg-[length:12px_12px] bg-repeat-x"
-            style={{ backgroundImage: 'linear-gradient(135deg, var(--color-panel) 50%, transparent 50%), linear-gradient(225deg, var(--color-panel) 50%, transparent 50%)' }}
-          />
-          <div className="mt-3 flex flex-col gap-2">
-            {f.alert}
-            <SaveButtons f={f} />
-          </div>
-        </aside>
-      </div>
+      <BarLinks f={f} />
+      <TiledBody f={f} />
       {f.discardDialog}
     </div>
   );
