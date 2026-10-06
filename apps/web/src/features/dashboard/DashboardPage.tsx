@@ -12,6 +12,8 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { DASHBOARD_VARIANTS, VariantB, VariantC, VariantD, VariantE } from './DashboardDesktopPrototype';
 import { dashboardModel, dayPart, todoRows, firstTrialTime, METHODS } from './dashboard';
 
 function Tile({ to, label, count, icon: Icon, late, sub }: { to: string; label: string; count: string; icon: LucideIcon; late?: boolean; sub?: string | null }) {
@@ -55,6 +57,17 @@ export function DashboardPage() {
   const customerName = (order: Order) => state.customers[order.customerId]?.name ?? '';
 
   const { kind } = useShell();
+  const variant = useVariant(Object.keys(DASHBOARD_VARIANTS));
+  if (kind !== 'mobile' && variant !== 'A')
+    return (
+      <>
+        {variant === 'B' && <VariantB />}
+        {variant === 'C' && <VariantC />}
+        {variant === 'D' && <VariantD />}
+        {variant === 'E' && <VariantE />}
+        <PrototypeSwitcher variants={DASHBOARD_VARIANTS} />
+      </>
+    );
   if (kind === 'mobile') {
     const rows = todoRows(model);
     return (
@@ -123,7 +136,12 @@ export function DashboardPage() {
     );
   }
 
-  return <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} />;
+  return (
+    <>
+      <DesktopHome model={model} today={today} showMoney={showMoney} customerName={customerName} />
+      <PrototypeSwitcher variants={DASHBOARD_VARIANTS} />
+    </>
+  );
 }
 
 const ROW_LIMIT = 5;
