@@ -18,7 +18,7 @@ import { NumberField } from '../../ui/NumberField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
-import { MEASURE_VARIANTS, MeasureVariantB, MeasureVariantC, MeasureVariantD } from './CustomerPagesDesktopPrototype';
+import { MEASURE_VARIANTS, MeasureVariantB, MeasureVariantC, MeasureVariantD, MeasureVariantE } from './CustomerPagesDesktopPrototype';
 import { useMeasurementAccess } from '../common/hooks';
 import { problemText } from '../common/problemText';
 import { MeasureTiles } from '../orders/entry/MeasureTiles';
@@ -98,8 +98,10 @@ export function MeasurementForm() {
         <MeasureVariantB key={k} customer={customer} template={template} />
       ) : variant === 'C' ? (
         <MeasureVariantC key={k} customer={customer} template={template} />
-      ) : (
+      ) : variant === 'D' ? (
         <MeasureVariantD key={k} customer={customer} template={template} />
+      ) : (
+        <MeasureVariantE key={k} customer={customer} template={template} />
       )}
       {kind === 'desktop' && <PrototypeSwitcher variants={MEASURE_VARIANTS} />}
     </>

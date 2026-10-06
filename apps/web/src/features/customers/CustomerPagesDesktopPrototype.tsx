@@ -13,7 +13,7 @@ import {
   type MeasurementValue,
   type MeasurementVersion,
 } from '@darzikhata/domain';
-import { ArrowLeft, CalendarDays, ClipboardList, History, Ruler, Shirt, UsersRound, Wallet, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ClipboardList, History, ReceiptText, Ruler, Shirt, UsersRound, Wallet, type LucideIcon } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useCurrentStaff, useSnapshot, useStore } from '../../data/StoreContext';
@@ -51,9 +51,10 @@ export const CUSTOMER_FORM_VARIANTS = {
 
 export const MEASURE_VARIANTS = {
   A: 'Current form',
-  B: 'Table: before | new | change',
-  C: 'Big tiles + side panel',
+  B: 'D + change on every cell, side panel',
+  C: 'D + click any old value to copy it',
   D: 'History grid, copy a version',
+  E: 'D + orders per version, only changed',
 } as const;
 
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
@@ -575,6 +576,10 @@ function useMeasureForm(customerId: string, template: GarmentTemplate) {
     setValues(numbers(v));
     setGeneration((g) => g + 1);
   };
+  const pick = (key: string, value: number) => {
+    setOne(key, value);
+    setGeneration((g) => g + 1);
+  };
   const withUnits = () => {
     const out: Record<string, MeasurementValue> = {};
     for (const field of template.fields) {
@@ -610,7 +615,7 @@ function useMeasureForm(customerId: string, template: GarmentTemplate) {
     navigate(backTo);
   }
 
-  return { template, last, versions, previous, values, setOne, load, generation, source, setSource, notes, setNotes, errors, problem, saving, save, dialog, backTo, missing, changed };
+  return { template, last, versions, previous, values, setOne, load, pick, generation, source, setSource, notes, setNotes, errors, problem, saving, save, dialog, backTo, missing, changed };
 }
 
 type MeasureState = ReturnType<typeof useMeasureForm>;
@@ -795,252 +800,256 @@ function MeasureForm({ m, customer, children }: { m: MeasureState; customer: Cus
   );
 }
 
-/** B: a table, one row per measurement: the value before, the new one, and how much it changed. */
-export function MeasureVariantB({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
-  const { t, label, language, date } = useI18n();
-  const m = useMeasureForm(customer.id, template);
-  return (
-    <MeasureForm m={m} customer={customer}>
-      <section aria-label={t('measure.section')} className={`${CARD} min-w-0 flex-1`}>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-panel text-xs text-muted">
-              <tr className="border-b border-line">
-                <th className="px-5 py-2.5 text-start font-semibold">মাপ</th>
-                <th className="px-3 py-2.5 text-end font-semibold">আগে {m.last ? `(${date(m.last.takenAt.slice(0, 10))})` : ''}</th>
-                <th className="w-48 px-3 py-2.5 text-start font-semibold">নতুন</th>
-                <th className="w-28 px-5 py-2.5 text-start font-semibold">পার্থক্য</th>
-              </tr>
-            </thead>
-            {fieldGroups(template.fields).map((group) => (
-              <tbody key={group.group}>
-                <tr>
-                  <th colSpan={4} className="bg-surface/70 px-5 py-1.5 text-start text-xs font-bold text-muted">
-                    {groupLabel(group.group, t)}
-                  </th>
-                </tr>
-                {group.fields.map((field) => {
-                  const now = m.values[field.key] ?? null;
-                  const before = m.previous[field.key];
-                  const unit = t(field.unit === 'cm' ? 'unit.cm' : 'unit.inch');
-                  return (
-                    <tr key={field.key} className={`border-b border-line ${changedFromPrevious(now, before) ? 'bg-warn-soft/40' : ''}`}>
-                      <td className="px-5 py-1.5 font-medium">
-                        {label(field.label)}
-                        {field.required && <span className="text-danger"> *</span>}
-                        {m.errors[field.key] && <span className="block text-xs text-danger">{m.errors[field.key]}</span>}
-                      </td>
-                      <td className="px-3 py-1.5 text-end text-muted">{before === undefined ? '–' : `${formatMeasurement(before, language)} ${unit}`}</td>
-                      <td className="px-3 py-1.5">
-                        <div className="flex items-center gap-2">
-                          <MInput
-                            key={`${field.key}-${m.generation}`}
-                            label={label(field.label)}
-                            value={now}
-                            onChange={(v) => m.setOne(field.key, v)}
-                            error={m.errors[field.key]}
-                            className="h-9 w-28 rounded-lg border border-line bg-panel px-2.5 text-end font-display text-base font-semibold focus:outline-2 focus:outline-focus"
-                          />
-                          <span className="text-xs text-muted">{unit}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-1.5">
-                        <Delta now={now} before={before} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            ))}
-          </table>
-        </div>
-      </section>
-      <SavePanel m={m} />
-    </MeasureForm>
-  );
+interface GridOptions {
+  /** Under each old value, how much it moved from the version before it. */
+  cellDeltas?: boolean;
+  /** Old values are buttons that copy that one value into the new column. */
+  pickCells?: boolean;
+  /** Each version's header lists the orders that used it. */
+  orders?: boolean;
+  /** Hide rows where nothing ever changed and nothing is being changed. */
+  onlyChanged?: boolean;
+  max?: number;
 }
 
-/** C: one big tile per measurement, grouped, the old value and change under the number; a side panel with history. */
-export function MeasureVariantC({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
+/** The new values beside earlier versions, newest first; any version can be copied in. */
+function HistoryGrid({ m, customerId, opts = {} }: { m: MeasureState; customerId: string; opts?: GridOptions }) {
   const { t, label, language, date } = useI18n();
-  const m = useMeasureForm(customer.id, template);
-  const history = [...m.versions].reverse();
+  const { state } = useSnapshot();
+  const history = [...m.versions].reverse().slice(0, opts.max ?? 5);
+  const usedOn = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    if (!opts.orders) return out;
+    for (const order of Object.values(state.orders)) {
+      if (order.customerId !== customerId) continue;
+      for (const item of order.items) {
+        if (item.templateId !== m.template.id || !item.measurements) continue;
+        const list = (out[item.measurements.versionId] ??= []);
+        if (!list.includes(order.number)) list.push(order.number);
+      }
+    }
+    return out;
+  }, [opts.orders, state.orders, customerId, m.template.id]);
+  const cols = 2 + Math.max(history.length, 1);
+  const rowMoves = (key: string) => {
+    if (changedFromPrevious(m.values[key] ?? null, m.previous[key])) return true;
+    for (let i = 0; i < history.length - 1; i++) {
+      const a = history[i]!.values[key];
+      const b = history[i + 1]!.values[key];
+      if (a && b && a.value !== b.value) return true;
+    }
+    return false;
+  };
   return (
-    <MeasureForm m={m} customer={customer}>
-      <section aria-label={t('measure.section')} className={`${CARD} min-w-0 flex-1`}>
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto p-5">
-          <p className="text-sm text-muted">Enter চাপলে পরের মাপে যাবে। ৩৮.৫ বা ৩৮ ১/২ দুটোই চলে।</p>
-          {fieldGroups(template.fields).map((group) => (
-            <fieldset key={group.group} className="flex flex-col gap-2">
-              <legend className="mb-2 text-xs font-bold text-muted">{groupLabel(group.group, t)}</legend>
-              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
-                {group.fields.map((field) => {
-                  const now = m.values[field.key] ?? null;
-                  const before = m.previous[field.key];
-                  const changed = changedFromPrevious(now, before);
-                  const error = m.errors[field.key];
-                  return (
-                    <label
-                      key={field.key}
-                      className={`flex flex-col gap-1 rounded-xl px-3 pt-2 pb-2.5 ring-inset focus-within:ring-2 focus-within:ring-brand ${
-                        error ? 'ring-2 ring-danger' : changed ? 'bg-warn-soft/60 ring-1 ring-warn-line' : 'bg-surface/60 ring-1 ring-line'
-                      }`}
-                    >
-                      <span className="flex items-center justify-between text-sm font-medium text-muted">
-                        <span>
-                          {label(field.label)}
-                          {field.required && <span className="text-danger"> *</span>}
-                        </span>
-                        <span className="text-xs">{t(field.unit === 'cm' ? 'unit.cm' : 'unit.inch')}</span>
-                      </span>
+    <table className="w-full text-sm">
+      <thead className="sticky top-0 z-10 bg-panel text-xs">
+        <tr className="border-b border-line">
+          <th className="px-5 py-2 text-start align-bottom font-semibold text-muted">মাপ</th>
+          <th className="w-48 bg-brand-soft px-3 py-2 text-start align-bottom font-bold text-brand-strong">নতুন মাপ</th>
+          {history.map((v, i) => (
+            <th key={v.id} className="px-3 py-2 text-end align-bottom font-semibold text-muted">
+              <span className="block text-ink">{date(v.takenAt.slice(0, 10), { year: true })}</span>
+              <span className="block font-normal">{i === 0 ? t('measure.current') : t(v.source === 'sample' ? 'source.sample' : 'source.body')}</span>
+              {opts.orders && (
+                <span className="mt-0.5 flex flex-wrap justify-end gap-1">
+                  {(usedOn[v.id] ?? []).map((n) => (
+                    <span key={n} className="inline-flex items-center gap-0.5 rounded bg-surface px-1 font-normal text-ink">
+                      <ReceiptText aria-hidden="true" size={10} />
+                      {n}
+                    </span>
+                  ))}
+                  {!usedOn[v.id] && <span className="font-normal">কোনো অর্ডারে নয়</span>}
+                </span>
+              )}
+              <button type="button" onClick={() => m.load(v)} className="mt-0.5 font-semibold text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-focus">
+                এগুলো বসান
+              </button>
+            </th>
+          ))}
+          {history.length === 0 && <th className="px-3 py-2 text-start font-normal text-muted">আগের কোনো মাপ নেই</th>}
+        </tr>
+      </thead>
+      {fieldGroups(m.template.fields).map((group) => {
+        const fields = opts.onlyChanged ? group.fields.filter((f) => rowMoves(f.key) || m.errors[f.key]) : group.fields;
+        if (fields.length === 0) return null;
+        return (
+          <tbody key={group.group}>
+            <tr>
+              <th colSpan={cols} className="bg-surface/70 px-5 py-1.5 text-start text-xs font-bold text-muted">
+                {groupLabel(group.group, t)}
+              </th>
+            </tr>
+            {fields.map((field) => {
+              const now = m.values[field.key] ?? null;
+              return (
+                <tr key={field.key} className="border-b border-line">
+                  <td className="px-5 py-1.5 font-medium">
+                    {label(field.label)}
+                    {field.required && <span className="text-danger"> *</span>}
+                    {m.errors[field.key] && <span className="block text-xs text-danger">{m.errors[field.key]}</span>}
+                  </td>
+                  <td className="bg-brand-soft/40 px-3 py-1.5">
+                    <div className="flex items-center gap-2">
                       <MInput
                         key={`${field.key}-${m.generation}`}
                         label={label(field.label)}
                         value={now}
                         onChange={(v) => m.setOne(field.key, v)}
-                        error={error}
-                        className="w-full bg-transparent font-display text-3xl font-bold outline-none"
+                        error={m.errors[field.key]}
+                        className="h-9 w-24 rounded-lg border border-line bg-panel px-2.5 text-end font-display text-base font-semibold focus:outline-2 focus:outline-focus"
                       />
-                      <span className="flex min-h-5 items-center gap-1.5 text-xs text-muted">
-                        {error ? (
-                          <span className="text-danger">{error}</span>
-                        ) : before !== undefined ? (
-                          <>
-                            আগে {formatMeasurement(before, language)} <Delta now={now} before={before} />
-                          </>
+                      <Delta now={now} before={m.previous[field.key]} />
+                    </div>
+                  </td>
+                  {history.map((v, i) => {
+                    const value = v.values[field.key];
+                    const older = history[i + 1]?.values[field.key];
+                    const moved = value && older && value.value !== older.value;
+                    const same = value !== undefined && now === value.value;
+                    const text = value ? formatMeasurement(value.value, language) : '–';
+                    return (
+                      <td key={v.id} className={`px-3 py-1.5 text-end ${moved ? 'font-semibold text-warn-ink' : 'text-muted'}`}>
+                        {opts.pickCells && value ? (
+                          <button
+                            type="button"
+                            title="এই মাপটি বসান"
+                            aria-label={`${label(field.label)} ${text} বসান`}
+                            onClick={() => m.pick(field.key, value.value)}
+                            className={`rounded-md px-2 py-0.5 hover:bg-brand-soft hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-focus ${same ? 'ring-1 ring-brand ring-inset' : ''}`}
+                          >
+                            {text}
+                          </button>
                         ) : (
-                          'আগে ছিল না'
+                          text
                         )}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-          ))}
-        </div>
-      </section>
-      <SavePanel m={m}>
-        {history.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <History aria-hidden="true" size={15} /> আগের মাপগুলো
-            </p>
-            {history.map((v, i) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => m.load(v)}
-                className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
-              >
-                <span>
-                  {date(v.takenAt.slice(0, 10), { year: true })}
-                  {i === 0 && <span className="ms-1.5 rounded-full bg-brand-soft px-1.5 text-xs font-semibold text-brand-strong">{t('measure.current')}</span>}
-                </span>
-                <span className="text-xs font-semibold text-brand-strong">বসান</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </SavePanel>
+                        {opts.cellDeltas && moved && (
+                          <span className="block text-[11px] font-normal">{deltaText(Math.round((value.value - older.value) * 1000) / 1000, language)}</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  {history.length === 0 && <td />}
+                </tr>
+              );
+            })}
+          </tbody>
+        );
+      })}
+    </table>
+  );
+}
+
+/** Along the bottom of the grid card: where it was measured from, notes, counts, cancel and save. */
+function MeasureFooter({ m, children }: { m: MeasureState; children?: ReactNode }) {
+  const { t, number } = useI18n();
+  return (
+    <div className="flex flex-wrap items-end gap-4 border-t border-line px-5 py-3">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm font-semibold">{t('measure.source')}</p>
+        <SourceSwitch m={m} />
+      </div>
+      <TextField label={t('measure.notes')} className="min-w-64 flex-1" value={m.notes} onChange={(e) => m.setNotes(e.target.value)} autoComplete="off" />
+      {children}
+      <p className="text-sm text-muted">
+        {number(m.changed)}টি বদলেছে · {number(m.missing.length)}টি বাকি
+      </p>
+      {m.problem && (
+        <p role="alert" className="text-sm text-danger">
+          {m.problem}
+        </p>
+      )}
+      <Link to={m.backTo} className={buttonClasses('secondary', 'lg')}>
+        {t('common.cancel')}
+      </Link>
+      <Button type="submit" size="lg" disabled={m.saving}>
+        {t('measure.save')}
+      </Button>
+    </div>
+  );
+}
+
+function GridCard({ m, customer, opts, footer = true, top }: { m: MeasureState; customer: Customer; opts?: GridOptions; footer?: boolean; top?: ReactNode }) {
+  const { t } = useI18n();
+  return (
+    <section aria-label={t('measure.section')} className={`${CARD} min-w-0 flex-1`}>
+      {top}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <HistoryGrid m={m} customerId={customer.id} opts={opts} />
+      </div>
+      {footer && <MeasureFooter m={m} />}
+    </section>
+  );
+}
+
+/** B: D's grid with how much each old value moved, and the save panel at the side instead of the bottom. */
+export function MeasureVariantB({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
+  const m = useMeasureForm(customer.id, template);
+  return (
+    <MeasureForm m={m} customer={customer}>
+      <GridCard m={m} customer={customer} opts={{ cellDeltas: true }} footer={false} />
+      <SavePanel m={m} />
+    </MeasureForm>
+  );
+}
+
+/** C: D, where any old value can be clicked to copy just that one into the new column. */
+export function MeasureVariantC({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
+  const m = useMeasureForm(customer.id, template);
+  return (
+    <MeasureForm m={m} customer={customer}>
+      <GridCard
+        m={m}
+        customer={customer}
+        opts={{ pickCells: true }}
+        top={<p className="border-b border-line px-5 py-2 text-sm text-muted">আগের যেকোনো মাপে ক্লিক করলে সেটি নতুন মাপে বসে যাবে। পুরো সেট বসাতে কলামের উপরের "এগুলো বসান" চাপুন।</p>}
+      />
     </MeasureForm>
   );
 }
 
 /** D: one grid, the new values beside every earlier version (newest first), changes tinted; any version can be copied in. */
 export function MeasureVariantD({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
-  const { t, label, language, date, number } = useI18n();
   const m = useMeasureForm(customer.id, template);
-  const history = [...m.versions].reverse().slice(0, 5);
   return (
     <MeasureForm m={m} customer={customer}>
-      <section aria-label={t('measure.section')} className={`${CARD} min-w-0 flex-1`}>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-panel text-xs">
-              <tr className="border-b border-line">
-                <th className="px-5 py-2 text-start font-semibold text-muted">মাপ</th>
-                <th className="w-44 bg-brand-soft px-3 py-2 text-start font-bold text-brand-strong">নতুন মাপ</th>
-                {history.map((v, i) => (
-                  <th key={v.id} className="px-3 py-2 text-end font-semibold text-muted">
-                    <span className="block text-ink">{date(v.takenAt.slice(0, 10), { year: true })}</span>
-                    <span className="block font-normal">{i === 0 ? t('measure.current') : t(v.source === 'sample' ? 'source.sample' : 'source.body')}</span>
-                    <button type="button" onClick={() => m.load(v)} className="mt-0.5 font-semibold text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-focus">
-                      এগুলো বসান
-                    </button>
-                  </th>
-                ))}
-                {history.length === 0 && <th className="px-3 py-2 text-start font-normal text-muted">আগের কোনো মাপ নেই</th>}
-              </tr>
-            </thead>
-            {fieldGroups(template.fields).map((group) => (
-              <tbody key={group.group}>
-                <tr>
-                  <th colSpan={2 + Math.max(history.length, 1)} className="bg-surface/70 px-5 py-1.5 text-start text-xs font-bold text-muted">
-                    {groupLabel(group.group, t)}
-                  </th>
-                </tr>
-                {group.fields.map((field) => {
-                  const now = m.values[field.key] ?? null;
-                  return (
-                    <tr key={field.key} className="border-b border-line">
-                      <td className="px-5 py-1.5 font-medium">
-                        {label(field.label)}
-                        {field.required && <span className="text-danger"> *</span>}
-                      </td>
-                      <td className="bg-brand-soft/40 px-3 py-1.5">
-                        <div className="flex items-center gap-2">
-                          <MInput
-                            key={`${field.key}-${m.generation}`}
-                            label={label(field.label)}
-                            value={now}
-                            onChange={(v) => m.setOne(field.key, v)}
-                            error={m.errors[field.key]}
-                            className="h-9 w-24 rounded-lg border border-line bg-panel px-2.5 text-end font-display text-base font-semibold focus:outline-2 focus:outline-focus"
-                          />
-                          <Delta now={now} before={m.previous[field.key]} />
-                        </div>
-                      </td>
-                      {history.map((v, i) => {
-                        const value = v.values[field.key];
-                        const older = history[i + 1]?.values[field.key];
-                        const moved = value && older && value.value !== older.value;
-                        return (
-                          <td key={v.id} className={`px-3 py-1.5 text-end ${moved ? 'font-semibold text-warn-ink' : 'text-muted'}`}>
-                            {value ? formatMeasurement(value.value, language) : '–'}
-                          </td>
-                        );
-                      })}
-                      {history.length === 0 && <td />}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            ))}
-          </table>
-        </div>
-        <div className="flex flex-wrap items-end gap-4 border-t border-line px-5 py-3">
-          <div className="flex flex-col gap-1.5">
-            <p className="text-sm font-semibold">{t('measure.source')}</p>
-            <SourceSwitch m={m} />
+      <GridCard m={m} customer={customer} />
+    </MeasureForm>
+  );
+}
+
+/** E: D with the orders that used each version under its date, all versions, and a switch to show only rows that moved. */
+export function MeasureVariantE({ customer, template }: { customer: Customer; template: GarmentTemplate }) {
+  const m = useMeasureForm(customer.id, template);
+  const [onlyChanged, setOnlyChanged] = useState(false);
+  const options = [
+    { value: false, label: 'সব মাপ' },
+    { value: true, label: 'শুধু যা বদলেছে' },
+  ];
+  return (
+    <MeasureForm m={m} customer={customer}>
+      <GridCard
+        m={m}
+        customer={customer}
+        opts={{ orders: true, onlyChanged, max: 8 }}
+        top={
+          <div className="flex items-center gap-3 border-b border-line px-5 py-2">
+            <div role="group" aria-label="দেখান" className="flex rounded-xl bg-surface p-[3px]">
+              {options.map((o) => (
+                <button
+                  key={String(o.value)}
+                  type="button"
+                  aria-pressed={onlyChanged === o.value}
+                  onClick={() => setOnlyChanged(o.value)}
+                  className={`min-h-8 rounded-[9px] px-3 text-sm focus-visible:outline-2 focus-visible:outline-focus ${onlyChanged === o.value ? 'bg-panel font-semibold text-ink shadow-sm' : 'text-muted'}`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-muted">প্রতিটি মাপের নিচে কোন অর্ডারে সেটি ব্যবহার হয়েছে তা দেখানো আছে।</p>
           </div>
-          <TextField label={t('measure.notes')} className="min-w-64 flex-1" value={m.notes} onChange={(e) => m.setNotes(e.target.value)} autoComplete="off" />
-          <p className="text-sm text-muted">
-            {number(m.changed)}টি বদলেছে · {number(m.missing.length)}টি বাকি
-          </p>
-          {m.problem && (
-            <p role="alert" className="text-sm text-danger">
-              {m.problem}
-            </p>
-          )}
-          <Link to={m.backTo} className={buttonClasses('secondary', 'lg')}>
-            {t('common.cancel')}
-          </Link>
-          <Button type="submit" size="lg" disabled={m.saving}>
-            {t('measure.save')}
-          </Button>
-        </div>
-      </section>
+        }
+      />
     </MeasureForm>
   );
 }
