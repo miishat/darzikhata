@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): desktop settings layouts, switched with ?variant=. Lives on prototype/settings-desktop only.
 import { toBanglaDigits, toEnglishDigits, type Branch, type GarmentTemplate, type Staff } from '@darzikhata/domain';
-import { Building2, ChevronRight, MonitorSmartphone, Pencil, Plus, Shirt, Store, Users, X, type LucideIcon } from 'lucide-react';
+import { Building2, ChevronRight, Link2, MonitorSmartphone, Pencil, Phone, Plus, ReceiptText, ShieldCheck, Shirt, Store, Users, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
@@ -141,39 +141,35 @@ function ShopForm({ inline = false }: { inline?: boolean }) {
     setSaved(true);
   }
 
-  const group = 'flex flex-col gap-4 rounded-xl border border-line p-4';
-  const legend = 'font-semibold';
   return (
     <form onSubmit={save} noValidate className={inline ? 'flex flex-col' : 'flex min-h-0 flex-1 flex-col'}>
       <div className={inline ? 'p-5' : 'relative min-h-0 flex-1 overflow-auto p-5'}>
-        <div className="grid max-w-4xl gap-4 xl:grid-cols-2">
-          <fieldset className={group}>
-            <legend className={`${legend} px-1`}>{L('নাম', 'Name')}</legend>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <SettingCard icon={Store} title={L('দোকানের নাম', 'Shop Name')} sub={L('রসিদ আর স্ট্যাটাস লিংকে দেখায়', 'Shown on receipts and status links')}>
             <TextField label={t('settings.shop.nameBn')} value={input.nameBn} onChange={(e) => set({ nameBn: e.target.value })} autoComplete="off" />
             <TextField label={t('settings.shop.nameEn')} value={input.nameEn} onChange={(e) => set({ nameEn: e.target.value })} autoComplete="off" />
-          </fieldset>
-          <fieldset className={group}>
-            <legend className={`${legend} px-1`}>{L('যোগাযোগ', 'Contact')}</legend>
+          </SettingCard>
+          <SettingCard icon={Phone} title={L('যোগাযোগ', 'Contact')} sub={L('কাস্টমার যেখানে খুঁজে পাবে', 'Where customers can reach the shop')}>
             <TextField label={t('settings.shop.phone')} value={input.phone} onChange={(e) => set({ phone: e.target.value })} type="tel" autoComplete="off" />
             <TextField label={t('settings.shop.address')} value={input.address} onChange={(e) => set({ address: e.target.value })} autoComplete="off" />
-          </fieldset>
-          <fieldset className={`${group} xl:col-span-2`}>
-            <legend className={`${legend} px-1`}>{L('নিয়ম', 'Rules')}</legend>
-            <div className="grid items-start gap-4 xl:grid-cols-2">
-              <TextField label={t('settings.shop.linkDays')} value={input.days} onChange={(e) => set({ days: e.target.value })} hint={t('settings.shop.linkDaysHint')} inputMode="numeric" autoComplete="off" />
-              <div className="rounded-lg bg-surface p-3">
-                <Checkbox label={t('settings.shop.restrict')} checked={input.restrict} onChange={(restrict) => set({ restrict })} />
-              </div>
+          </SettingCard>
+          <SettingCard icon={Link2} title={L('স্ট্যাটাস লিংক', 'Status Links')} sub={t('settings.shop.linkDaysHint')}>
+            <TextField label={t('settings.shop.linkDays')} value={input.days} onChange={(e) => set({ days: e.target.value })} inputMode="numeric" autoComplete="off" />
+          </SettingCard>
+          <SettingCard icon={ShieldCheck} title={L('মাপের গোপনীয়তা', 'Measurement Privacy')} sub={L('কে মহিলা কাস্টমারের মাপ দেখবে', 'Who sees female customers’ measurements')}>
+            <div className="rounded-lg bg-surface/60 p-3">
+              <Checkbox label={t('settings.shop.restrict')} checked={input.restrict} onChange={(restrict) => set({ restrict })} />
             </div>
-          </fieldset>
+          </SettingCard>
           {/* How the name reads on a receipt, so the owner sees the effect of each field. */}
-          <div className="rounded-xl border border-dashed border-line p-4 xl:col-span-2">
-            <p className="text-sm text-muted">{L('রসিদে যেমন দেখাবে', 'On a Receipt')}</p>
-            <p className="mt-2 text-center font-display text-xl font-bold">{(language === 'bn' ? input.nameBn : input.nameEn) || input.nameBn || input.nameEn}</p>
-            <p className="text-center text-sm text-muted">
-              {input.address} · {input.phone}
-            </p>
-          </div>
+          <SettingCard icon={ReceiptText} title={L('রসিদে যেমন দেখাবে', 'On a Receipt')} sub={L('সেভ করার আগেই দেখে নিন', 'A preview before you save')} className="lg:col-span-2">
+            <div className="rounded-lg bg-surface/60 p-4 text-center">
+              <p className="font-display text-xl font-bold">{(language === 'bn' ? input.nameBn : input.nameEn) || input.nameBn || input.nameEn}</p>
+              <p className="text-sm text-muted">
+                {input.address} · {input.phone}
+              </p>
+            </div>
+          </SettingCard>
         </div>
       </div>
       {(
@@ -320,6 +316,25 @@ function StaffCards({ onEdit }: { onEdit(staff: Staff): void }) {
 }
 
 /** Each branch with the devices that belong to it; a device moves with its select. */
+/** The card every section uses: an icon tile, a title and a line under it, an optional button, then the content. */
+function SettingCard({ icon: Icon, title, sub, action, className = '', children }: { icon: LucideIcon; title: string; sub?: string; action?: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <section aria-label={title} className={`flex flex-col gap-3 rounded-xl border border-line p-4 ${className}`}>
+      <div className="flex items-start gap-3">
+        <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong">
+          <Icon size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold">{title}</p>
+          {sub && <p className="text-sm text-muted">{sub}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function BranchBoard({ onEdit }: { onEdit(branch: Branch): void }) {
   const { t, language, number } = useI18n();
   const L = useL();
@@ -328,33 +343,31 @@ function BranchBoard({ onEdit }: { onEdit(branch: Branch): void }) {
   const move = (deviceId: string, branchId: string) =>
     void store.updateConfig((c) => ({ ...c, devices: c.devices.map((d) => (d.id === deviceId ? { ...d, branchId } : d)) }));
   return (
-    <div className="flex flex-col gap-4 p-5">
-      <div className="grid gap-4 lg:grid-cols-2">
+    <div className="flex flex-col gap-3 p-5">
+      <div className="grid gap-3 lg:grid-cols-2">
         {config!.branches.map((b) => {
           const devices = config!.devices.filter((d) => d.branchId === b.id);
           return (
-            <section key={b.id} aria-label={b.name[language]} className="flex flex-col rounded-xl border border-line">
-              <div className="flex items-start gap-3 border-b border-line p-4">
-                <span aria-hidden="true" className="grid size-10 place-items-center rounded-lg bg-surface">
-                  {b.kind === 'shop' ? <Store size={20} /> : <Building2 size={20} />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-lg font-bold">{b.name[language]}</p>
-                  <p className="text-sm text-muted">
-                    {t(`branchKind.${b.kind}`)} · {b.address}
-                  </p>
-                </div>
+            <SettingCard
+              key={b.id}
+              icon={b.kind === 'shop' ? Store : Building2}
+              title={b.name[language]}
+              sub={`${t(`branchKind.${b.kind}`)} · ${b.address} · ${L(`${number(devices.length)}টি ডিভাইস`, `${number(devices.length)} Devices`)}`}
+              action={
                 <Button variant="secondary" aria-label={t('settings.editItem', { name: b.name[language] })} onClick={() => onEdit(b)}>
                   <Pencil aria-hidden="true" size={16} />
                 </Button>
-              </div>
-              <ul className="flex flex-col gap-2 p-3">
-                {devices.length === 0 && <li className="px-1 text-sm text-muted">{L('কোনো ডিভাইস নেই', 'No devices')}</li>}
+              }
+            >
+              <ul className="flex flex-col gap-2">
+                {devices.length === 0 && <li className="text-sm text-muted">{L('কোনো ডিভাইস নেই', 'No devices')}</li>}
                 {devices.map((d) => (
                   <li key={d.id} className="flex items-center gap-3 rounded-lg bg-surface/60 px-3 py-2">
                     <MonitorSmartphone aria-hidden="true" size={18} className="text-muted" />
                     <span className="flex-1 font-semibold">{d.name}</span>
-                    <span className="rounded bg-panel px-1.5 font-mono text-sm">{d.series}</span>
+                    <span className="rounded-md bg-panel px-1.5 py-0.5 text-xs">
+                      {t('settings.device.series')} {d.series}
+                    </span>
                     <select
                       aria-label={t('settings.device.branch', { name: d.name })}
                       value={d.branchId}
@@ -371,8 +384,7 @@ function BranchBoard({ onEdit }: { onEdit(branch: Branch): void }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-auto border-t border-line px-4 py-2 text-xs text-muted">{L(`${number(devices.length)}টি ডিভাইস`, `${number(devices.length)} Devices`)}</p>
-            </section>
+            </SettingCard>
           );
         })}
       </div>
