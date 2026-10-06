@@ -31,7 +31,8 @@ export const en: Messages = {
   'nav.newOrder': 'New Order',
   'nav.main': 'Main Menu',
   'nav.late': '{count} Late',
-  'nav.section.shop': 'Accounts & Shop',
+  'nav.collapse': 'Collapse Menu',
+  'nav.expand': 'Expand Menu',
   'nav.branchMenu': 'Shop and Branch',
 
   'sync.online': 'Online',
