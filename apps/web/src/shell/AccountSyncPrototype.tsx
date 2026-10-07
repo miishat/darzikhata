@@ -157,7 +157,7 @@ export function PrototypeDialogA({ kind, onClose }: { kind: ProtoKind | null; on
   const shown = useRef<ProtoKind>('account');
   if (kind) shown.current = kind;
   return (
-    <Dialog open={kind !== null} animated title={t(shown.current === 'account' ? 'shell.account' : 'sync.title')} onClose={onClose}>
+    <Dialog open={kind !== null} animated hideTitle title={t(shown.current === 'account' ? 'shell.account' : 'sync.title')} onClose={onClose}>
       {shown.current === 'account' ? <PopoverAccount onClose={onClose} /> : <PopoverSync onClose={onClose} />}
     </Dialog>
   );

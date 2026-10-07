@@ -11,6 +11,8 @@ export interface DialogProps {
   hideTitleOnPhone?: boolean;
   /** The action buttons show only on larger screens; on a phone the sheet closes by tapping outside it. */
   actionsDesktopOnly?: boolean;
+  /** PROTOTYPE: the title is announced but not shown on any screen, when the content makes it plain. */
+  hideTitle?: boolean;
   /** PROTOTYPE: on a larger screen it grows out of the button that opened it, its sections settle in turn, and it shrinks away on closing. */
   animated?: boolean;
 }
@@ -74,7 +76,7 @@ export function useModalFocus(open: boolean, panel: RefObject<HTMLElement | null
 }
 
 /** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
-export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false, animated = false }: DialogProps) {
+export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false, animated = false, hideTitle = false }: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const [wasOpen, setWasOpen] = useState(open);
@@ -119,10 +121,10 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
         <div aria-hidden="true" className="sticky top-0 z-10 -mx-5 mb-1 bg-panel-raised pb-2 pt-2 sm:hidden">
           <div className="mx-auto h-1 w-9 rounded-full bg-muted/40" />
         </div>
-        <h2 id={titleId} className={`text-lg font-semibold ${hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
+        <h2 id={titleId} className={`text-lg font-semibold ${hideTitle ? 'sr-only' : hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
           {title}
         </h2>
-        {children && <div className={`dialog-body text-muted ${hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
+        {children && <div className={`dialog-body text-muted ${hideTitle ? '' : hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
         {actions && <div className={`mt-5 flex flex-wrap justify-end gap-2 max-sm:[&>*]:flex-1 ${actionsDesktopOnly ? 'max-sm:hidden' : ''}`}>{actions}</div>}
       </div>
     </div>,
