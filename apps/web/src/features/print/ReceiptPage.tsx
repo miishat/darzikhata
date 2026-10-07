@@ -5,8 +5,10 @@ import { useSnapshot } from '../../data/StoreContext';
 import { formatDate, formatMoney, translate } from '../../i18n/format';
 import { shareOrCopy } from '../../lib/share';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
 import { receiptModel, receiptShareText, type ReceiptModel } from './receipt';
+import { ReceiptMemo } from './ReceiptMemo';
 
 /** The totals table: price, discount, adjustments, total, paid, then balance or credit due. */
 export function MoneyTable({ model, language }: { model: ReceiptModel; language: Language }) {
@@ -49,10 +51,11 @@ export function MoneyTable({ model, language }: { model: ReceiptModel; language:
   );
 }
 
-/** A printable receipt, in its own language, with share and print. */
+/** A printable receipt, in its own language, with share and print. A desktop prints it as a cash memo with a tear-off slip. */
 export function ReceiptPage() {
   const { orderId = '' } = useParams();
   const app = useI18n();
+  const { kind } = useShell();
   const { state, config } = useSnapshot();
   const [language, setLanguage] = usePrintLanguage();
   const [copied, setCopied] = useState(false);
@@ -83,7 +86,18 @@ export function ReceiptPage() {
       }}
       onShare={share}
       notice={copied ? app.t('print.copied') : null}
+      orderId={order.id}
     >
+      {kind === 'desktop' ? <ReceiptMemo model={model} language={language} /> : <ReceiptSheet model={model} language={language} />}
+    </PrintLayout>
+  );
+}
+
+/** The phone's receipt: shop and order, the garments, the totals and the payments as tables. */
+function ReceiptSheet({ model, language }: { model: ReceiptModel; language: Language }) {
+  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
+  return (
+    <>
       <header className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t('receipt.title')}</h1>
@@ -173,6 +187,6 @@ export function ReceiptPage() {
           </tbody>
         </table>
       )}
-    </PrintLayout>
+    </>
   );
 }

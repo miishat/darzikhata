@@ -5,9 +5,11 @@ import { Loading } from '../../app/guards';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { LanguageToggle } from '../../shell/ShellParts';
+import { useShell } from '../../shell/ShellPreference';
 import { initialsOf } from '../../ui/Avatar';
 import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
 import { buttonClasses } from '../../ui/Button';
+import { DesktopStatusPage } from './DesktopStatusPage';
 
 function Notice({ message }: { message: string }) {
   return (
@@ -30,11 +32,12 @@ const LOOK: Record<SummaryGroup, { icon: LucideIcon; chip: string }> = {
   cancelled: { icon: Ban, chip: 'bg-tone-cancelled-bg text-tone-cancelled-fg' },
 };
 
-/** What a customer sees from a status link: the shop, the order number and each garment's progress. Nothing else. */
+/** What a customer sees from a status link: the shop, the order number and each garment's progress. Nothing else. A desktop gets a wider page. */
 export function StatusPage() {
   const { token = '' } = useParams();
   const { t, label, date, dateTime, number, language } = useI18n();
   const { status, config, state } = useSnapshot();
+  const { kind } = useShell();
   if (status === 'loading') return <Loading />;
   const order = config ? findOrderByToken(Object.values(state.orders), token) : null;
   if (!config || !order) return <Notice message={t('status.notFound')} />;
@@ -48,6 +51,7 @@ export function StatusPage() {
   const headline = allDelivered
     ? t('status.allDelivered')
     : t('status.headline', { total: number(counted.length), ready: number(ready) });
+  if (kind === 'desktop') return <DesktopStatusPage view={view} headline={headline} />;
   const shopInitial = initialsOf(view.shop.name.split(/\s+/)[0] ?? '');
 
   return (

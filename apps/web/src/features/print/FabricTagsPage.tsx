@@ -22,7 +22,7 @@ export function FabricTagsPage() {
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
 
   return (
-    <PrintLayout back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }} title={t('print.tags')} language={language} onLanguage={setLanguage}>
+    <PrintLayout back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }} title={t('print.tags')} language={language} onLanguage={setLanguage} orderId={order.id}>
       <h1 className="mb-4 text-2xl font-semibold">{t('print.tags')}</h1>
       <ul aria-label={t('print.tags')} className="grid grid-cols-2 gap-3">
         {order.items
