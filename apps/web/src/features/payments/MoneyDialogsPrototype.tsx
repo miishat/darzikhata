@@ -35,8 +35,9 @@ const VARIANTS = {
   A: 'Current small dialogs',
   B: 'Form + before → after',
   C: 'Big amount, quick picks, method tiles',
-  D: 'One money window with tabs + history',
-  E: 'Side drawer with the ledger',
+  D: 'B frame with C insides (big amount left, before → after right)',
+  E: 'B form with C shortcuts (chips, tiles, amount on the button)',
+  F: 'C with B numbers (before → after strip on top)',
 };
 const KEYS = Object.keys(VARIANTS);
 
@@ -64,6 +65,7 @@ export function MoneyPrototype({ kind, order, payment, onClose, current }: Proto
       {variant === 'C' && <VariantC {...props} />}
       {variant === 'D' && <VariantD {...props} />}
       {variant === 'E' && <VariantE {...props} />}
+      {variant === 'F' && <VariantF {...props} />}
       {createPortal(<PrototypeSwitcher variants={VARIANTS} />, document.body)}
     </>
   );
@@ -256,13 +258,13 @@ function WhoLine({ order }: { order: Order }) {
 }
 
 /** The standard fields for the action, as today. */
-function Fields({ m, hideAmount = false, methodTiles = false }: { m: Money; hideAmount?: boolean; methodTiles?: boolean }) {
+function Fields({ m, hideAmount = false, methodTiles = false, picks = false }: { m: Money; hideAmount?: boolean; methodTiles?: boolean; picks?: boolean }) {
   const { t, money } = useI18n();
   const methods = METHODS.map((value) => ({ value, label: t(`method.${value}`) }));
   return (
     <div className="flex flex-col gap-4">
       {m.kind === 'correct' && <p className="font-semibold">{t('payments.nowRecorded', { amount: money(m.current) })}</p>}
-      {m.kind === 'adjust' && !hideAmount && (
+      {m.kind === 'adjust' && !hideAmount && !picks && (
         <ChoiceGroup
           legend={t('payments.adjustKind')}
           value={m.dir}
@@ -273,6 +275,7 @@ function Fields({ m, hideAmount = false, methodTiles = false }: { m: Money; hide
           onChange={m.setDir}
         />
       )}
+      {!hideAmount && picks && m.kind === 'adjust' && <DirectionToggle m={m} />}
       {!hideAmount && (
         <NumberField
           key={m.amountKey}
@@ -283,6 +286,7 @@ function Fields({ m, hideAmount = false, methodTiles = false }: { m: Money; hide
           error={m.amountError}
         />
       )}
+      {!hideAmount && picks && <QuickPicks m={m} align="start" />}
       {(m.kind === 'take' || m.kind === 'refund') &&
         (methodTiles ? <MethodTiles m={m} /> : <ChoiceGroup legend={t('payment.method')} value={m.method} options={methods} onChange={m.setMethod} />)}
       {m.kind === 'take' && (!methodTiles || m.method !== 'cash') && (
@@ -472,7 +476,7 @@ function BigAmount({ m }: { m: Money }) {
   );
 }
 
-function QuickPicks({ m }: { m: Money }) {
+function QuickPicks({ m, align = 'center' }: { m: Money; align?: 'center' | 'start' }) {
   const { money } = useI18n();
   const sub = subtotal(m.order);
   const picks: Array<{ label: string; value: number }> =
@@ -497,7 +501,7 @@ function QuickPicks({ m }: { m: Money }) {
             ? [10000, 20000, 50000].map((v) => ({ label: money(v), value: v }))
             : [{ label: `এখনকার ${money(m.current)}`, value: m.current }];
   return (
-    <div className="flex flex-wrap justify-center gap-2">
+    <div className={`-mt-1 flex flex-wrap gap-2 ${align === 'center' ? 'justify-center' : ''}`}>
       {picks.map((p) => (
         <button
           key={p.label}
@@ -512,41 +516,69 @@ function QuickPicks({ m }: { m: Money }) {
   );
 }
 
-function VariantC(props: FormProps) {
-  const m = useMoney(props);
+function DirectionToggle({ m }: { m: Money }) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {(['up', 'down'] as const).map((d) => (
+        <button
+          key={d}
+          type="button"
+          aria-pressed={m.dir === d}
+          onClick={() => m.setDir(d)}
+          className={`min-h-11 rounded-xl border font-semibold ${m.dir === d ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel hover:bg-surface'}`}
+        >
+          {d === 'up' ? '+ দাম বাড়ান' : '− দাম কমান'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The save label, with the amount in it when money changes hands. */
+function useSaveLabel(m: Money) {
   const labels = useLabels();
   const { money } = useI18n();
-  const left = m.after.total - m.after.paid;
   const verb = labels.save(m.kind);
-  const saveLabel = m.amount !== null && (m.kind === 'take' || m.kind === 'refund') ? `${money(m.amount)} ${verb}` : verb;
+  return m.amount !== null && m.amount > 0 && (m.kind === 'take' || m.kind === 'refund') ? `${money(m.amount)} ${verb}` : verb;
+}
+
+/** C's middle: direction, the big amount, the quick picks and the rest of the fields with method tiles. */
+function BigBody({ m }: { m: Money }) {
+  const { money } = useI18n();
   return (
-    <Frame label={labels.title(m.kind)} onClose={m.onClose} className="flex max-h-[calc(100dvh-2rem)] w-[540px] max-w-full flex-col gap-5 overflow-y-auto rounded-2xl p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
-          <h2 className="font-display text-xl font-bold">{labels.title(m.kind)}</h2>
-          <WhoLine order={m.order} />
-        </div>
-        <CloseButton onClose={m.onClose} />
-      </div>
-      {m.kind === 'adjust' && (
-        <div className="grid grid-cols-2 gap-2">
-          {(['up', 'down'] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={m.dir === d}
-              onClick={() => m.setDir(d)}
-              className={`min-h-11 rounded-xl border font-semibold ${m.dir === d ? 'border-brand bg-brand-soft text-brand-strong' : 'border-line bg-panel hover:bg-surface'}`}
-            >
-              {d === 'up' ? '+ দাম বাড়ান' : '− দাম কমান'}
-            </button>
-          ))}
-        </div>
-      )}
+    <>
+      {m.kind === 'adjust' && <DirectionToggle m={m} />}
       {m.kind === 'correct' && <p className="text-center text-sm text-muted">এখন লেখা আছে {money(m.current)}</p>}
       <BigAmount m={m} />
       <QuickPicks m={m} />
       <Fields m={m} hideAmount methodTiles />
+    </>
+  );
+}
+
+function Header({ m }: { m: Money }) {
+  const labels = useLabels();
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="font-display text-xl font-bold">{labels.title(m.kind)}</h2>
+        <WhoLine order={m.order} />
+      </div>
+      <CloseButton onClose={m.onClose} />
+    </div>
+  );
+}
+
+function VariantC(props: FormProps) {
+  const m = useMoney(props);
+  const labels = useLabels();
+  const { money } = useI18n();
+  const saveLabel = useSaveLabel(m);
+  const left = m.after.total - m.after.paid;
+  return (
+    <Frame label={labels.title(m.kind)} onClose={m.onClose} className="flex max-h-[calc(100dvh-2rem)] w-[540px] max-w-full flex-col gap-5 overflow-y-auto rounded-2xl p-6">
+      <Header m={m} />
+      <BigBody m={m} />
       <p className="text-center text-sm text-muted">
         {left > 0 ? `পরে বাকি থাকবে ${money(left)}` : left < 0 ? `পরে ফেরত পাওনা ${money(-left)}` : 'পরে পুরো টাকা শোধ'}
       </p>
@@ -556,149 +588,90 @@ function VariantC(props: FormProps) {
   );
 }
 
-/* ---------- D: one money window with tabs and the history ---------- */
+/* ---------- D: B's two columns, C's big amount on the left ---------- */
 
 function VariantD(props: FormProps) {
-  const can = useCan();
+  const m = useMoney(props);
   const labels = useLabels();
-  const { t } = useI18n();
-  const [tab, setTab] = useState<MoneyKind>(props.kind);
-  const [payment, setPayment] = useState(props.payment);
-  const tabs: MoneyKind[] = [
-    ...(can('payments.record') ? (['take'] as const) : []),
-    ...(can('payments.refund') && netPaid(props.order.payments) > 0 ? (['refund'] as const) : []),
-    ...(can('orders.edit') ? (['discount', 'adjust'] as const) : []),
-    ...(payment ? (['correct'] as const) : []),
-  ];
+  const saveLabel = useSaveLabel(m);
   return (
-    <Frame label={t('payments.section')} onClose={props.onClose} className="flex h-[min(660px,calc(100dvh-2rem))] w-[920px] max-w-full flex-col overflow-hidden rounded-2xl">
-      <header className="flex items-center gap-4 border-b border-line px-6 py-4">
-        <div className="flex flex-1 flex-col gap-1">
-          <h2 className="font-display text-xl font-bold">{t('payments.section')}</h2>
-          <WhoLine order={props.order} />
+    <Frame label={labels.title(m.kind)} onClose={m.onClose} className="grid max-h-[calc(100dvh-2rem)] w-[860px] max-w-full grid-cols-[1fr_300px] overflow-hidden rounded-2xl">
+      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto p-6">
+        <Header m={m} />
+        <BigBody m={m} />
+        <Problem m={m} />
+        <div className="mt-auto">
+          <Actions m={m} label={saveLabel} wide />
         </div>
-        <CloseButton onClose={props.onClose} />
-      </header>
-      <div role="tablist" className="flex gap-1 border-b border-line px-4">
-        {tabs.map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={`-mb-px border-b-2 px-4 py-3 text-sm font-semibold ${tab === k ? 'border-brand text-brand-strong' : 'border-transparent text-muted hover:text-ink'}`}
-          >
-            {labels.tab(k)}
-          </button>
-        ))}
       </div>
-      <TabBody
-        key={`${tab}-${payment?.id ?? ''}`}
-        {...props}
-        kind={tab}
-        payment={payment}
-        onCorrect={(p) => {
-          setPayment(p);
-          setTab('correct');
-        }}
-      />
+      <aside className="flex flex-col gap-4 border-s border-line bg-surface p-6">
+        <h3 className="text-sm font-semibold text-muted">এই অর্ডারের হিসাব</h3>
+        <BeforeAfter m={m} />
+        <div className="mt-auto">
+          <Outcome m={m} />
+        </div>
+      </aside>
     </Frame>
   );
 }
 
-function TabBody(props: FormProps & { onCorrect(p: Payment): void }) {
-  const m = useMoney(props);
-  return (
-    <div className="grid min-h-0 flex-1 grid-cols-[1fr_380px]">
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-6">
-        <Fields m={m} />
-        <Problem m={m} />
-        <div className="mt-auto">
-          <Actions m={m} />
-        </div>
-      </div>
-      <aside className="flex min-h-0 flex-col gap-4 border-s border-line bg-surface p-5">
-        <BeforeAfter m={m} compact />
-        <History order={m.order} onCorrect={props.onCorrect} />
-      </aside>
-    </div>
-  );
-}
-
-/** Every record on the order, newest first, with a correction link on each. */
-function History({ order, onCorrect }: { order: Order; onCorrect?(p: Payment): void }) {
-  const { t, date, money } = useI18n();
-  const can = useCan();
-  const { model } = useOrderInfo(order);
-  const rows = (model?.payments ?? []).map((row, i) => ({ row, payment: order.payments[i]! })).reverse();
-  return (
-    <section className="flex min-h-0 flex-1 flex-col gap-2">
-      <h3 className="text-sm font-semibold text-muted">{t('receipt.payments')}</h3>
-      {rows.length === 0 && <p className="text-sm text-muted">{t('payments.nothingYet')}</p>}
-      <ul className="m-0 flex min-h-0 flex-1 list-none flex-col overflow-y-auto p-0">
-        {rows.map(({ row, payment }) => (
-          <li key={row.id} className="flex items-center gap-3 border-b border-line py-2 text-sm last:border-b-0">
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="font-semibold">
-                {t(`receipt.kind.${row.kind}`)} · {t(`method.${row.method}`)}
-              </span>
-              <span className="truncate text-xs text-muted">
-                {date(row.at.slice(0, 10))}
-                {row.reason && ` · ${row.reason}`}
-              </span>
-            </div>
-            <span className={`whitespace-nowrap font-semibold ${row.effect < 0 ? 'text-danger' : 'text-ok'}`}>{money(row.effect)}</span>
-            {onCorrect && can('payments.correct') && row.kind !== 'correction' && (
-              <button type="button" onClick={() => onCorrect(payment)} className="text-xs font-semibold text-brand-strong hover:underline">
-                {t('payments.correct')}
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/* ---------- E: drawer from the right, ledger above, form docked below ---------- */
+/* ---------- E: B as it is, with C's shortcuts in the normal form ---------- */
 
 function VariantE(props: FormProps) {
   const m = useMoney(props);
   const labels = useLabels();
-  const { t, money } = useI18n();
-  const left = m.after.total - m.after.paid;
-  const tile = (label: string, from: number, to: number, tone = '') => (
-    <div className="flex flex-col gap-0.5 rounded-xl bg-surface px-3 py-2.5">
-      <span className="text-xs text-muted">{label}</span>
-      <span className={`font-display text-lg font-bold ${tone}`}>{money(to)}</span>
-      <span className={`text-xs ${from !== to ? 'text-muted line-through' : 'invisible'}`}>{money(from)}</span>
-    </div>
-  );
-  const fromLeft = m.before.total - m.before.paid;
+  const saveLabel = useSaveLabel(m);
   return (
-    <Frame side label={labels.title(m.kind)} onClose={m.onClose} className="flex h-full w-[460px] max-w-full flex-col">
-      <header className="flex items-start gap-3 border-b border-line px-5 py-4">
-        <div className="flex flex-1 flex-col gap-1.5">
+    <Frame label={labels.title(m.kind)} onClose={m.onClose} className="grid w-[780px] max-w-full grid-cols-[1fr_300px] overflow-hidden rounded-2xl">
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex flex-col gap-1.5">
           <h2 className="font-display text-xl font-bold">{labels.title(m.kind)}</h2>
           <WhoLine order={m.order} />
         </div>
-        <CloseButton onClose={m.onClose} />
-      </header>
-      <div className="grid grid-cols-3 gap-2 px-5 pt-4">
-        {tile(t('payments.billed'), m.before.total, m.after.total)}
-        {tile(t('money.paid'), m.before.paid, m.after.paid, 'text-ok')}
-        {tile(left < 0 ? t('money.creditDue') : t('money.balance'), Math.abs(fromLeft), Math.abs(left), left > 0 ? 'text-warn' : 'text-ok')}
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col px-5 pt-4">
-        <History order={m.order} />
-      </div>
-      <section className="flex flex-col gap-4 border-t border-line bg-panel px-5 py-4 shadow-[0_-6px_16px_-12px_rgb(0_0_0/0.3)]">
-        <h3 className="text-sm font-semibold text-brand-strong">নতুন লেনদেন</h3>
-        <Fields m={m} />
+        <Fields m={m} picks methodTiles />
         <Problem m={m} />
-        <Actions m={m} wide />
-      </section>
+        <div className="mt-auto">
+          <Actions m={m} label={saveLabel} />
+        </div>
+      </div>
+      <aside className="flex flex-col gap-4 border-s border-line bg-surface p-6">
+        <h3 className="text-sm font-semibold text-muted">এই অর্ডারের হিসাব</h3>
+        <BeforeAfter m={m} />
+        <div className="mt-auto">
+          <Outcome m={m} />
+        </div>
+      </aside>
+    </Frame>
+  );
+}
+
+/* ---------- F: C's single column, B's numbers as a strip under the header ---------- */
+
+function VariantF(props: FormProps) {
+  const m = useMoney(props);
+  const labels = useLabels();
+  const { t, money } = useI18n();
+  const saveLabel = useSaveLabel(m);
+  const fromLeft = m.before.total - m.before.paid;
+  const toLeft = m.after.total - m.after.paid;
+  const cell = (label: string, from: number, to: number, tone = '') => (
+    <div className={`flex flex-col items-center gap-0.5 px-2 py-2.5 ${from !== to ? 'bg-brand-soft' : ''}`}>
+      <span className="text-xs text-muted">{label}</span>
+      <span className={`font-display text-lg font-bold ${tone}`}>{money(to)}</span>
+      <span className={`text-xs text-muted line-through ${from !== to ? '' : 'invisible'}`}>{money(from)}</span>
+    </div>
+  );
+  return (
+    <Frame label={labels.title(m.kind)} onClose={m.onClose} className="flex max-h-[calc(100dvh-2rem)] w-[560px] max-w-full flex-col gap-5 overflow-y-auto rounded-2xl p-6">
+      <Header m={m} />
+      <div className="grid grid-cols-3 divide-x divide-line overflow-hidden rounded-xl border border-line">
+        {cell(t('payments.billed'), m.before.total, m.after.total)}
+        {cell(t('money.paid'), m.before.paid, m.after.paid, 'text-ok')}
+        {cell(toLeft < 0 ? t('money.creditDue') : t('money.balance'), Math.abs(fromLeft), Math.abs(toLeft), toLeft > 0 ? 'text-warn' : 'text-ok')}
+      </div>
+      <BigBody m={m} />
+      <Problem m={m} />
+      <Actions m={m} label={saveLabel} wide />
     </Frame>
   );
 }
