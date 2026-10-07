@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ChevronRight, ClipboardCheck, RefreshCw, Smartphone, Wifi, WifiOff } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot, useStore } from '../data/StoreContext';
+import { useShell } from './ShellPreference';
 import { otherDeviceEdit, otherDeviceTarget } from '../features/sync/otherDevice';
 import { useSyncStatus, useVisibleReview } from '../features/sync/useSync';
 import type { MessageKey } from '../i18n/bn';
@@ -76,13 +77,22 @@ export function SyncButton({ block = false, dot = false }: { block?: boolean; do
 const ROW = 'flex min-h-14 w-full items-center gap-3 px-3 py-2 text-start focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50';
 const TILE = 'flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong';
 
-/** The sync sheet: online switch, sync now, changes to review, and the demo's other device, as settings-style rows. */
-function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
-  const { t, number, dateTime } = useI18n();
+interface SyncDialogProps {
+  open: boolean;
+  onClose(): void;
+}
+
+/** The sync popup: a centred card on a desktop, a settings-style sheet on a phone. */
+function SyncDialog(props: SyncDialogProps) {
+  const { kind } = useShell();
+  return kind === 'desktop' ? <DesktopSyncDialog {...props} /> : <PhoneSyncDialog {...props} />;
+}
+
+/** The demo's other device: what it can change on this screen, sending that change, and what happened, forgotten on closing. */
+function useOtherDevice(open: boolean) {
+  const { t } = useI18n();
   const store = useStore();
   const { sync, state } = useSnapshot();
-  const review = useVisibleReview();
-  const status = useSyncStatus();
   const { pathname } = useLocation();
   const [outcome, setOutcome] = useState<MessageKey | null>(null);
   const target = otherDeviceTarget(pathname, state);
@@ -91,7 +101,7 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
     if (!open) setOutcome(null);
   }, [open]);
 
-  const pushOther = async () => {
+  const push = async () => {
     if (!target) return;
     const note = t(target.kind === 'customer' ? 'sync.otherCustomerNote' : 'sync.otherItemNote');
     const edit = otherDeviceEdit(target, state, note);
@@ -100,6 +110,74 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
     const result = await store.pushFromOtherDevice(edit);
     setOutcome(result.ok ? (wasOnline ? 'sync.otherDone' : 'sync.otherQueued') : 'sync.otherNotOnServer');
   };
+
+  return { target, outcome, push };
+}
+
+/**
+ * The desktop sync popup: the status with the online switch, Sync Now with what is waiting, a highlighted link
+ * when changes need review, and the demo's other device. It grows out of the sync button; its title is announced but not shown.
+ */
+function DesktopSyncDialog({ open, onClose }: SyncDialogProps) {
+  const { t, number, dateTime } = useI18n();
+  const store = useStore();
+  const { sync } = useSnapshot();
+  const review = useVisibleReview();
+  const status = useSyncStatus();
+  const other = useOtherDevice(open);
+
+  return (
+    <Dialog open={open} title={t('sync.title')} onClose={onClose} hideTitle animated>
+      <div className="space-y-3 text-ink">
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${DOT[status]}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-lg font-bold leading-tight">{t(STATUS_KEY[status]!)}</span>
+            <span className="block text-sm text-muted">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
+          </span>
+          <Switch on={sync.online} onChange={(on) => void store.setOnline(on)} label={t(sync.online ? 'sync.goOffline' : 'sync.goOnline')} />
+        </div>
+        <Button className="w-full" disabled={!sync.online || sync.syncing} onClick={() => void store.syncNow()}>
+          <RefreshCw size={16} aria-hidden="true" className={sync.syncing ? 'animate-spin' : ''} />
+          {t('sync.now')}
+        </Button>
+        <p className="text-center text-sm text-muted">{sync.pending > 0 ? t('sync.pending', { count: number(sync.pending) }) : t('sync.allSent')}</p>
+        {review.length > 0 && (
+          <Link
+            to="/app/review"
+            data-tour="review-link"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-xl bg-warn-soft p-3 text-warn-ink ring-1 ring-inset ring-warn-line focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <ClipboardCheck size={20} aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-sm font-semibold">{t('sync.reviewCount', { count: number(review.length) })}</span>
+            <span className="text-sm font-bold underline">{t('sync.openReview')}</span>
+          </Link>
+        )}
+        <hr className="border-line" />
+        <div>
+          <Button variant="secondary" className="w-full" disabled={!other.target} onClick={() => void other.push()}>
+            <Smartphone size={16} aria-hidden="true" />
+            {t('sync.other')}
+          </Button>
+          <p className="mt-1.5 text-center text-xs text-muted">{t(other.target ? 'sync.otherHint' : 'sync.otherNone')}</p>
+        </div>
+        <p role="status" className="text-center text-sm">
+          {other.outcome ? t(other.outcome) : null}
+        </p>
+      </div>
+    </Dialog>
+  );
+}
+
+/** The phone's sync sheet: online switch, sync now, changes to review, and the demo's other device, as settings-style rows. */
+function PhoneSyncDialog({ open, onClose }: SyncDialogProps) {
+  const { t, number, dateTime } = useI18n();
+  const store = useStore();
+  const { sync } = useSnapshot();
+  const review = useVisibleReview();
+  const status = useSyncStatus();
+  const { target, outcome, push: pushOther } = useOtherDevice(open);
 
   return (
     <Dialog

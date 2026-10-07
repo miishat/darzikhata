@@ -18,6 +18,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Account and sync popups on a desktop:
+  - The account popup shows who is signed in with Switch User, then language, colour theme and screen layout always in view instead of rows that expand, then the demo controls.
+  - The sync popup shows the status with the online switch, a full-width Sync Now button with what is waiting, a highlighted link when changes need review, and the other-device button with its hint centred under it.
+  - Neither popup shows a title, since the first line already says what it is; screen readers still announce it.
+  - Both grow out of the button that opened them while the page dims, their sections settle in turn, and they shrink away on closing. The Reset Demo Data and Choose Another Sample Shop confirms do the same. Reduced motion turns this off. Phones are unchanged.
 - Settings editors on a desktop:
   - Garments are a table with each garment's price, measurement count, stages and status. Opening one slides its editor in from the right with three tabs: Name and Price, Measurement Fields, and Stages. Fields sit under their group, with an inch / cm toggle on each. Stages sit in three boxes (In Progress, Ready, Delivered), each with its own Add button, so stages always stay in the order tracking needs. A refused save opens the tab with the problem.
   - Staff are a table where a person's role and on/off switch save at once. The pencil opens their name, PIN, role and branches in a side panel, where each role card says what that role can use.

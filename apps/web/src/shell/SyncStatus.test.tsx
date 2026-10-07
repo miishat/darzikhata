@@ -41,7 +41,7 @@ describe('Sync status', () => {
     await userEvent.click(within(dialog).getByRole('switch', { name: 'অফলাইনে যান' }));
     expect(await within(dialog).findByRole('switch', { name: 'অনলাইনে যান' })).toBeTruthy();
     expect(within(dialog).getByRole('button', { name: /এখনই সিঙ্ক করুন/ })).toHaveProperty('disabled', true);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'বন্ধ করুন' }));
+    await userEvent.keyboard('{Escape}');
 
     await act(() => store.dispatch(payment));
     expect(await screen.findByRole('button', { name: 'অফলাইন · সিঙ্ক বাকি ১' })).toBeTruthy();
@@ -75,7 +75,7 @@ describe('Sync status', () => {
     let dialog = await openSync();
     await userEvent.click(within(dialog).getByRole('button', { name: /অন্য ডিভাইস থেকে বদলান/ }));
     expect(await within(dialog).findByText('অন্য ডিভাইসের পরিবর্তন এসেছে।')).toBeTruthy();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'বন্ধ করুন' }));
+    await userEvent.keyboard('{Escape}');
     dialog = await openSync();
     expect(within(dialog).queryByText('অন্য ডিভাইসের পরিবর্তন এসেছে।')).toBeNull();
   });
@@ -86,6 +86,19 @@ describe('Sync status', () => {
     const live = document.querySelector('[aria-live="polite"].sr-only');
     expect(live?.textContent).toBe(button.getAttribute('aria-label') ?? button.textContent);
     expect(button.querySelector('[aria-live]')).toBeNull();
+  });
+
+  it('opens a centred card on a desktop with the title announced but not shown, and lines centred', async () => {
+    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/work' });
+    const dialog = await openSync();
+    const title = document.getElementById(dialog.getAttribute('aria-labelledby')!)!;
+    expect(title.textContent).toBe('সিঙ্ক');
+    expect(title.className).toContain('sr-only');
+    expect(within(dialog).queryByRole('button', { name: 'বন্ধ করুন' })).toBeNull();
+    expect(within(dialog).getByText('আগে একটি কাস্টমার বা অর্ডার খুলুন।').className).toContain('text-center');
+    expect(within(dialog).getByRole('link', { name: /যাচাই করুন/ }).textContent).toContain('যাচাই করতে হবে: ১টি পরিবর্তন');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('has nothing for another device to change until a customer or order is open', async () => {
