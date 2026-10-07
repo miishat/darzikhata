@@ -17,6 +17,8 @@ import { OrderTable } from './OrderTable';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
+import { usePanelGrow } from '../../ui/usePanelGrow';
+
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 
 const VIEW_ICONS: Record<OrderView, LucideIcon> = {
@@ -74,6 +76,9 @@ export function OrdersPage() {
     return text ? `?${text}` : '';
   };
   const closeOrder = () => navigate({ pathname: '/app/orders', search: listSearch() });
+  const listCard = useRef<HTMLDivElement>(null);
+  const panelCard = useRef<HTMLElement>(null);
+  usePanelGrow(kind === 'desktop' && Boolean(orderId) && !full, listCard, panelCard, 'panel');
   const view = viewOfQuery(query, money) ?? '';
   const tabViews = ORDER_VIEWS.filter((v) => v !== 'owed' || money);
   const panelId = 'orders-view-panel';
@@ -124,7 +129,7 @@ export function OrdersPage() {
   return (
     // The window less the shell header (3.5rem) and the page padding (2 × 1.5rem).
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4">
-      <div className={`${CARD} min-w-0 flex-1`}>
+      <div ref={listCard} className={`${CARD} min-w-0 flex-1`}>
         <div className="flex flex-col gap-3 border-b border-line p-4">
           <h1 className="font-display text-xl font-bold">{t('nav.orders')}</h1>
           <ViewTabs
@@ -186,7 +191,7 @@ export function OrdersPage() {
         </div>
       </div>
       {orderId && (
-        <section aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
+        <section ref={panelCard} aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
           <OrderDetail orderId={orderId} onClose={closeOrder} />
         </section>
       )}

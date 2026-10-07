@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- On a desktop, opening an order or a customer from the list no longer makes the page jump: the order panel opens out from the right edge while the list makes room, and the customer list narrows smoothly to its column as the profile fades in. Moving between records inside an open panel stays still, and there is no motion when the system asks for less.
+- The order list's search box shrinks (down to a limit) before the sort control has to wrap to a second line.
 - On a desktop, the order's More menu and each garment's menu open as a popup that grows out of the button, like the account menu. A header names the order (with the customer, date and branch) or the garment (with who wears it and its stage); the actions sit as rows in labelled cards: the order's papers, the order's actions, and the garment's actions with Cancel in a card of its own. There is no Close button; Esc or a click outside closes it. Phones keep the sheet.
 - The desktop review queue:
   - The waiting changes are listed on the left with who made them, when, and how many fields differ (or that the server refused the change). The chosen one fills the right.
@@ -83,6 +85,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The New Customer plus button beside the narrowed customer list shows a full-size plus; it had been squeezed to a dot.
 - The Open Full Page button in the order beside the list is the same size as the More and Close buttons next to it, so the three line up.
 - The desktop customer directory card keeps its full height when the list is short.
 - The desktop customer profile panel shows the customer's second name under their name.
