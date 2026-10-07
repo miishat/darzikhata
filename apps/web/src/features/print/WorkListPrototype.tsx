@@ -9,10 +9,11 @@ import type { WorkGroup, WorkQuery } from '../work/workList';
 
 export const WORK_PAPER_VARIANTS = {
   A: 'Current paper',
-  B: 'Ledger: receipt-style header, tick boxes, short dates, late marked, design notes in the notes column',
-  C: 'One sheet per group: each worker or stage on its own page with a sign-off line',
   D: 'By due date: each group split into late, this week and later, with a calendar block per row',
-  E: 'Tickets: two cards a row with cut lines, one per garment',
+  F: 'D, the tick box swapped for a write-in: done on (date) and initials',
+  G: "D, the tick box swapped for each garment's stages as circles to fill in with a pen",
+  H: 'D, the tick box swapped for two boxes to write in: got it and handed back',
+  I: 'D tighter: one line a garment, the bands down the left margin, the weekday in the calendar block',
 };
 
 export function useWorkPaperVariant() {
@@ -228,8 +229,60 @@ const addDays = (day: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
+type Mark = 'box' | 'writeIn' | 'stages' | 'cells';
+interface DueOptions {
+  mark: Mark;
+  tight?: boolean;
+}
+
+const WEEKDAYS: Record<Language, string[]> = {
+  bn: ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+};
+
+const Blank = ({ label, w }: { label: string; w: string }) => (
+  <span className="flex items-end gap-1 text-[10px] text-muted">
+    {label}
+    <span aria-hidden="true" className={`${w} border-b border-ink`} />
+  </span>
+);
+
+/** What the worker marks by hand at the end of a row. */
+function RowMark({ mark, r, language }: { mark: Mark; r: ItemRef; language: Language }) {
+  if (mark === 'box') return <Tick />;
+  if (mark === 'writeIn')
+    return (
+      <span className="flex flex-col gap-2 pb-0.5">
+        <Blank label={pick(language, 'শেষ', 'Done')} w="w-16" />
+        <Blank label={pick(language, 'সই', 'Initials')} w="w-16" />
+      </span>
+    );
+  if (mark === 'cells')
+    return (
+      <span className="grid grid-cols-2 gap-1">
+        <span aria-hidden="true" className="h-9 w-14 rounded border border-ink" />
+        <span aria-hidden="true" className="h-9 w-14 rounded border border-ink" />
+      </span>
+    );
+  const at = r.item.stages.findIndex((s) => s.key === r.item.stageKey);
+  return (
+    <span className="flex items-start gap-1.5">
+      {r.item.stages.map((stage, i) => (
+        <span key={stage.key} className="flex w-10 flex-col items-center gap-0.5 text-center">
+          <span
+            aria-hidden="true"
+            className={`size-4 rounded-full border-ink ${i < at ? 'border-2 bg-ink' : i === at ? 'border-[3px]' : 'border'}`}
+          />
+          <span className={`text-[9px] leading-tight ${i === at ? 'font-bold' : 'text-muted'}`}>{labelIn(stage.label, language)}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /** D: within each group, the garments in three bands by delivery, each row led by a calendar block. */
-function ByDue(props: WorkPaperProps) {
+function ByDue(props: WorkPaperProps & { options?: DueOptions }) {
+  const { mark, tight = false } = props.options ?? { mark: 'box' };
   const { language, config, query, groups, today } = props;
   const x = useText(language, config, query);
   const week = addDays(today, 7);
@@ -252,9 +305,52 @@ function ByDue(props: WorkPaperProps) {
               {title}
               <span className="font-sans text-sm font-normal text-muted">{x.t('work.count', { n: x.n(group.refs.length) })}</span>
             </h2>
+            {mark === 'cells' && (
+              <p className="flex justify-end gap-1 text-[10px] font-semibold text-muted">
+                <span className="w-14 text-center">{pick(language, 'পেলাম', 'Got it')}</span>
+                <span className="w-14 text-center">{pick(language, 'ফেরত দিলাম', 'Handed back')}</span>
+              </p>
+            )}
             {bands.map((band) => {
               const rows = sorted.filter(band.test);
               if (rows.length === 0) return null;
+              if (tight)
+                return (
+                  <div key={band.key} className="grid grid-cols-[4.5rem_1fr] border-b-2 border-ink last:border-b-0">
+                    <h3 className={`py-1.5 pr-2 text-xs font-bold ${band.key === 'late' ? 'text-ink' : 'text-muted'}`}>
+                      {band.label}
+                      <span className="block font-display text-2xl">{x.n(rows.length)}</span>
+                    </h3>
+                    <ul className="m-0 list-none border-l border-line p-0 pl-3">
+                      {rows.map((r) => {
+                        const due = r.item.deliveryDate;
+                        const isLate = band.key === 'late';
+                        return (
+                          <li key={r.item.id} className="print-block grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 border-b border-line py-1 text-sm last:border-b-0">
+                            <span className={`flex items-baseline gap-1 rounded border-2 border-ink px-1.5 ${isLate ? 'bg-ink text-panel' : ''}`}>
+                              {due ? (
+                                <>
+                                  <b className="font-display">{day(due)}</b>
+                                  <span className="text-[10px]">{month(due)}</span>
+                                  <span className="ml-auto text-[10px] font-semibold">{WEEKDAYS[language][new Date(`${due.slice(0, 10)}T00:00:00Z`).getUTCDay()]}</span>
+                                </>
+                              ) : (
+                                '-'
+                              )}
+                            </span>
+                            <p className="truncate">
+                              <b className="tabular-nums">{r.order.number}</b> · <b>{itemTitle(r.order, r.item, language)}</b>{' '}
+                              <span className="text-muted">
+                                · {[r.item.wearer || x.customer(r), x.other(r), r.item.trialDate && `${x.t('print.trial')}: ${x.short(r.item.trialDate)}`, x.notes(r)].filter(Boolean).join(' · ')}
+                              </span>
+                            </p>
+                            <RowMark mark={mark} r={r} language={language} />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
               return (
                 <Fragment key={band.key}>
                   <h3 className={`mt-3 mb-1 text-xs font-bold uppercase tracking-[0.15em] ${band.key === 'late' ? 'text-ink' : 'text-muted'}`}>
@@ -284,7 +380,7 @@ function ByDue(props: WorkPaperProps) {
                               {[x.other(r), r.item.trialDate && `${x.t('print.trial')}: ${x.short(r.item.trialDate)}`, x.notes(r)].filter(Boolean).join(' · ')}
                             </p>
                           </div>
-                          <Tick />
+                          <RowMark mark={mark} r={r} language={language} />
                         </li>
                       );
                     })}
@@ -350,7 +446,14 @@ function Tickets(props: WorkPaperProps) {
 
 export function WorkPaper(props: WorkPaperProps): ReactNode {
   const empty = props.onlyToday && props.groups.length === 0 ? <p>{translate(props.language, 'print.noWorkToday')}</p> : null;
-  const body = props.variant === 'B' ? <Ledger {...props} /> : props.variant === 'C' ? <Sheets {...props} /> : props.variant === 'D' ? <ByDue {...props} /> : <Tickets {...props} />;
+  const options: Record<string, DueOptions> = {
+    D: { mark: 'box' },
+    F: { mark: 'writeIn' },
+    G: { mark: 'stages' },
+    H: { mark: 'cells' },
+    I: { mark: 'box', tight: true },
+  };
+  const body = <ByDue {...props} options={options[props.variant] ?? { mark: 'box' }} />;
   return (
     <>
       {body}
