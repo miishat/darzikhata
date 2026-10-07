@@ -3,6 +3,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 const supervisor = { staffId: 'uniform-supervisor', pin: '3333' };
 
@@ -13,9 +14,9 @@ describe('Branch scope', () => {
     expect(await screen.findByText(`১–২০, মোট ${toBanglaDigits(String(count))}`)).toBeTruthy();
     await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
     const branch = screen.getByLabelText('শাখা');
-    expect(branch).toHaveProperty('value', 'all');
+    expect(branch.textContent).toBe('সব শাখা');
 
-    await userEvent.selectOptions(branch, 'কারখানা');
+    await chooseOption(branch, 'কারখানা');
     expect(await screen.findByText('১–১, মোট ১')).toBeTruthy();
     expect(screen.getByRole('row', { name: /A-0027/ })).toBeTruthy();
     expect(window.localStorage.getItem('dk.branch')).toBe('workshop');
@@ -35,7 +36,7 @@ describe('Branch scope', () => {
   it('limits payments and global search to the chosen branch', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/payments' });
     await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
-    await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'কারখানা');
+    await chooseOption(await screen.findByLabelText('শাখা'), 'কারখানা');
     const due = screen.getByRole('table', { name: 'বাকি টাকা' });
     // The header and the group order.
     expect(within(due).getAllByRole('row')).toHaveLength(2);
@@ -57,7 +58,7 @@ describe('Branch scope', () => {
 
   it('offers the switcher under More on a phone', async () => {
     await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/more' });
-    await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'দোকান');
+    await chooseOption(await screen.findByLabelText('শাখা'), 'দোকান');
     expect(window.localStorage.getItem('dk.branch')).toBe('shop');
   });
 });

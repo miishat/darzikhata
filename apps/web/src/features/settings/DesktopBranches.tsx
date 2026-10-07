@@ -7,6 +7,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
 import { useBranchSave, useMoveDevice } from './useBranchSave';
+import { Select } from '../../ui/Select';
 
 type Note = { saved: boolean; problem: string | null };
 
@@ -112,18 +113,12 @@ export function DesktopBranches() {
                       <span className="rounded-md bg-surface px-1.5 py-0.5 text-xs">
                         {t('settings.device.series')} {device.series}
                       </span>
-                      <select
-                        aria-label={t('settings.device.branch', { name: device.name })}
+                      <Select
+                        label={t('settings.device.branch', { name: device.name })}
                         value={device.branchId}
-                        onChange={(e) => void moveDevice(device.id, e.target.value)}
-                        className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus"
-                      >
-                        {config.branches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name[language]}
-                          </option>
-                        ))}
-                      </select>
+                        options={config.branches.map((b) => ({ value: b.id, label: b.name[language] }))}
+                        onChange={(branchId) => void moveDevice(device.id, branchId)}
+                      />
                     </li>
                   ))}
                 </ul>

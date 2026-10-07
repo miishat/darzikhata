@@ -16,6 +16,7 @@ import { useWorkList } from './useWorkList';
 import { WorkBoard, WorkerChips, isLate } from './BoardView';
 import { WorkGroupTable } from './WorkGroupTable';
 import { assignees, filterWork, stageOptions } from './workList';
+import { Select } from '../../ui/Select';
 
 type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
 
@@ -93,7 +94,6 @@ function DesktopWorkPage() {
   if (view === 'board') printParams.delete('stage');
   const printSearch = printParams.toString();
 
-  const select = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus';
   const empty = view === 'board' ? boardRows.length === 0 : groups.length === 0;
 
   return (
@@ -131,24 +131,22 @@ function DesktopWorkPage() {
         {view === 'list' && (
           <div className="flex flex-wrap items-center gap-2">
             {viewer.seesAll && (
-              <select
-                aria-label={t('work.groupBy')}
+              <Select
+                label={t('work.groupBy')}
                 value={query.by}
-                onChange={(event) => setQuery({ ...query, by: event.target.value === 'stage' ? 'stage' : 'worker' })}
-                className={select}
-              >
-                <option value="worker">{t('work.byWorker')}</option>
-                <option value="stage">{t('work.byStage')}</option>
-              </select>
+                options={[
+                  { value: 'worker', label: t('work.byWorker') },
+                  { value: 'stage', label: t('work.byStage') },
+                ]}
+                onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
+              />
             )}
-            <select aria-label={t('work.stage')} value={query.stage} onChange={(event) => setQuery({ ...query, stage: event.target.value })} className={select}>
-              <option value="all">{t('work.allStages')}</option>
-              {stages.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {label(s.label)}
-                </option>
-              ))}
-            </select>
+            <Select
+              label={t('work.stage')}
+              value={query.stage}
+              options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
+              onChange={(stage) => setQuery({ ...query, stage })}
+            />
           </div>
         )}
       </div>

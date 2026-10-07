@@ -3,6 +3,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 const SHIRT = { 'ঝুল': '29', 'বুক': '38', 'পেট': '34', 'কাঁধ (পুট)': '17', 'হাতা': '23', 'গলা': '15½' };
 
@@ -30,9 +31,9 @@ describe('Order entry on mobile', () => {
     await next();
 
     expect(await screen.findByRole('heading', { name: 'পোশাক ও মাপ' })).toBeTruthy();
-    await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'শার্ট');
+    await chooseOption(screen.getByLabelText('পোশাক'), 'শার্ট');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
-    await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'পাঞ্জাবি');
+    await chooseOption(screen.getByLabelText('পোশাক'), 'পাঞ্জাবি');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await userEvent.click(screen.getByRole('button', { name: 'শার্ট ১' }));
     const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
@@ -82,7 +83,7 @@ describe('Order entry on mobile', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'শার্ট');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await userEvent.type(within(screen.getByRole('region', { name: 'শার্ট ১' })).getByLabelText('ঝুল'), '29');
     await next();
@@ -99,7 +100,7 @@ describe('Order entry on mobile', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await next();
     await next();
@@ -114,7 +115,7 @@ describe('Order entry on mobile', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await next();
     await next();
@@ -131,7 +132,7 @@ describe('Order entry on mobile', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'অল্টারেশন');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     await next();
     await next();
@@ -154,7 +155,7 @@ describe('Order entry on mobile', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'শার্ট');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     const quantity = within(screen.getByRole('region', { name: 'শার্ট ১' })).getByLabelText('সংখ্যা');
     await userEvent.clear(quantity);
@@ -178,7 +179,7 @@ describe('Measuring a shirt with the keypad on a phone', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
     await userEvent.type(screen.getByLabelText('নাম'), 'জসিম');
     await next();
-    await userEvent.selectOptions(await screen.findByLabelText('পোশাক'), 'শার্ট');
+    await chooseOption(await screen.findByLabelText('পোশাক'), 'শার্ট');
     await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
     const shirt = screen.getByRole('region', { name: 'শার্ট ১' });
     expect(within(screen.getByRole('progressbar')).queryAllByRole('button')).toHaveLength(0);
@@ -203,7 +204,7 @@ describe('Measuring a shirt with the keypad on a phone', () => {
       await userEvent.type(screen.getByLabelText('ফোন'), '01799887766');
       await next();
       await screen.findByRole('heading', { name: 'পোশাক ও মাপ' });
-      await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'শার্ট');
+      await chooseOption(screen.getByLabelText('পোশাক'), 'শার্ট');
       await userEvent.click(screen.getByRole('button', { name: 'পোশাক যোগ করুন' }));
 
       expect(screen.queryByTestId('keypad-space')).toBeNull();

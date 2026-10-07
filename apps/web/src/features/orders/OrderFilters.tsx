@@ -1,6 +1,6 @@
 import { ArrowDownUp, Search } from 'lucide-react';
 import { useSnapshot } from '../../data/StoreContext';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
@@ -12,6 +12,7 @@ import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import { type OrderListQuery, type OrderSort, type OrderStatusFilter } from './orderList';
 import { viewOfQuery } from './orderViews';
+import { Select } from '../../ui/Select';
 
 interface Props {
   query: OrderListQuery;
@@ -157,6 +158,7 @@ const DATE_INPUT = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm 
 /** The laptop filter row: table search, worker and date filters, a chip for each active filter, and the sort on the right. */
 function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
   const { t, date, label } = useI18n();
+  const sortLabelId = useId();
   const can = useCan();
   const money = can('money.view');
   const sorts = useSortOptions();
@@ -241,20 +243,15 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
             {t('orders.clearFilters')}
           </Button>
         )}
-        <label className="ms-auto flex items-center gap-2 text-sm text-muted">
-          {t('orders.sort')}
-          <select
+        <div className="ms-auto flex items-center gap-2 text-sm text-muted">
+          <span id={sortLabelId}>{t('orders.sort')}</span>
+          <Select
+            labelledBy={sortLabelId}
             value={query.sort}
-            onChange={(e) => onChange({ sort: e.target.value as OrderSort })}
-            className="min-h-9 rounded-lg border border-line bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-focus"
-          >
-            {sorts.map((value) => (
-              <option key={value} value={value}>
-                {t(`orders.sort.${value}`)}
-              </option>
-            ))}
-          </select>
-        </label>
+            options={sorts.map((value) => ({ value, label: t(`orders.sort.${value}`) }))}
+            onChange={(sort) => onChange({ sort: sort as OrderSort })}
+          />
+        </div>
       </div>
     </div>
   );

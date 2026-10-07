@@ -27,6 +27,7 @@ import {
   type TemplateForm,
 } from './templateInput';
 import { TEMPLATES_PATH, useTemplateDraft, type TemplateDraft } from './useTemplateDraft';
+import { Select } from '../../ui/Select';
 
 const STAGE_KINDS = ['unfinished', 'ready', 'delivered'] as const;
 const TABS = ['basics', 'fields', 'stages'] as const;
@@ -315,18 +316,14 @@ function Fields({ d }: { d: TemplateDraft }) {
                 </div>
                 {labelError && <p className="text-sm text-danger">{labelError}</p>}
                 <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label={t('settings.field.group', { n })}
+                  <Select
+                    size="md"
+                    label={t('settings.field.group', { n })}
                     value={row.group}
-                    onChange={(e) => patchField(i, { group: e.target.value })}
-                    className={`${control} !w-36`}
-                  >
-                    {[...new Set([...FIELD_GROUPS, row.group])].map((x) => (
-                      <option key={x} value={x}>
-                        {groupLabel(x, t)}
-                      </option>
-                    ))}
-                  </select>
+                    options={[...new Set([...FIELD_GROUPS, row.group])].map((x) => ({ value: x, label: groupLabel(x, t) }))}
+                    onChange={(group) => patchField(i, { group })}
+                    className="w-36"
+                  />
                   <UnitToggle value={row.unit} onChange={(unit) => patchField(i, { unit })} label={t('settings.field.unit', { n })} />
                   <RowCheck
                     label={t('settings.field.required', { n })}
@@ -428,18 +425,13 @@ function Stages({ d }: { d: TemplateDraft }) {
                   </div>
                   {labelError && <p className="text-sm text-danger">{labelError}</p>}
                   <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      aria-label={t('settings.stage.group', { n })}
+                    <Select
+                      size="md"
+                      label={t('settings.stage.group', { n })}
                       value={row.group}
-                      onChange={(e) => d.update((f) => setStageGroup(f, i, e.target.value as StageRow['group']))}
-                      className={`${control} !w-auto`}
-                    >
-                      {STAGE_KINDS.map((x) => (
-                        <option key={x} value={x}>
-                          {t(`stageGroup.${x}`)}
-                        </option>
-                      ))}
-                    </select>
+                      options={STAGE_KINDS.map((x) => ({ value: x, label: t(`stageGroup.${x}`) }))}
+                      onChange={(group) => d.update((f) => setStageGroup(f, i, group as StageRow['group']))}
+                    />
                     <RowCheck
                       label={t('settings.stage.optional', { n })}
                       text={t('settings.stage.optionalShort')}

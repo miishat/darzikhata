@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 import { workItems } from './workList';
+import { chooseOption, optionLabels } from '../../test/chooseOption';
 
 const bn = (n: number) => toBanglaDigits(String(n));
 const supervisor = { staffId: 'uniform-supervisor', pin: '3333' };
@@ -16,7 +17,7 @@ describe('Work lists', () => {
     expect(await screen.findByText(`${bn(refs.length)}টি পোশাক`)).toBeTruthy();
     expect(within(region('কারিগর ঠিক হয়নি')).getAllByRole('row')).toHaveLength(refs.length + 1);
 
-    await userEvent.selectOptions(screen.getByLabelText('ভাগ করুন'), 'ধাপ অনুযায়ী');
+    await chooseOption(screen.getByLabelText('ভাগ করুন'), 'ধাপ অনুযায়ী');
     expect(router.state.location.search).toBe('?by=stage');
     const stitching = refs.filter((r) => r.item.stageKey === 'stitching').length;
     expect(within(await screen.findByRole('region', { name: 'সেলাই' })).getAllByRole('row')).toHaveLength(stitching + 1);
@@ -44,7 +45,7 @@ describe('Work lists', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'কারিগর ঠিক করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' });
-    await userEvent.selectOptions(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
+    await chooseOption(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
     const preview = within(dialog).getByRole('list', { name: 'যা হবে' });
     expect(within(preview).getAllByRole('listitem')).toHaveLength(6);
     expect(within(preview).getAllByText(/আগে থেকেই সেলিম শেখ/)).toHaveLength(4);
@@ -67,8 +68,7 @@ describe('Work lists', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: 'সব বেছে নিন: কাটিং' }));
     await userEvent.click(screen.getByRole('button', { name: 'ধাপ বদলান' }));
     const dialog = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
-    const targets = within(within(dialog).getByLabelText('নতুন ধাপ')).getAllByRole('option');
-    expect(targets.map((o) => o.textContent)).toEqual(['সেলাই']);
+    expect(await optionLabels(within(dialog).getByLabelText('নতুন ধাপ'))).toEqual(['সেলাই']);
     expect(within(within(dialog).getByRole('list', { name: 'যা হবে' })).getAllByText(/কাটিং → সেলাই/)).toHaveLength(6);
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'নিশ্চিত করুন' }));
@@ -87,7 +87,7 @@ describe('Work lists', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: `${title} বেছে নিন` }));
     await userEvent.click(screen.getByRole('button', { name: 'কারিগর ঠিক করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' });
-    await userEvent.selectOptions(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
+    await chooseOption(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
 
     await act(() =>
       store.dispatch({ type: 'item.assigned', orderId: order.id, itemId: item.id, baseVersion: item.version, assigneeId: 'uniform-owner' }),

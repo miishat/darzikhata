@@ -5,6 +5,7 @@ import { toBanglaDigits } from '@darzikhata/domain';
 import { renderApp } from '../test/renderApp';
 import { navCounts } from './navCounts';
 import { dashboardModel } from '../features/dashboard/dashboard';
+import { chooseOption } from '../test/chooseOption';
 
 describe('Desktop sidebar and top bar', () => {
   it('shows counts that match the dashboard, with names that stay the same', async () => {
@@ -120,8 +121,8 @@ describe('Desktop sidebar and top bar', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     await userEvent.click(trigger);
     const menu = await screen.findByRole('group', { name: /শাখা/ });
-    await userEvent.selectOptions(within(menu).getByLabelText('শাখা'), 'দোকান');
-    expect((within(menu).getByLabelText('শাখা') as HTMLSelectElement).value).toBe('shop');
+    await chooseOption(within(menu).getByLabelText('শাখা'), 'দোকান');
+    expect(within(menu).getByLabelText('শাখা').textContent).toBe('দোকান');
     expect(trigger.textContent).toContain('দোকান');
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('group', { name: /শাখা/ })).toBeNull();

@@ -2,6 +2,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 describe('Customer form', () => {
   it('adds a customer with a new household and opens their profile', async () => {
@@ -10,7 +11,7 @@ describe('Customer form', () => {
     await userEvent.type(screen.getByLabelText('নাম'), 'সুমি আক্তার');
     await userEvent.type(screen.getByLabelText('ফোন'), '০১৮১১০০০০০০');
     await userEvent.click(screen.getByRole('radio', { name: 'মহিলা' }));
-    await userEvent.selectOptions(screen.getByLabelText('পরিবার'), 'নতুন পরিবার');
+    await chooseOption(screen.getByLabelText('পরিবার'), 'নতুন পরিবার');
     await userEvent.type(screen.getByLabelText('পরিবারের নাম'), 'আক্তার পরিবার');
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
 
@@ -116,7 +117,7 @@ describe('Customer form', () => {
 
     await userEvent.type(screen.getByLabelText('নাম'), 'সুমি আক্তার');
     await userEvent.click(screen.getByRole('radio', { name: 'মহিলা' }));
-    await userEvent.selectOptions(screen.getByLabelText('পরিবার'), 'নতুন পরিবার');
+    await chooseOption(screen.getByLabelText('পরিবার'), 'নতুন পরিবার');
     await userEvent.type(screen.getByLabelText('পরিবারের নাম'), 'আক্তার পরিবার');
     expect(within(preview).getByText('সুমি আক্তার')).toBeTruthy();
     expect(within(preview).getByText('মহিলা')).toBeTruthy();

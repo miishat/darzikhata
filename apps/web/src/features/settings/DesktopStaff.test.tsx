@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 async function trySignIn(store: ShopStore, staffId: string, pin: string): Promise<boolean> {
   let ok = false;
@@ -43,15 +44,16 @@ describe('Desktop staff table', () => {
 
   it('changes a role from the table, but not your own', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
-    await userEvent.selectOptions(await screen.findByLabelText('সেলিম শেখ: দায়িত্ব'), 'ম্যানেজার');
+    await chooseOption(await screen.findByLabelText('সেলিম শেখ: দায়িত্ব'), 'ম্যানেজার');
     await screen.findByText('সেভ হয়েছে');
     expect(store.getSnapshot().config!.staff.find((s) => s.id === 'uniform-tailor-2')!.roleId).toBe('manager');
 
     const before = store.getSnapshot().config;
-    await userEvent.selectOptions(screen.getByLabelText('কামাল হোসেন: দায়িত্ব'), 'ম্যানেজার');
+    await chooseOption(screen.getByLabelText('কামাল হোসেন: দায়িত্ব'), 'ম্যানেজার');
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'নিজের দায়িত্ব বদলানো বা নিজেকে নিষ্ক্রিয় করা যাবে না');
     expect(store.getSnapshot().config).toBe(before);
-    expect((screen.getByLabelText('কামাল হোসেন: দায়িত্ব') as HTMLSelectElement).value).toBe(before!.staff.find((s) => s.name === 'কামাল হোসেন')!.roleId);
+    const ownRole = before!.roles.find((r) => r.id === before!.staff.find((s) => s.name === 'কামাল হোসেন')!.roleId)!;
+    expect(screen.getByLabelText('কামাল হোসেন: দায়িত্ব').textContent).toBe(ownRole.name.bn);
   });
 
   it('masks the PIN in the panel and never shows one in the table', async () => {
