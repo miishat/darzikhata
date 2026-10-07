@@ -10,7 +10,7 @@ import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Switch } from '../ui/Switch';
 
-const STATUS_KEY: Record<string, MessageKey> = {
+export const STATUS_KEY: Record<string, MessageKey> = {
   online: 'sync.online',
   offline: 'sync.offline',
   syncing: 'sync.syncing',
@@ -22,7 +22,7 @@ const TONE: Record<string, string> = {
   syncing: 'bg-surface text-muted',
   'needs-attention': 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink',
 };
-const DOT: Record<string, string> = {
+export const DOT: Record<string, string> = {
   online: 'bg-ok',
   offline: 'bg-warn',
   syncing: 'bg-muted',
@@ -33,7 +33,7 @@ const DOT: Record<string, string> = {
  * The sync status: a pill, a full-width block (sidebar) or a coloured dot (the folded sidebar rail).
  * It opens the sync dialog: online switch, waiting changes, review and the demo's other device.
  */
-export function SyncButton({ block = false, dot = false }: { block?: boolean; dot?: boolean }) {
+export function SyncButton({ block = false, dot = false, onOpen }: { block?: boolean; dot?: boolean; onOpen?: (anchor: HTMLElement) => void }) {
   const { t, number, dateTime } = useI18n();
   const { sync } = useSnapshot();
   const status = useSyncStatus();
@@ -44,7 +44,7 @@ export function SyncButton({ block = false, dot = false }: { block?: boolean; do
       <button
         type="button"
         data-tour="sync-status"
-        onClick={() => setOpen(true)}
+        onClick={(e) => (onOpen ? onOpen(e.currentTarget) : setOpen(true))}
         aria-label={block || dot ? label : undefined}
         title={dot ? label : undefined}
         className={
@@ -68,7 +68,7 @@ export function SyncButton({ block = false, dot = false }: { block?: boolean; do
       <span aria-live="polite" className="sr-only">
         {label}
       </span>
-      <SyncDialog open={open} onClose={() => setOpen(false)} />
+      {!onOpen && <SyncDialog open={open} onClose={() => setOpen(false)} />}
     </>
   );
 }

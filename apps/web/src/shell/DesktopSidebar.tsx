@@ -9,7 +9,9 @@ import { useI18n } from '../i18n/I18nProvider';
 import { readSetting, writeSetting } from '../lib/safeStorage';
 import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/BrandMark';
+import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
 import { AccountMenu } from './AccountMenu';
+import { PROTO_KEYS, PROTO_VARIANTS, PrototypeAccountSync, type ProtoKind } from './AccountSyncPrototype';
 import { visibleNav, type NavItem } from './nav';
 import { navCounts } from './navCounts';
 import { useShopHeader } from './ShellParts';
@@ -81,7 +83,7 @@ function ShopHeader() {
 }
 
 /** The signed-in person, which opens sign-in to switch user, and the account menu. On the rail, just the avatar. */
-function PersonButton({ rail }: { rail: boolean }) {
+function PersonButton({ rail, onAccount }: { rail: boolean; onAccount?: (anchor: HTMLElement) => void }) {
   const { t, label } = useI18n();
   const current = useCurrentStaff();
   const navigate = useNavigate();
@@ -113,12 +115,12 @@ function PersonButton({ rail }: { rail: boolean }) {
         aria-label={t('shell.account')}
         title={rail ? t('shell.account') : undefined}
         aria-haspopup="dialog"
-        onClick={() => setAccountOpen(true)}
+        onClick={(e) => (onAccount ? onAccount(e.currentTarget) : setAccountOpen(true))}
         className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Ellipsis aria-hidden="true" size={20} />
       </button>
-      <AccountMenu open={accountOpen} onClose={() => setAccountOpen(false)} />
+      {!onAccount && <AccountMenu open={accountOpen} onClose={() => setAccountOpen(false)} />}
     </div>
   );
 }
@@ -134,6 +136,9 @@ export function DesktopSidebar({ role }: { role: Role }) {
   const counts = useMemo(() => navCounts(state, today), [state, today]);
   const idBase = useId();
   const [rail, setRail] = useRail();
+  const variant = useVariant(PROTO_KEYS);
+  const [proto, setProto] = useState<{ kind: ProtoKind; anchor: HTMLElement } | null>(null);
+  const openProto = variant === 'A' ? undefined : (kind: ProtoKind) => (anchor: HTMLElement) => setProto((p) => (p?.kind === kind ? null : { kind, anchor }));
   const items = visibleNav(role);
   const main = items.filter((i) => !SHOP_KEYS.has(i.key));
   const shop = items.filter((i) => SHOP_KEYS.has(i.key));
@@ -241,9 +246,11 @@ export function DesktopSidebar({ role }: { role: Role }) {
         {shop.map(link)}
       </nav>
       <div className={`flex flex-col gap-2 border-t border-line pt-3 ${rail ? 'items-center' : ''}`}>
-        <SyncButton block={!rail} dot={rail} />
-        <PersonButton rail={rail} />
+        <SyncButton block={!rail} dot={rail} onOpen={openProto?.('sync')} />
+        <PersonButton rail={rail} onAccount={openProto?.('account')} />
       </div>
+      {proto && variant !== 'A' && <PrototypeAccountSync key={proto.kind} variant={variant} kind={proto.kind} anchor={proto.anchor} onClose={() => setProto(null)} />}
+      <PrototypeSwitcher variants={PROTO_VARIANTS} />
     </aside>
   );
 }
