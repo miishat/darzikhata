@@ -18,6 +18,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The desktop review queue:
+  - The waiting changes are listed on the left with who made them, when, and how many fields differ (or that the server refused the change). The chosen one fills the right.
+  - Each field reads as one line: what the record holds now, an arrow, and what the change wanted. Ticking Take New on some fields and pressing Save My Picks keeps just those, replacing the separate Merge by Hand step.
+  - A View Profile or View Order button beside the name opens the record, and the explanation sits as a note above the fields so both panel headers line up.
+  - Settling a change shows the result at the top of the list; an empty queue shows a tick and "Nothing to review". Phones keep the list of cards.
 - The desktop order page (opened full size from the order beside the list):
   - The customer leads the header with their name, phone, a Call button and a View Profile link; the order number, its status and who took it sit on the right.
   - A strip of key numbers follows: how many garments are ready, the next delivery, and the total, paid and amount owed for staff who may see money.

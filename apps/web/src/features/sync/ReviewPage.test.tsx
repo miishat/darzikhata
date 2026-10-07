@@ -7,9 +7,9 @@ import { renderApp } from '../../test/renderApp';
 // (rahman-c4): this device changed his phone and notes while another device changed his notes.
 const entry = () => screen.findByRole('region', { name: 'কাস্টমার: সুমন দাস' });
 
-describe('Review queue', () => {
+describe('Review queue on a phone', () => {
   it('shows the waiting change field by field, beside what the record holds now', async () => {
-    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     expect(await screen.findByRole('heading', { name: 'যাচাইয়ের তালিকা' })).toBeTruthy();
     const section = await entry();
     expect(section.getAttribute('data-tour')).toBe('review-item');
@@ -27,7 +27,7 @@ describe('Review queue', () => {
   });
 
   it('keeps what the record holds now', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     const before = store.getSnapshot().state.customers['rahman-c4'];
     await userEvent.click(within(await entry()).getByRole('button', { name: 'এখন যা আছে রাখুন' }));
     expect((await screen.findByRole('status')).textContent).toBe('সমাধান হয়েছে');
@@ -44,7 +44,7 @@ describe('Review queue', () => {
   });
 
   it('merges by hand, field by field', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     const section = await entry();
     await userEvent.click(within(section).getByRole('button', { name: 'মিলিয়ে নিন' }));
     const phone = within(section).getByRole('group', { name: 'ফোন' });
@@ -57,7 +57,7 @@ describe('Review queue', () => {
   });
 
   it('moves focus to the result message once a change is settled', async () => {
-    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     await userEvent.click(within(await entry()).getByRole('button', { name: 'এখন যা আছে রাখুন' }));
     const status = await screen.findByRole('status');
     // The message can be found as soon as it renders; the focus moves in an effect just after.
@@ -65,7 +65,7 @@ describe('Review queue', () => {
   });
 
   it('starts from the current choices again after cancelling a merge', async () => {
-    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     const section = await entry();
     await userEvent.click(within(section).getByRole('button', { name: 'মিলিয়ে নিন' }));
     await userEvent.click(within(section).getByRole('radio', { name: 'অপেক্ষমাণ পরিবর্তন: 01712345678' }));
@@ -75,7 +75,7 @@ describe('Review queue', () => {
   });
 
   it('needs the connection to settle anything', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/review' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/review' });
     const section = await entry();
     await act(() => store.setOnline(false));
     expect(await screen.findByText('সমাধান করতে অনলাইনে যান।')).toBeTruthy();
@@ -83,7 +83,7 @@ describe('Review queue', () => {
   });
 
   it('is closed to people who cannot settle any change', async () => {
-    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/review', as: { staffId: 'nakshi-tailor', pin: '4444' } });
+    await renderApp({ layout: 'mobile', shop: 'nakshi', path: '/app/review', as: { staffId: 'nakshi-tailor', pin: '4444' } });
     expect((await screen.findByRole('alert')).textContent).toBe('এই অংশ দেখার অনুমতি আপনার নেই।');
   });
 });
