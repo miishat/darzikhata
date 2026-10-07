@@ -419,8 +419,8 @@ function ShopClock({ config, compact = false, bigName = false }: { config: ShopC
   return (
     <>
       {bigName ? (
-        <p className="flex items-center gap-3 font-display text-4xl font-bold">
-          <BrandMark size={44} />
+        <p className="flex items-center gap-2.5 font-display text-2xl font-bold">
+          <BrandMark size={32} />
           {shopContact(config, language).name}
         </p>
       ) : (
