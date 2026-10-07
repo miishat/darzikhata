@@ -2,7 +2,7 @@ import { ArrowRight, Banknote, ClipboardList, Printer, Ruler, WifiOff, Wrench, t
 import type { MessageKey } from '../../i18n/bn';
 import { useI18n } from '../../i18n/I18nProvider';
 import { SEED_SHOPS, type SeedShopKey } from '../../seed/shops';
-import { LanguageToggle } from '../../shell/ShellParts';
+import { LanguageVariantSwitcher, WelcomeLanguage } from './LanguagePrototype';
 import { BrandMark } from '../../ui/BrandMark';
 
 export interface DesktopWelcomeProps {
@@ -28,13 +28,15 @@ export function DesktopWelcome({ icons, opening, onOpen }: DesktopWelcomeProps) 
   const { t, label } = useI18n();
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-brand-soft to-surface px-12 py-6">
-      <div className="ms-auto">
-        <LanguageToggle />
+      <LanguageVariantSwitcher />
+      <div className="ms-auto flex min-h-10">
+        <WelcomeLanguage spot="corner" />
       </div>
       <div className="mx-auto mt-[6vh] flex w-full max-w-5xl flex-col items-center text-center">
         <BrandMark size={64} />
         <h1 className="mt-5 font-display text-5xl font-bold">{t('welcome.title')}</h1>
         <p className="mt-3 text-lg text-muted">{t('welcome.subtitle')}</p>
+        <WelcomeLanguage spot="hero" />
         <ul className="m-0 mt-10 grid w-full list-none grid-cols-3 gap-4 p-0">
           {SEED_SHOPS.map((shop) => {
             const Icon = icons[shop.key];
