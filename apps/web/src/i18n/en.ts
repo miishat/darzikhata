@@ -330,6 +330,7 @@ export const en: Messages = {
   'print.designNotes': 'Design',
   'print.fabricNote': 'Fabric',
   'print.adjustments': 'Fitting Changes',
+  'print.measurementsIn': 'Measurements ({unit})',
   'print.measurementsHidden': 'No permission to see measurements',
   'print.notFound': 'Order not found',
   'print.backToWork': 'Back to the Work List',

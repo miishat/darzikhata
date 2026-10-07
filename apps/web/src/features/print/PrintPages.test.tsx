@@ -115,9 +115,28 @@ describe('Desktop print pages', () => {
 });
 
 describe('Job slip', () => {
-  it('shows each garment’s measurements and notes but no money', async () => {
-    // Sample data: the first Rahman order with a measured garment (rahman-o40 may be an alteration without measurements).
+  it('shows each garment’s measurements as a strip of cells with the unit once, and no money', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman' });
+    const { state, config } = store.getSnapshot();
+    const order = Object.values(state.orders).find((o) => o.items.some((i) => !i.cancelled && i.measurements))!;
+    await router.navigate(`/print/job/${order.id}`);
+    expect(await screen.findByRole('heading', { name: 'কাজের স্লিপ' })).toBeTruthy();
+
+    const index = order.items.findIndex((i) => !i.cancelled && i.measurements);
+    const item = order.items[index]!;
+    const section = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(index + 1))}` });
+    const fields = config!.templates.find((t) => t.id === item.templateId)!.fields.filter((f) => item.measurements!.values[f.key]);
+    const strip = within(section).getByRole('table', { name: 'মাপ (ইঞ্চি)' });
+    expect(within(strip).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(expect.arrayContaining(fields.map((f) => f.label.bn)));
+    const cells = within(strip).getAllByRole('cell').map((c) => c.textContent);
+    expect(cells).toContain(formatMeasurement(item.measurements!.values[fields[0]!.key]!.value, 'bn'));
+    expect(screen.getByText(order.number)).toBeTruthy();
+    expect(document.body.textContent).not.toContain('৳');
+  });
+
+  it('keeps the phone slip as a list of fields with their units', async () => {
+    // Sample data: the first Rahman order with a measured garment (rahman-o40 may be an alteration without measurements).
+    const { store, router } = await renderApp({ layout: 'mobile', shop: 'rahman' });
     const { state, config } = store.getSnapshot();
     const order = Object.values(state.orders).find((o) => o.items.some((i) => !i.cancelled && i.measurements))!;
     await router.navigate(`/print/job/${order.id}`);

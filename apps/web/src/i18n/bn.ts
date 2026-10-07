@@ -329,6 +329,7 @@ export const bn = {
   'print.designNotes': 'ডিজাইন',
   'print.fabricNote': 'কাপড়',
   'print.adjustments': 'ফিটিংয়ের পরিবর্তন',
+  'print.measurementsIn': 'মাপ ({unit})',
   'print.measurementsHidden': 'মাপ দেখার অনুমতি নেই',
   'print.notFound': 'অর্ডার পাওয়া যায়নি',
   'print.backToWork': 'কাজের তালিকায় ফিরে যান',
