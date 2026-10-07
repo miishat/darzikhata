@@ -10,9 +10,10 @@ export const TEMPLATES_PATH = '/app/settings/templates';
 
 /**
  * One garment being edited: the form, its checks and the save. Leaving with unsaved changes asks first;
- * a save goes back to the garment list with a "Saved" note.
+ * a save goes back to the garment list with a "Saved" note. `leave` can hold that back, for example while
+ * a panel slides away, and must call `go` when done.
  */
-export function useTemplateDraft(initial: TemplateForm) {
+export function useTemplateDraft(initial: TemplateForm, leave: (go: () => void) => void = (go) => go()) {
   const { t, language } = useI18n();
   const store = useStore();
   const navigate = useNavigate();
@@ -59,11 +60,11 @@ export function useTemplateDraft(initial: TemplateForm) {
     }
     setDone(true);
     allowNextNavigation();
-    navigate(TEMPLATES_PATH, { state: { saved: true } });
+    leave(() => navigate(TEMPLATES_PATH, { state: { saved: true } }));
     return null;
   }
 
-  return { form, update, patchField, patchStage, err, errors, problem, saving, save, dialog };
+  return { form, update, patchField, patchStage, err, errors, problem, saving, save, dialog, dirty };
 }
 
 export type TemplateDraft = ReturnType<typeof useTemplateDraft>;

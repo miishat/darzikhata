@@ -308,6 +308,59 @@ body {
   }
 }
 
+/*
+ * A desktop drawer glides in from the right while the page dims, its contents settling a moment later.
+ * Closing reverses it faster (Drawer waits 180ms before unmounting).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-scrim {
+    animation: fade-in 220ms ease-out;
+  }
+  .drawer-panel {
+    animation: drawer-in 340ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .drawer-panel > * {
+    animation: drawer-settle 360ms cubic-bezier(0.22, 1, 0.36, 1) 60ms backwards;
+  }
+  .drawer-scrim[data-leaving] {
+    animation: fade-out 180ms ease-in forwards;
+  }
+  .drawer-scrim[data-leaving] .drawer-panel {
+    animation: drawer-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes drawer-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes drawer-settle {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
 @page {
   size: A4;
   margin: 12mm;

@@ -1,10 +1,10 @@
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
-import { Drawer } from '../../ui/Drawer';
+import { Drawer, type DrawerHandle } from '../../ui/Drawer';
 import { NumberField } from '../../ui/NumberField';
 import { rovingTabsKeyDown } from '../../ui/rovingTabs';
 import { Switch } from '../../ui/Switch';
@@ -126,7 +126,11 @@ export function DesktopTemplates() {
 
 function TemplateDrawer({ initial, title, onClose }: { initial: TemplateForm; title: string; onClose(): void }) {
   const { t, number } = useI18n();
-  const d = useTemplateDraft(initial);
+  const drawer = useRef<DrawerHandle>(null);
+  const slideOut = (then: () => void) => (drawer.current ? drawer.current.close(then) : then());
+  const d = useTemplateDraft(initial, slideOut);
+  // With unsaved changes the panel stays put while the "leave without saving?" question shows over it.
+  const close = () => (d.dirty ? onClose() : slideOut(onClose));
   const [tab, setTab] = useState<Tab>('basics');
   const base = useId();
   const tabId = (key: Tab) => `${base}-${key}`;
@@ -146,11 +150,12 @@ function TemplateDrawer({ initial, title, onClose }: { initial: TemplateForm; ti
 
   return (
     <Drawer
+      ref={drawer}
       title={title}
-      onClose={onClose}
+      onClose={close}
       footer={
         <>
-          <Button variant="secondary" size="lg" className="flex-1" onClick={onClose}>
+          <Button variant="secondary" size="lg" className="flex-1" onClick={close}>
             {t('common.cancel')}
           </Button>
           <Button size="lg" className="flex-[2]" onClick={() => void save()} disabled={d.saving}>
