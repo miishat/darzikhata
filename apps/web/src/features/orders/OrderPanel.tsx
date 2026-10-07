@@ -129,9 +129,9 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
               to={fullPageTo(order.id, search)}
               aria-label={t('orders.openFull')}
               title={t('orders.openFull')}
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-              <ExternalLink aria-hidden="true" size={18} />
+              <ExternalLink aria-hidden="true" size={20} />
             </Link>
             <ActionSheet
               label={t('order.more')}

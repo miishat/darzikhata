@@ -83,6 +83,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The Open Full Page button in the order beside the list is the same size as the More and Close buttons next to it, so the three line up.
 - The desktop customer directory card keeps its full height when the list is short.
 - The desktop customer profile panel shows the customer's second name under their name.
 - Switching garments on the measurement page no longer keeps the previous garment's values in the form.
