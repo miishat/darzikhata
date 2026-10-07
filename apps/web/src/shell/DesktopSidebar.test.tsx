@@ -92,9 +92,26 @@ describe('Desktop sidebar and top bar', () => {
   it('opens the account and more dialog from the ellipsis button', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
     await userEvent.click(await screen.findByRole('button', { name: 'অ্যাকাউন্ট ও আরও' }));
-    expect(await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' })).toBeTruthy();
+    const menu = await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' });
+    const title = document.getElementById(menu.getAttribute('aria-labelledby')!)!;
+    expect(title.className).toContain('sr-only');
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('shows language, theme and layout in view in the account popup, and switches language there', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/dashboard' });
+    await userEvent.click(await screen.findByRole('button', { name: 'অ্যাকাউন্ট ও আরও' }));
+    const menu = await screen.findByRole('dialog', { name: 'অ্যাকাউন্ট ও আরও' });
+    expect(within(menu).getAllByRole('radiogroup').map((g) => g.getAttribute('aria-label'))).toEqual(['ভাষা', 'রঙের থিম', 'স্ক্রিন লেআউট']);
+    expect(within(menu).queryByRole('button', { expanded: false })).toBeNull();
+    expect(within(menu).getByRole('button', { name: 'ইউজার বদলান' })).toBeTruthy();
+    expect(within(menu).queryByRole('link', { name: 'পেমেন্ট' })).toBeNull();
+    await userEvent.click(within(menu).getByRole('radio', { name: 'English' }));
+    const english = await screen.findByRole('dialog', { name: 'Account and More' });
+    expect(within(english).getByRole('button', { name: 'Reset Demo Data' })).toBeTruthy();
+    await userEvent.click(within(english).getByRole('button', { name: 'Reset Demo Data' }));
+    expect(await screen.findByRole('dialog', { name: 'Reset Demo Data' })).toBeTruthy();
   });
 
   it('switches the branch scope from the branch popover and closes it when focus leaves', async () => {
