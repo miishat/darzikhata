@@ -17,6 +17,7 @@ async function openOrder(keep: (order: Order) => boolean, as?: { staffId: string
   const app = await renderApp({ layout: 'desktop', shop, path: '/app/orders', ...(as ? { as } : {}) });
   const order = find(app.store, keep);
   await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
+  await userEvent.click(await screen.findByRole('tab', { name: 'টাকার হিসাব' }));
   const money = await screen.findByRole('region', { name: 'টাকার হিসাব' });
   return { ...app, order, money };
 }
@@ -109,6 +110,7 @@ describe('Payments on an order', () => {
     expect(credit).toBe(item.price);
 
     await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
+    await userEvent.click(await screen.findByRole('tab', { name: 'টাকার হিসাব' }));
     const money = await screen.findByRole('region', { name: 'টাকার হিসাব' });
     expect(within(totalsRow(money, /^ফেরত পাওনা/)).getByText(formatTaka(credit, 'bn'))).toBeTruthy();
     expect(within(money).getByText('ফেরত দিন, অথবা কাস্টমারের ক্রেডিট হিসেবে রেখে দিন। নিজে থেকে কিছু হবে না।')).toBeTruthy();

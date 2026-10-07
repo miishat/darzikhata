@@ -115,12 +115,9 @@ export function OrdersPage() {
 
   if (orderId && full) {
     return (
-      <div className="flex flex-col gap-3">
-        <h1 className="text-xl font-semibold">{t('nav.orders')}</h1>
-        <section aria-label={t('orders.detail')} className="max-w-4xl rounded-xl border border-line bg-panel p-4">
-          <OrderDetail orderId={orderId} onClose={closeOrder} full />
-        </section>
-      </div>
+      <section aria-label={t('orders.detail')}>
+        <OrderDetail orderId={orderId} onClose={closeOrder} full />
+      </section>
     );
   }
 

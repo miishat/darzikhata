@@ -18,6 +18,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The desktop order page (opened full size from the order beside the list):
+  - The customer leads the header with their name, phone, a Call button and a View Profile link; the order number, its status and who took it sit on the right.
+  - A strip of key numbers follows: how many garments are ready, the next delivery, and the total, paid and amount owed for staff who may see money.
+  - Tabs show the garments, the money or the status link one at a time. Beside them are the receipt, job slip and tags as joined icons, then Share Status Link (which opens the link tab) and Order Again.
+  - Garments are the same blocks as in the order panel, two or three across, under a heading per wearer when the order names who wears what.
+  - The header, numbers and tabs stay in place while only the section below scrolls. A bar along the bottom shows the amount owed and progress, with Hand Over (asking which garment when several are ready) and Take Payment.
 - Print pages and the status page on a desktop:
   - Print pages have one toolbar along the top: back and the page's name, tabs between the order's receipt, job slip and fabric tags (the receipt only for staff who may see money), then Share, the paper's language and Print. The paper shows as an A4 sheet.
   - The receipt is a cash memo: the shop's name centred at the top, the order and customer, each garment with a dotted line out to its price, the totals with the amount owed boxed, and a tear-off slip at the bottom for the customer to bring when collecting, with the order number, the number of garments, the next delivery date and the amount owed.

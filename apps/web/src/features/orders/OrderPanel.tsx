@@ -29,37 +29,92 @@ export function fullPageTo(orderId: string, search: string): { pathname: string;
   return { pathname: `/app/orders/${orderId}`, search: `?${params.toString()}` };
 }
 
+/** Who took the order and when, and its branch when the shop has more than one. */
+export function useOrderByline(order: Order): string {
+  const { t, date, label } = useI18n();
+  const { config } = useSnapshot();
+  const takenBy = config?.staff.find((s) => s.id === order.createdBy)?.name;
+  const branch = config && config.branches.length > 1 ? config.branches.find((b) => b.id === order.branchId) : undefined;
+  const taken = date(order.createdAt.slice(0, 10));
+  return [takenBy ? t('order.takenBy', { date: taken, name: takenBy }) : t('order.takenOn', { date: taken }), branch ? label(branch.name) : '']
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
+ * Handing over from a whole order: the garments ready to go, and `start`, which opens the hand-over for the
+ * only one, or first asks which when several are ready. `element` holds the dialogs.
+ */
+export function useOrderHandOver(order: Order) {
+  const { t, language } = useI18n();
+  const can = useCan();
+  const [picking, setPicking] = useState(false);
+  const [handingId, setHandingId] = useState<string | null>(null);
+  const ready = order.items.filter((item) => can('work.updateStage') && nextMove(item)?.stage.group === 'delivered');
+  const handing = order.items.find((item) => item.id === handingId);
+
+  const start = () => {
+    if (ready.length === 1) setHandingId(ready[0]!.id);
+    else if (ready.length > 1) setPicking(true);
+  };
+
+  const element = (
+    <>
+      {picking && (
+        <Dialog
+          open
+          title={t('order.handOverPick')}
+          onClose={() => setPicking(false)}
+          actions={
+            <Button variant="secondary" onClick={() => setPicking(false)}>
+              {t('common.cancel')}
+            </Button>
+          }
+        >
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {ready.map((item) => (
+              <li key={item.id}>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setPicking(false);
+                    setHandingId(item.id);
+                  }}
+                >
+                  {itemTitle(order, item, language)}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Dialog>
+      )}
+      {handing && <HandOverDialog order={order} item={handing} onClose={() => setHandingId(null)} />}
+    </>
+  );
+  return { ready, start, element };
+}
+
 /**
  * The order beside the list: who and when, the customer, the money, one block per garment,
  * and a footer for handing over and taking payment. Nothing here is done by a key press.
  */
 export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }) {
-  const { t, language, date, label } = useI18n();
+  const { t, language } = useI18n();
   const can = useCan();
-  const { state, config } = useSnapshot();
+  const { state } = useSnapshot();
   const { search } = useLocation();
   const money = useMoneyDialogs(order);
   const [sharing, setSharing] = useState(false);
-  const [picking, setPicking] = useState(false);
-  const [handingId, setHandingId] = useState<string | null>(null);
+  const handOver = useOrderHandOver(order);
+  const byline = useOrderByline(order);
 
   const customer = state.customers[order.customerId];
-  const takenBy = config?.staff.find((s) => s.id === order.createdBy)?.name;
-  const branch = config && config.branches.length > 1 ? config.branches.find((b) => b.id === order.branchId) : undefined;
-  const taken = date(order.createdAt.slice(0, 10));
-  const byline = [takenBy ? t('order.takenBy', { date: taken, name: takenBy }) : t('order.takenOn', { date: taken }), branch ? label(branch.name) : '']
-    .filter(Boolean)
-    .join(' · ');
-
-  const ready = order.items.filter((item) => can('work.updateStage') && nextMove(item)?.stage.group === 'delivered');
+  const ready = handOver.ready;
   const showTake = can('money.view') && can('payments.record') && moneySummary(order).balance > 0;
   const hasFooter = ready.length > 0 || showTake;
-  const handing = order.items.find((item) => item.id === handingId);
-
-  const startHandOver = () => {
-    if (ready.length === 1) setHandingId(ready[0]!.id);
-    else if (ready.length > 1) setPicking(true);
-  };
+  const startHandOver = handOver.start;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -179,37 +234,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
           </div>
         </Dialog>
       )}
-      {picking && (
-        <Dialog
-          open
-          title={t('order.handOverPick')}
-          onClose={() => setPicking(false)}
-          actions={
-            <Button variant="secondary" onClick={() => setPicking(false)}>
-              {t('common.cancel')}
-            </Button>
-          }
-        >
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {ready.map((item) => (
-              <li key={item.id}>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setPicking(false);
-                    setHandingId(item.id);
-                  }}
-                >
-                  {itemTitle(order, item, language)}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Dialog>
-      )}
-      {handing && <HandOverDialog order={order} item={handing} onClose={() => setHandingId(null)} />}
+      {handOver.element}
     </div>
   );
 }
@@ -217,7 +242,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign';
 
 /** One garment in the panel: stage, a strip of progress, the usual next move, and the rest behind a menu. */
-function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
+export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
   const { t, language, label, date, number } = useI18n();
   const can = useCan();
   const hasAccess = useMeasurementAccess();

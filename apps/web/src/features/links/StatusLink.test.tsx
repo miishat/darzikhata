@@ -16,6 +16,8 @@ async function openOrder(shop: SeedShopKey, keep: (order: Order) => boolean, as?
   const order = Object.values(app.store.getSnapshot().state.orders).find(keep)!;
   await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
   await screen.findByRole('region', { name: 'অর্ডারের বিস্তারিত' });
+  const tab = screen.queryByRole('tab', { name: 'স্ট্যাটাস লিংক' });
+  if (tab) await userEvent.click(tab);
   return { ...app, order };
 }
 
@@ -67,6 +69,7 @@ describe('Status link section', () => {
 
   it('is only for staff who may manage links', async () => {
     await openOrder('uniform', (o) => o.id === 'uniform-o27', { staffId: 'uniform-supervisor', pin: '3333' });
+    expect(screen.queryByRole('tab', { name: 'স্ট্যাটাস লিংক' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'স্ট্যাটাস লিংক' })).toBeNull();
   });
 });
