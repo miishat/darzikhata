@@ -10,6 +10,8 @@ import { useScopedState } from '../branches/BranchScopeProvider';
 import { dashboardModel, todoRows } from '../dashboard/dashboard';
 import { useWorkList } from '../work/useWorkList';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
+import { useShell } from '../../shell/ShellPreference';
+import { WorkPaper, WorkPaperSwitcher, useWorkPaperVariant } from './WorkListPrototype';
 
 /** A paper work list with the same filters and grouping as the screen, one table per group. */
 export function WorkListPrintPage() {
@@ -20,6 +22,8 @@ export function WorkListPrintPage() {
   const [params] = useSearchParams();
   const today = useToday();
   const [language, setLanguage] = usePrintLanguage();
+  const { kind } = useShell();
+  const variant = useWorkPaperVariant();
   const onlyToday = params.get('today') === '1';
   /*
    * "Today" is the Home page's own meaning (todoRows over dashboardModel): garments with a trial
@@ -51,6 +55,11 @@ export function WorkListPrintPage() {
       language={language}
       onLanguage={setLanguage}
     >
+      {kind === 'desktop' && <WorkPaperSwitcher />}
+      {kind === 'desktop' && variant !== 'A' ? (
+        <WorkPaper variant={variant} language={language} config={config} query={query} groups={groups} heading={heading} today={today} onlyToday={onlyToday} />
+      ) : (
+      <>
       <header className="mb-4">
         <h1 className="text-2xl font-semibold">{heading}</h1>
         <p className="font-semibold">{shopContact(config, language).name}</p>
@@ -98,6 +107,8 @@ export function WorkListPrintPage() {
           </section>
         );
       })}
+      </>
+      )}
     </PrintLayout>
   );
 }
