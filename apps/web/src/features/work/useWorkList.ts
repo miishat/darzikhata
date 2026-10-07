@@ -64,9 +64,12 @@ export function useWorkList(): WorkList {
     (next: WorkQuery) => {
       const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
       if (view === 'board') written.set('view', 'board');
+      // PROTOTYPE: keep the mockup letter while filtering.
+      const variant = params.get('variant');
+      if (variant) written.set('variant', variant);
       setParams(written, { replace: true });
     },
-    [setParams, seesAll, view],
+    [setParams, seesAll, view, params],
   );
   const setView = useCallback(
     (next: WorkView) => {

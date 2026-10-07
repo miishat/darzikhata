@@ -1,3 +1,6 @@
+import { DropdownSwitcher, ProtoSelect, useDropdownVariant } from '../../ui/DropdownPrototype';
+import { stageTone } from '../../ui/stageTone';
+import { Layers, Users } from 'lucide-react';
 import type { ItemRef } from '@darzikhata/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { Columns3, List, Printer } from 'lucide-react';
@@ -93,6 +96,7 @@ function DesktopWorkPage() {
   if (view === 'board') printParams.delete('stage');
   const printSearch = printParams.toString();
 
+  const dropdown = useDropdownVariant();
   const select = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus';
   const empty = view === 'board' ? boardRows.length === 0 : groups.length === 0;
 
@@ -128,7 +132,34 @@ function DesktopWorkPage() {
         {viewer.seesAll && (
           <WorkerChips workers={workers} counts={chipCounts} late={lateCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
         )}
-        {view === 'list' && (
+        {view === 'list' && dropdown !== 'A' && (
+          <div className="flex flex-wrap items-center gap-2">
+            {viewer.seesAll && (
+              <ProtoSelect
+                variant={dropdown}
+                label={t('work.groupBy')}
+                value={query.by}
+                options={[
+                  { value: 'worker', label: t('work.byWorker'), icon: Users },
+                  { value: 'stage', label: t('work.byStage'), icon: Layers },
+                ]}
+                onChange={(v) => setQuery({ ...query, by: v === 'stage' ? 'stage' : 'worker' })}
+              />
+            )}
+            <ProtoSelect
+              variant={dropdown}
+              label={t('work.stage')}
+              value={query.stage}
+              options={[
+                { value: 'all', label: t('work.allStages') },
+                ...stages.map((s, i) => ({ value: s.key, label: label(s.label), dot: TONE_DOT[stageTone(s, 'unfinished', i)] })),
+              ]}
+              onChange={(v) => setQuery({ ...query, stage: v })}
+            />
+          </div>
+        )}
+        <DropdownSwitcher />
+        {view === 'list' && dropdown === 'A' && (
           <div className="flex flex-wrap items-center gap-2">
             {viewer.seesAll && (
               <select
@@ -191,6 +222,16 @@ function DesktopWorkPage() {
 }
 
 /** Phones get one card per garment; desktops keep the table with batch assign and stage moves. */
+const TONE_DOT: Record<string, string> = {
+  booked: 'bg-tone-booked-dot',
+  cutting: 'bg-tone-cutting-dot',
+  working: 'bg-tone-working-dot',
+  trial: 'bg-tone-trial-dot',
+  ready: 'bg-tone-ready-dot',
+  done: 'bg-tone-done-dot',
+  cancelled: 'bg-tone-cancelled-dot',
+};
+
 export function WorkPage() {
   const { kind } = useShell();
   return kind === 'mobile' ? <MobileWorkPage /> : <DesktopWorkPage />;
