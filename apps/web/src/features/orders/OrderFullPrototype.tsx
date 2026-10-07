@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): desktop full order page variants behind ?variant=. A is the current page.
-import { isOrderClosed, itemSummaryGroup, moneySummary, netPaid, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
-import { ArrowLeft, CalendarClock, FileText, Percent, Phone, Printer, Repeat, Share2, Tag, Undo2, Wallet, X, type LucideIcon } from 'lucide-react';
+import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
+import { ArrowLeft, ChevronDown, FileText, Phone, Printer, Repeat, Share2, Shirt, Tag, Wallet, X, type LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -12,7 +12,13 @@ import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { useCan } from '../common/hooks';
 import { progressText } from '../common/orderText';
 import { StatusLinkSection } from '../links/StatusLinkSection';
-import { MoneyCard, OrderMoney, useMoneyDialogs } from '../payments/OrderMoney';
+import { OrderMoney, useMoneyDialogs } from '../payments/OrderMoney';
+import { DueLabel } from '../../ui/DueLabel';
+import { StagePill } from '../../ui/StagePill';
+import { StageStrip } from '../../ui/StageStrip';
+import { stageTone } from '../../ui/stageTone';
+import { itemTitle } from '../common/orderText';
+import { MoveOn } from './ItemCard';
 import { HandOverDialog } from './itemDialogs';
 import { PanelItem } from './OrderPanel';
 import { nextMove } from './stageMoves';
@@ -20,9 +26,12 @@ import { wearerGroups } from './wearers';
 
 export const FULL_VARIANTS = {
   A: 'Current page',
-  B: 'Header bar with papers, garments left, customer + money column right',
   C: 'Panel stretched: summary tiles, garment grid, sticky action bar',
   D: 'Key numbers strip, then tabs: Garments / Money / Status link',
+  E: 'C with a wearer list down the side, money in the action bar',
+  F: 'C with garments as compact rows that open in place',
+  G: 'D on a navy header band',
+  H: 'D with tabs down the left, wearers under Garments',
 };
 const KEYS = Object.keys(FULL_VARIANTS);
 
@@ -158,45 +167,33 @@ function PaperLinks({ order, onShare, iconsOnly = false }: { order: Order; onSha
   );
 }
 
-/** Money buttons beside the money card: take, refund, discount, price change. */
-function MoneyButtons({ order, open }: { order: Order; open: ReturnType<typeof useMoneyDialogs>['open'] }) {
-  const { t } = useI18n();
-  const can = useCan();
-  if (!can('money.view')) return null;
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {can('payments.record') && moneySummary(order).balance > 0 && (
-        <Button className="col-span-2" onClick={() => open({ kind: 'take' })}>
-          <Wallet size={16} aria-hidden="true" />
-          {t('payments.take')}
-        </Button>
-      )}
-      {can('payments.refund') && netPaid(order.payments) > 0 && (
-        <Button variant="secondary" className="text-xs" onClick={() => open({ kind: 'refund' })}>
-          <Undo2 size={14} aria-hidden="true" />
-          {t('payments.refund')}
-        </Button>
-      )}
-      {can('orders.edit') && (
-        <Button variant="secondary" className="text-xs" onClick={() => open({ kind: 'discount' })}>
-          <Percent size={14} aria-hidden="true" />
-          {t('payments.discount')}
-        </Button>
-      )}
-      {can('orders.edit') && (
-        <Button variant="secondary" className="text-xs" onClick={() => open({ kind: 'adjust' })}>
-          <CalendarClock size={14} aria-hidden="true" />
-          {t('payments.adjust')}
-        </Button>
-      )}
-    </div>
-  );
-}
-
 /** The garments, grouped under each wearer when the order has wearers, in a grid of panel blocks. */
-function Garments({ order, cols }: { order: Order; cols: string }) {
+function Garments({ order, cols, only = null, rows = false }: { order: Order; cols: string; only?: number | null; rows?: boolean }) {
   const { t, language } = useI18n();
   const groups = wearerGroups(order);
+  if (rows) {
+    const list = (items: OrderItem[]) => (
+      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+        {items.map((item) => (
+          <CompactRow key={item.id} order={order} item={item} />
+        ))}
+      </div>
+    );
+    if (groups.length === 0) return list(order.items);
+    return (
+      <div className="flex flex-col gap-5">
+        {groups.map((group, index) => (
+          <section key={group.wearer ?? ''} id={`wearer-${index}`} aria-label={group.wearer ?? t('wearers.others')} className="flex scroll-mt-4 flex-col gap-2">
+            <div className="flex items-baseline gap-3">
+              <h3 className="font-display text-lg font-bold">{group.wearer ?? t('wearers.others')}</h3>
+              <p className="text-sm text-muted">{progressText(group.progress, language)}</p>
+            </div>
+            {list(group.items)}
+          </section>
+        ))}
+      </div>
+    );
+  }
   const grid = (items: OrderItem[]) => (
     <div className={`grid items-start gap-3 ${cols}`}>
       {items.map((item) => (
@@ -207,10 +204,11 @@ function Garments({ order, cols }: { order: Order; cols: string }) {
   if (groups.length === 0) return grid(order.items);
   return (
     <div className="flex flex-col gap-5">
-      {groups.map((group) => {
+      {groups.map((group, index) => {
         const name = group.wearer ?? t('wearers.others');
+        if (only !== null && only !== index) return null;
         return (
-          <section key={group.wearer ?? ''} aria-label={name} className="flex flex-col gap-2">
+          <section key={group.wearer ?? ''} id={`wearer-${index}`} aria-label={name} className="flex scroll-mt-4 flex-col gap-2">
             <div className="flex items-baseline gap-3">
               <h3 className="font-display text-lg font-bold">{name}</h3>
               <p className="text-sm text-muted">{progressText(group.progress, language)}</p>
@@ -223,89 +221,99 @@ function Garments({ order, cols }: { order: Order; cols: string }) {
   );
 }
 
-function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
+export function ProtoFullOrder({ variant, order, onClose }: { variant: string; order: Order; onClose(): void }) {
+  if (variant === 'C' || variant === 'E' || variant === 'F') return <FullC order={order} onClose={onClose} take={variant} />;
+  return <FullD order={order} onClose={onClose} take={variant} />;
+}
+
+/** F: one garment per row with its stage, delivery, worker and next move; clicking the row opens the full block in place. */
+function CompactRow({ order, item }: { order: Order; item: OrderItem }) {
+  const { t, language, label, date } = useI18n();
+  const can = useCan();
+  const { config } = useSnapshot();
+  const [open, setOpen] = useState(false);
+  const title = itemTitle(order, item, language);
+  const stageIndex = item.stages.findIndex((s) => s.key === item.stageKey);
+  const stage = item.stages[stageIndex];
+  const group = itemSummaryGroup(item);
+  const worker = item.assignedTo ? config?.staff.find((s) => s.id === item.assignedTo) : undefined;
+  const next = nextMove(item);
+  const canMove = can('work.updateStage') && next !== null && !item.cancelled && next.stage.group !== 'delivered';
   return (
-    <div className="flex items-center justify-between gap-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{children}</h3>
-      {aside}
+    <div className="border-b border-line last:border-b-0">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_auto_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto_auto] items-center gap-4 px-4 py-2.5">
+        <div className="min-w-0">
+          <p className={`truncate font-semibold ${item.cancelled ? 'line-through' : ''}`}>{title}</p>
+          {item.wearer && <p className="truncate text-xs text-muted">{item.wearer}</p>}
+        </div>
+        <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, group, Math.max(stageIndex, 0))} />
+        <div className="min-w-0">{!item.cancelled && stageIndex >= 0 && <StageStrip total={item.stages.length} current={stageIndex + 1} stage={stage ? label(stage.label) : item.stageKey} />}</div>
+        <div className="flex min-w-0 flex-col text-sm">
+          {item.deliveryDate && <span className="text-muted">{date(item.deliveryDate)}</span>}
+          {item.deliveryDate && (group === 'unfinished' || group === 'ready') && <DueLabel date={item.deliveryDate} />}
+        </div>
+        <span className="truncate text-sm">{worker?.name ?? ''}</span>
+        <div>
+          {canMove && next && (
+            <MoveOn
+              order={order}
+              item={item}
+              stageKey={next.stage.key}
+              label={t('item.moveTo', { stage: label(next.stage.label) })}
+              render={(props) => (
+                <button type="button" disabled={props.disabled} onClick={props.onClick} className={`${buttonClasses('secondary')} min-h-9! border-brand text-brand-strong`}>
+                  {props.children}
+                </button>
+              )}
+            />
+          )}
+        </div>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={t('item.details')}
+          onClick={() => setOpen(!open)}
+          className="flex size-9 items-center justify-center rounded-full text-muted hover:bg-surface"
+        >
+          <ChevronDown size={18} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      {open && (
+        <div className="bg-surface px-4 pb-4 pt-1">
+          <PanelItem order={order} item={item} />
+        </div>
+      )}
     </div>
   );
 }
 
-export function ProtoFullOrder({ variant, order, onClose }: { variant: string; order: Order; onClose(): void }) {
-  if (variant === 'B') return <FullB order={order} onClose={onClose} />;
-  if (variant === 'C') return <FullC order={order} onClose={onClose} />;
-  return <FullD order={order} onClose={onClose} />;
-}
-
-function BackToList({ onClose }: { onClose(): void }) {
-  const { t, language } = useI18n();
-  return (
-    <button type="button" onClick={onClose} className="flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink">
-      <ArrowLeft size={16} aria-hidden="true" />
-      {pick(language, 'অর্ডারের তালিকা', 'Order List')}
+/** E: the wearers down the side, each a jump to its garments with its progress. */
+function WearerList({ order, active, onPick }: { order: Order; active?: number | null; onPick(index: number | null): void }) {
+  const { t, language, number } = useI18n();
+  const groups = wearerGroups(order);
+  const live = order.items.filter((i) => !i.cancelled).length;
+  const row = (key: string, name: string, sub: string, on: boolean, pickIt: () => void) => (
+    <button
+      key={key}
+      type="button"
+      onClick={pickIt}
+      aria-current={on ? 'true' : undefined}
+      className={`flex w-full flex-col rounded-xl px-3 py-2 text-start ${on ? 'bg-brand-soft text-brand-strong' : 'hover:bg-surface'}`}
+    >
+      <span className="truncate text-sm font-semibold">{name}</span>
+      <span className="truncate text-xs text-muted">{sub}</span>
     </button>
   );
-}
-
-/** B: a header bar across the top, garments on the left, a sticky column with the customer, money and link on the right. */
-function FullB({ order, onClose }: { order: Order; onClose(): void }) {
-  const { t, language } = useI18n();
-  const can = useCan();
-  const f = useFullOrder(order);
   return (
-    <div className="flex flex-col gap-4">
-      <BackToList onClose={onClose} />
-      <header className="flex flex-wrap items-start gap-4 rounded-2xl border border-line bg-panel p-5">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-bold tracking-wide">{order.number}</h1>
-            <StatusPill order={order} />
-          </div>
-          <p className="mt-1 text-sm text-muted">{f.byline}</p>
-          <div className="mt-3 flex max-w-md items-center gap-3">
-            <div className="flex-1">
-              <GarmentBars order={order} />
-            </div>
-            <span className="shrink-0 text-sm text-muted">{progressText(orderProgress(order), language)}</span>
-          </div>
-        </div>
-        <PaperLinks order={order} onShare={f.share} />
-      </header>
-      <div className="grid grid-cols-[minmax(0,1fr)_360px] items-start gap-4">
-        <div className="flex flex-col gap-3">
-          <SectionTitle
-            aside={
-              f.ready.length > 0 && (
-                <Button variant="secondary" className="min-h-9!" onClick={f.handOver}>
-                  {t('order.handOverBar')}
-                </Button>
-              )
-            }
-          >
-            {t('receipt.garments')}
-          </SectionTitle>
-          <Garments order={order} cols="grid-cols-1 2xl:grid-cols-2" />
-        </div>
-        <aside className="sticky top-4 flex flex-col gap-3">
-          <SectionTitle>{t('order.customer')}</SectionTitle>
-          <CustomerCard order={order} />
-          {can('money.view') && (
-            <>
-              <SectionTitle>{t('payments.section')}</SectionTitle>
-              <MoneyCard order={order} open={f.money.open} />
-              <MoneyButtons order={order} open={f.money.open} />
-            </>
-          )}
-        </aside>
-      </div>
-      {f.dialogs}
-    </div>
+    <nav aria-label={t('wearers.summary')} className="flex flex-col gap-1">
+      {row('all', pick(language, 'সব পোশাক', 'All Garments'), `${number(live)}`, active === null, () => onPick(null))}
+      {groups.map((group, index) => row(String(index), group.wearer ?? t('wearers.others'), progressText(group.progress, language), active === index, () => onPick(index)))}
+    </nav>
   );
 }
 
 /** C: the panel stretched out. Summary tiles across the top, garments in a grid, and the hand-over and payment bar pinned to the bottom. */
-function FullC({ order, onClose }: { order: Order; onClose(): void }) {
+function FullC({ order, onClose, take }: { order: Order; onClose(): void; take: string }) {
   const { t, language, money, date } = useI18n();
   const can = useCan();
   const f = useFullOrder(order);
@@ -349,13 +357,47 @@ function FullC({ order, onClose }: { order: Order; onClose(): void }) {
             <span />
           )}
         </div>
-        <div className="mt-5">
-          <Garments order={order} cols="grid-cols-2 2xl:grid-cols-3" />
-        </div>
+        {take === 'E' && wearerGroups(order).length > 0 ? (
+          <div className="mt-5 grid grid-cols-[220px_minmax(0,1fr)] items-start gap-4">
+            <div className="sticky top-0 rounded-2xl border border-line bg-panel p-2">
+              <WearerList
+                order={order}
+                active={null}
+                onPick={(index) => document.getElementById(index === null ? 'garments-top' : `wearer-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              />
+            </div>
+            <div id="garments-top" className="scroll-mt-4">
+              <Garments order={order} cols="grid-cols-2" />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5">
+            <Garments order={order} cols="grid-cols-2 2xl:grid-cols-3" rows={take === 'F'} />
+          </div>
+        )}
       </div>
       {(f.ready.length > 0 || f.showTake) && (
         <div className="flex items-center justify-end gap-2 border-t border-line bg-panel px-5 py-3">
-          <span className="me-auto text-sm text-muted">{pick(language, 'এই অর্ডারে যা বাকি', 'Left on this order')}</span>
+          {take === 'C' ? (
+            <span className="me-auto text-sm text-muted">{pick(language, 'এই অর্ডারে যা বাকি', 'Left on this order')}</span>
+          ) : (
+            <span className="me-auto flex items-baseline gap-4 text-sm">
+              {can('money.view') && (
+                <>
+                  <span className="text-muted">
+                    {t('money.paid')} <b className="text-ok">{money(f.summary.paid)}</b>
+                  </span>
+                  <span className="text-muted">
+                    {owed.label} <b className={`font-display text-lg ${owed.tone}`}>{money(owed.amount)}</b>
+                  </span>
+                </>
+              )}
+              <span className="text-muted">
+                <Shirt size={14} aria-hidden="true" className="me-1 inline" />
+                {progressText(orderProgress(order), language)}
+              </span>
+            </span>
+          )}
           {f.ready.length > 0 && (
             <Button variant="secondary" onClick={f.handOver}>
               {t('order.handOverBar')}
@@ -377,11 +419,14 @@ function FullC({ order, onClose }: { order: Order; onClose(): void }) {
 type Tab = 'garments' | 'money' | 'link';
 
 /** D: a strip of key numbers under the header, then tabs so each part gets the full width. */
-function FullD({ order, onClose }: { order: Order; onClose(): void }) {
+function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: string }) {
   const { t, language, money, date, number } = useI18n();
   const can = useCan();
   const f = useFullOrder(order);
   const [tab, setTab] = useState<Tab>('garments');
+  const [only, setOnly] = useState<number | null>(null);
+  const navy = take === 'G';
+  const side = take === 'H';
   const progress = orderProgress(order);
   const live = order.items.filter((i) => !i.cancelled);
   const done = progress.ready + progress.delivered;
@@ -396,15 +441,21 @@ function FullD({ order, onClose }: { order: Order; onClose(): void }) {
   ];
   const stat = (label: string, value: ReactNode, tone = '') => (
     <div className="flex flex-col gap-0.5 px-5 py-3">
-      <span className="text-xs text-muted">{label}</span>
-      <span className={`font-display text-xl font-bold ${tone}`}>{value}</span>
+      <span className={`text-xs ${navy ? 'text-on-navy-muted' : 'text-muted'}`}>{label}</span>
+      <span className={`font-display text-xl font-bold ${navy ? '' : tone}`}>{value}</span>
     </div>
   );
+  const groups = wearerGroups(order);
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+      <div className={`overflow-hidden rounded-2xl ${navy ? 'bg-navy text-on-navy' : 'border border-line bg-panel'}`}>
         <header className="flex items-center gap-4 p-5">
-          <button type="button" aria-label={t('common.close')} onClick={onClose} className="flex size-10 items-center justify-center rounded-full border border-line hover:bg-surface">
+          <button
+            type="button"
+            aria-label={t('common.close')}
+            onClick={onClose}
+            className={`flex size-10 items-center justify-center rounded-full ${navy ? 'ring-1 ring-white/30 hover:bg-white/15' : 'border border-line hover:bg-surface'}`}
+          >
             <X size={18} aria-hidden="true" />
           </button>
           <div className="min-w-0 flex-1">
@@ -412,13 +463,18 @@ function FullD({ order, onClose }: { order: Order; onClose(): void }) {
               <h1 className="font-display text-2xl font-bold tracking-wide">{order.number}</h1>
               <StatusPill order={order} />
             </div>
-            <p className="text-sm text-muted">{f.byline}</p>
+            <p className={`text-sm ${navy ? 'text-on-navy-muted' : 'text-muted'}`}>{f.byline}</p>
           </div>
-          <div className="w-72">
+          <div className="w-72 text-ink">
             <CustomerCard order={order} compact />
           </div>
         </header>
-        <div className="grid grid-cols-5 divide-x divide-line border-t border-line bg-surface/50">
+        {navy && (
+          <div className="px-5">
+            <GarmentBars order={order} dark />
+          </div>
+        )}
+        <div className={`grid grid-cols-5 divide-x ${navy ? 'mt-2 divide-white/15 border-t border-white/15' : 'divide-line border-t border-line bg-surface/50'}`}>
           {stat(pick(language, 'রেডি', 'Ready'), `${number(done)} / ${number(live.length)}`)}
           {stat(pick(language, 'পরের ডেলিভারি', 'Next Delivery'), next ? date(next) : '-')}
           {can('money.view') && stat(t('money.total'), money(f.summary.total))}
@@ -431,6 +487,61 @@ function FullD({ order, onClose }: { order: Order; onClose(): void }) {
             )}
         </div>
       </div>
+      {side ? (
+        <div className="grid grid-cols-[240px_minmax(0,1fr)] items-start gap-4">
+          <div className="sticky top-4 flex flex-col gap-3">
+            <div role="tablist" aria-orientation="vertical" className="flex flex-col gap-1 rounded-2xl border border-line bg-panel p-2">
+              {tabs
+                .filter((x) => x.show)
+                .map((x) => (
+                  <div key={x.key}>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={tab === x.key}
+                      onClick={() => {
+                        setTab(x.key);
+                        setOnly(null);
+                      }}
+                      className={`w-full rounded-xl px-3 py-2.5 text-start text-sm ${tab === x.key && only === null ? 'bg-brand-soft font-semibold text-brand-strong' : 'hover:bg-surface'}`}
+                    >
+                      {x.label}
+                    </button>
+                    {x.key === 'garments' && tab === 'garments' && groups.length > 0 && (
+                      <div className="ms-3 mt-1 border-s border-line ps-2">
+                        <WearerList order={order} active={only} onPick={(index) => setOnly(index)} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+            <div className="flex flex-col gap-2">
+              {f.ready.length > 0 && (
+                <Button variant="secondary" onClick={f.handOver}>
+                  {t('order.handOverBar')}
+                </Button>
+              )}
+              {f.showTake && (
+                <Button onClick={() => f.money.open({ kind: 'take' })}>
+                  <Wallet size={16} aria-hidden="true" />
+                  {t('payments.take')}
+                </Button>
+              )}
+              <PaperLinks order={order} onShare={() => setTab('link')} iconsOnly />
+            </div>
+          </div>
+          <div role="tabpanel">
+            {tab === 'garments' && <Garments order={order} cols="grid-cols-2" only={only} />}
+            {tab === 'money' && <OrderMoney order={order} />}
+            {tab === 'link' && (
+              <div className="max-w-2xl">
+                <StatusLinkSection order={order} />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="flex items-center gap-3">
         <div role="tablist" className="flex rounded-xl bg-line/60 p-1">
           {tabs
@@ -472,6 +583,8 @@ function FullD({ order, onClose }: { order: Order; onClose(): void }) {
           </div>
         )}
       </div>
+        </>
+      )}
       {f.dialogs}
     </div>
   );
