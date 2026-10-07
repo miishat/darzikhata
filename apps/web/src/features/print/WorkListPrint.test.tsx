@@ -11,9 +11,9 @@ const printedRows = () =>
 const ownerWork = (store: ShopStore) =>
   workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'rahman-owner', seesAll: true });
 
-describe('Work-list print', () => {
+describe('Work-list print on a phone', () => {
   it('prints outside the app, one table per group with repeating headers', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?by=stage' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?by=stage' });
     expect(await screen.findByRole('heading', { name: 'কাজের তালিকা' })).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'প্রধান মেনু' })).toBeNull();
     expect(printedRows()).toBe(ownerWork(store).length);
@@ -33,7 +33,7 @@ describe('Work-list print', () => {
   });
 
   it('prints only the filtered garments and says which filter', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?stage=trial' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?stage=trial' });
     await screen.findByRole('heading', { name: 'কাজের তালিকা' });
     expect(printedRows()).toBe(ownerWork(store).filter((r) => r.item.stageKey === 'trial').length);
     expect(screen.getByText('ধাপ: ট্রায়াল')).toBeTruthy();
@@ -43,7 +43,7 @@ describe('Work-list print', () => {
     new Set(todoRows(dashboardModel(Object.values(store.getSnapshot().state.orders), todayInDhaka(new Date())), Infinity).map((r) => r.ref.item.id));
 
   it('prints only today’s work with ?today=1, and says so', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&by=stage' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?today=1&by=stage' });
     await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
     const expected = ownerWork(store).filter((r) => todayIds(store).has(r.item.id));
     expect(expected.length).toBeGreaterThan(0);
@@ -52,14 +52,14 @@ describe('Work-list print', () => {
   });
 
   it('keeps the stage filter with ?today=1', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&stage=trial' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?today=1&stage=trial' });
     await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
     expect(printedRows()).toBe(ownerWork(store).filter((r) => r.item.stageKey === 'trial' && todayIds(store).has(r.item.id)).length);
     expect(screen.getByText('ধাপ: ট্রায়াল')).toBeTruthy();
   });
 
   it('says so when nothing is due today', async () => {
-    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/work?today=1&stage=no-such-stage' });
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?today=1&stage=no-such-stage' });
     await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
     expect(screen.getByText('আজকের জন্য কোনো কাজ নেই।')).toBeTruthy();
     expect(screen.queryAllByRole('table')).toHaveLength(0);
@@ -73,7 +73,7 @@ describe('Work-list print', () => {
 
   it('prints a tailor’s own garments only', async () => {
     const { store } = await renderApp({
-      layout: 'desktop',
+      layout: 'mobile',
       shop: 'nakshi',
       path: '/print/work',
       as: { staffId: 'nakshi-tailor', pin: '4444' },

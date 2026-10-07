@@ -9,12 +9,15 @@ import { useToday } from '../common/hooks';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { dashboardModel, todoRows } from '../dashboard/dashboard';
 import { useWorkList } from '../work/useWorkList';
+import { useShell } from '../../shell/ShellPreference';
+import { DesktopWorkPaper } from './DesktopWorkPaper';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
 
-/** A paper work list with the same filters and grouping as the screen, one table per group. */
+/** A paper work list with the same filters and grouping as the screen, one table per group. The desktop has its own A4 layout. */
 export function WorkListPrintPage() {
   const app = useI18n();
-  const { config } = useSnapshot();
+  const { state: shop, config } = useSnapshot();
+  const { kind } = useShell();
   const { query, groups: allGroups } = useWorkList();
   const state = useScopedState();
   const [params] = useSearchParams();
@@ -51,53 +54,68 @@ export function WorkListPrintPage() {
       language={language}
       onLanguage={setLanguage}
     >
-      <header className="mb-4">
-        <h1 className="text-2xl font-semibold">{heading}</h1>
-        <p className="font-semibold">{shopContact(config, language).name}</p>
-        <p>{t('print.printedOn', { date: formatDate(today, language) })}</p>
-        {query.worker !== 'all' && <p>{t('item.worker', { name: query.worker === 'none' ? t('work.unassigned') : staffName(query.worker) })}</p>}
-        {query.stage !== 'all' && <p>{t('item.stage', { stage: filterStage ? stageName(filterStage) : query.stage })}</p>}
-      </header>
-      {onlyToday && groups.length === 0 && <p>{t('print.noWorkToday')}</p>}
-      {groups.map((group) => {
-        const title =
-          query.by === 'worker'
-            ? group.staff?.name ?? t('work.unassigned')
-            : group.stage
-              ? labelIn(group.stage.label, language)
-              : group.key;
-        return (
-          <section key={group.key} className="mb-6">
-            <h2 className="mb-1 text-lg font-semibold">{title}</h2>
-            <table aria-label={title} className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-line">
-                  <th scope="col" className={head}>{t('orders.col.order')}</th>
-                  <th scope="col" className={head}>{t('receipt.garment')}</th>
-                  <th scope="col" className={head}>{t('receipt.wearer')}</th>
-                  <th scope="col" className={head}>{query.by === 'worker' ? t('work.stage') : t('work.worker')}</th>
-                  <th scope="col" className={head}>{t('print.trial')}</th>
-                  <th scope="col" className={head}>{t('receipt.delivery')}</th>
-                  <th scope="col" className={`${head} w-1/4`}>{t('work.col.notes')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.refs.map((r) => (
-                  <tr key={r.item.id} className="print-block border-b border-line">
-                    <td className="whitespace-nowrap px-2 py-2 font-semibold">{r.order.number}</td>
-                    <td className="px-2 py-2">{itemTitle(r.order, r.item, language)}</td>
-                    <td className="px-2 py-2">{r.item.wearer}</td>
-                    <td className="px-2 py-2">{query.by === 'worker' ? stageName(r) : staffName(r.item.assignedTo)}</td>
-                    <td className="px-2 py-2">{r.item.trialDate ? formatDate(r.item.trialDate, language) : ''}</td>
-                    <td className="px-2 py-2">{r.item.deliveryDate ? formatDate(r.item.deliveryDate, language) : ''}</td>
-                    <td className="px-2 py-2" />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        );
-      })}
+      {kind === 'desktop' ? (
+        <DesktopWorkPaper
+          language={language}
+          config={config}
+          query={query}
+          groups={groups}
+          heading={heading}
+          today={today}
+          onlyToday={onlyToday}
+          customerName={(r) => shop.customers[r.order.customerId]?.name ?? ''}
+        />
+      ) : (
+        <>
+          <header className="mb-4">
+            <h1 className="text-2xl font-semibold">{heading}</h1>
+            <p className="font-semibold">{shopContact(config, language).name}</p>
+            <p>{t('print.printedOn', { date: formatDate(today, language) })}</p>
+            {query.worker !== 'all' && <p>{t('item.worker', { name: query.worker === 'none' ? t('work.unassigned') : staffName(query.worker) })}</p>}
+            {query.stage !== 'all' && <p>{t('item.stage', { stage: filterStage ? stageName(filterStage) : query.stage })}</p>}
+          </header>
+          {onlyToday && groups.length === 0 && <p>{t('print.noWorkToday')}</p>}
+          {groups.map((group) => {
+            const title =
+              query.by === 'worker'
+                ? group.staff?.name ?? t('work.unassigned')
+                : group.stage
+                  ? labelIn(group.stage.label, language)
+                  : group.key;
+            return (
+              <section key={group.key} className="mb-6">
+                <h2 className="mb-1 text-lg font-semibold">{title}</h2>
+                <table aria-label={title} className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-line">
+                      <th scope="col" className={head}>{t('orders.col.order')}</th>
+                      <th scope="col" className={head}>{t('receipt.garment')}</th>
+                      <th scope="col" className={head}>{t('receipt.wearer')}</th>
+                      <th scope="col" className={head}>{query.by === 'worker' ? t('work.stage') : t('work.worker')}</th>
+                      <th scope="col" className={head}>{t('print.trial')}</th>
+                      <th scope="col" className={head}>{t('receipt.delivery')}</th>
+                      <th scope="col" className={`${head} w-1/4`}>{t('work.col.notes')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.refs.map((r) => (
+                      <tr key={r.item.id} className="print-block border-b border-line">
+                        <td className="whitespace-nowrap px-2 py-2 font-semibold">{r.order.number}</td>
+                        <td className="px-2 py-2">{itemTitle(r.order, r.item, language)}</td>
+                        <td className="px-2 py-2">{r.item.wearer}</td>
+                        <td className="px-2 py-2">{query.by === 'worker' ? stageName(r) : staffName(r.item.assignedTo)}</td>
+                        <td className="px-2 py-2">{r.item.trialDate ? formatDate(r.item.trialDate, language) : ''}</td>
+                        <td className="px-2 py-2">{r.item.deliveryDate ? formatDate(r.item.deliveryDate, language) : ''}</td>
+                        <td className="px-2 py-2" />
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            );
+          })}
+        </>
+      )}
     </PrintLayout>
   );
 }
