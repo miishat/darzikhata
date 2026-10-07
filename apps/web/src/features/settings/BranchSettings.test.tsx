@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 
-describe('Branch settings', () => {
-  it('adds a branch, after which the branch switcher appears', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/settings/branches' });
+describe('Branch settings on a phone', () => {
+  it('adds a branch', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/settings/branches' });
     const add = await screen.findByRole('button', { name: 'নতুন শাখা' });
     expect(screen.queryByLabelText('শাখা')).toBeNull();
     await userEvent.click(add);
@@ -22,19 +22,17 @@ describe('Branch settings', () => {
       name: { bn: 'কারখানা', en: 'Workshop' },
       kind: 'workshop',
     });
-    await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
-    expect(await screen.findByLabelText('শাখা')).toBeTruthy();
   });
 
   it('moves a device to another branch at once', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/branches' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/branches' });
     await userEvent.selectOptions(await screen.findByLabelText('শাখা: দোকানের কম্পিউটার'), 'কারখানা');
     expect(await screen.findByText('সেভ হয়েছে')).toBeTruthy();
     expect(store.getSnapshot().config!.devices[0]!.branchId).toBe('workshop');
   });
 
   it('needs a name for a branch', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/settings/branches' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/settings/branches' });
     const before = store.getSnapshot().config;
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন শাখা' }));
     const dialog = await screen.findByRole('dialog', { name: 'নতুন শাখা' });

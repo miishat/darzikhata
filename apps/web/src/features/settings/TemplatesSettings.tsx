@@ -2,11 +2,18 @@ import { Plus, Shirt } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { buttonClasses } from '../../ui/Button';
+import { DesktopTemplates } from './DesktopTemplates';
 import { SECTION_BODY, SectionHeader, SettingCard, StagePath, StatusPill } from './SettingsCards';
 
-/** The shop's garment types as cards, each opening its editor. */
+/** The shop's garment types as cards, each opening its editor. On a desktop they are a table instead. */
 export function TemplatesSettings() {
+  const { kind } = useShell();
+  return kind === 'desktop' ? <DesktopTemplates /> : <TemplateCards />;
+}
+
+function TemplateCards() {
   const { t, language, money, number } = useI18n();
   const { config } = useSnapshot();
   const saved = (useLocation().state as { saved?: boolean } | null)?.saved === true;

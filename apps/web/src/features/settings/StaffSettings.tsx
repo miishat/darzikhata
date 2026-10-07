@@ -1,20 +1,30 @@
 import type { Staff } from '@darzikhata/domain';
 import { Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useSnapshot, useStore } from '../../data/StoreContext';
+import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { SelectField } from '../../ui/SelectField';
 import { TextField } from '../../ui/TextField';
 import { Shell } from '../orders/itemDialogs';
-import { configProblemText } from './configProblems';
+import { DesktopStaff } from './DesktopStaff';
 import { SECTION_BODY, SectionHeader, StatusPill } from './SettingsCards';
-import { readStaff, staffForm, type StaffForm } from './staffInput';
+import { staffForm, type StaffForm } from './staffInput';
+import { useStaffSave } from './useStaffSave';
 
-/** People who work in the shop: add, edit, and deactivate (never delete, their names are on past work). */
+/**
+ * People who work in the shop: add, edit, and deactivate (never delete, their names are on past work).
+ * On a desktop they are a table instead of cards.
+ */
 export function StaffSettings() {
+  const { kind } = useShell();
+  return kind === 'desktop' ? <DesktopStaff /> : <StaffCards />;
+}
+
+function StaffCards() {
   const { t, language } = useI18n();
   const { config } = useSnapshot();
   const [editing, setEditing] = useState<{ staff: Staff | null } | null>(null);
@@ -83,8 +93,8 @@ export function StaffSettings() {
 
 function StaffDialog({ staff, onClose, onSaved }: { staff: Staff | null; onClose(): void; onSaved(): void }) {
   const { t, language } = useI18n();
-  const store = useStore();
-  const { config, session } = useSnapshot();
+  const saveStaff = useStaffSave();
+  const { config } = useSnapshot();
   const [form, setForm] = useState<StaffForm>(() => staffForm(staff, config!));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
@@ -94,34 +104,12 @@ function StaffDialog({ staff, onClose, onSaved }: { staff: Staff | null; onClose
 
   async function save() {
     if (working) return;
-    setProblem(null);
-    const result = readStaff(form, {
-      config: store.getSnapshot().config ?? config!,
-      staffId: staff?.id ?? null,
-      selfId: session?.staffId ?? '',
-      newId: () => store.createId(),
-    });
-    if (!result.ok) {
-      const { self, ...fields } = result.errors;
-      setErrors(Object.fromEntries(Object.entries(fields).map(([k, key]) => [k, t(key)])));
-      if (self) setProblem(t(self));
-      return;
-    }
-    setErrors({});
     setWorking(true);
-    const next = result.staff;
-    const outcome = await store.updateConfig((current) => ({
-      ...current,
-      staff: current.staff.some((s) => s.id === next.id)
-        ? current.staff.map((s) => (s.id === next.id ? next : s))
-        : [...current.staff, next],
-    }));
+    const result = await saveStaff(form, staff?.id ?? null);
     setWorking(false);
-    if (!outcome.ok) {
-      setProblem(configProblemText(outcome.problems, language));
-      return;
-    }
-    onSaved();
+    setErrors(result.errors);
+    setProblem(result.problem);
+    if (result.ok) onSaved();
   }
 
   return (

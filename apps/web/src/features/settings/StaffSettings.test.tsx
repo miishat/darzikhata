@@ -13,9 +13,9 @@ async function trySignIn(store: ShopStore, staffId: string, pin: string): Promis
   return ok;
 }
 
-describe('Staff settings', () => {
+describe('Staff settings on a phone', () => {
   it('adds a person who can then sign in', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/staff' });
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন স্টাফ' }));
     const dialog = await screen.findByRole('dialog', { name: 'নতুন স্টাফ' });
     await userEvent.type(within(dialog).getByLabelText('নাম'), 'নতুন দর্জি');
@@ -33,7 +33,7 @@ describe('Staff settings', () => {
   });
 
   it('deactivates a person so they can no longer sign in', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/staff' });
     await userEvent.click(await screen.findByRole('button', { name: 'সেলিম শেখ: বদলান' }));
     const dialog = await screen.findByRole('dialog', { name: 'সেলিম শেখ' });
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'সক্রিয়' }));
@@ -46,7 +46,7 @@ describe('Staff settings', () => {
   });
 
   it('stops you changing your own role', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/staff' });
     const before = store.getSnapshot().config;
     await userEvent.click(await screen.findByRole('button', { name: 'কামাল হোসেন: বদলান' }));
     const dialog = await screen.findByRole('dialog', { name: 'কামাল হোসেন' });
@@ -57,7 +57,7 @@ describe('Staff settings', () => {
   });
 
   it('masks the PIN field for new and existing staff', async () => {
-    await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/staff' });
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন স্টাফ' }));
     const fresh = await screen.findByRole('dialog', { name: 'নতুন স্টাফ' });
     const freshPin = within(fresh).getByLabelText('পিন') as HTMLInputElement;
@@ -74,7 +74,7 @@ describe('Staff settings', () => {
   });
 
   it('never shows a PIN in the staff list', async () => {
-    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/staff' });
+    const { store } = await renderApp({ layout: 'mobile', shop: 'uniform', path: '/app/settings/staff' });
     const list = await screen.findByRole('list', { name: 'স্টাফ' });
     const text = list.textContent ?? '';
     for (const person of store.getSnapshot().config!.staff) {

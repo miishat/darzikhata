@@ -1,20 +1,29 @@
 import type { Branch } from '@darzikhata/domain';
 import { Building2, MonitorSmartphone, Pencil, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
-import { useSnapshot, useStore } from '../../data/StoreContext';
+import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { TextField } from '../../ui/TextField';
 import { Shell } from '../orders/itemDialogs';
-import { configProblemText } from './configProblems';
+import { DesktopBranches } from './DesktopBranches';
 import { SECTION_BODY, SectionHeader, SettingCard } from './SettingsCards';
-import { slugKey } from './keys';
+import { useBranchSave, useMoveDevice } from './useBranchSave';
 
-/** Branches (never deleted), each with the devices that belong to it. A device moves with its own select. */
+/**
+ * Branches (never deleted), each with the devices that belong to it. A device moves with its own select.
+ * On a desktop the branches are a list beside the chosen branch's editor.
+ */
 export function BranchSettings() {
+  const { kind } = useShell();
+  return kind === 'desktop' ? <DesktopBranches /> : <BranchCards />;
+}
+
+function BranchCards() {
   const { t, language, number } = useI18n();
-  const store = useStore();
+  const move = useMoveDevice();
   const { config } = useSnapshot();
   const [editing, setEditing] = useState<{ branch: Branch | null } | null>(null);
   const [saved, setSaved] = useState(false);
@@ -24,15 +33,9 @@ export function BranchSettings() {
   async function moveDevice(deviceId: string, branchId: string) {
     setSaved(false);
     setProblem(null);
-    const outcome = await store.updateConfig((current) => ({
-      ...current,
-      devices: current.devices.map((d) => (d.id === deviceId ? { ...d, branchId } : d)),
-    }));
-    if (!outcome.ok) {
-      setProblem(configProblemText(outcome.problems, language));
-      return;
-    }
-    setSaved(true);
+    const failed = await move(deviceId, branchId);
+    if (failed) setProblem(failed);
+    else setSaved(true);
   }
   const edit = (branch: Branch | null) => {
     setSaved(false);
@@ -125,7 +128,7 @@ export function BranchSettings() {
 
 function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onClose(): void; onSaved(): void }) {
   const { t, language } = useI18n();
-  const store = useStore();
+  const saveBranch = useBranchSave();
   const [nameBn, setNameBn] = useState(branch?.name.bn ?? '');
   const [nameEn, setNameEn] = useState(branch?.name.en ?? '');
   const [kind, setKind] = useState<Branch['kind']>(branch?.kind ?? 'shop');
@@ -137,35 +140,12 @@ function BranchDialog({ branch, onClose, onSaved }: { branch: Branch | null; onC
   async function save() {
     if (working) return;
     setProblem(null);
-    const bn = nameBn.trim();
-    const en = nameEn.trim();
-    if (!bn && !en) {
-      setError(t('settings.branch.error.name'));
-      return;
-    }
-    setError(undefined);
-    const name = { bn: bn || en, en: en || bn };
     setWorking(true);
-    const outcome = await store.updateConfig((current) => {
-      const next: Branch = {
-        id: branch?.id ?? slugKey(name.en, current.branches.map((b) => b.id), `branch-${current.branches.length + 1}`),
-        name,
-        kind,
-        address: address.trim(),
-      };
-      return {
-        ...current,
-        branches: current.branches.some((b) => b.id === next.id)
-          ? current.branches.map((b) => (b.id === next.id ? next : b))
-          : [...current.branches, next],
-      };
-    });
+    const result = await saveBranch(branch, { nameBn, nameEn, kind, address });
     setWorking(false);
-    if (!outcome.ok) {
-      setProblem(configProblemText(outcome.problems, language));
-      return;
-    }
-    onSaved();
+    setError(result.error);
+    setProblem(result.problem ?? null);
+    if (result.ok) onSaved();
   }
 
   return (
