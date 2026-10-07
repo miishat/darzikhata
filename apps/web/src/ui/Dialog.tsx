@@ -13,7 +13,7 @@ export interface DialogProps {
   actionsDesktopOnly?: boolean;
   /** The title is announced but not shown on any screen, when the content makes it plain. */
   hideTitle?: boolean;
-  /** On a larger screen it grows out of the button that opened it, its sections fade in turn, and it shrinks away on closing. */
+  /** On a larger screen it grows out of the button that opened it, and it shrinks away on closing. */
   animated?: boolean;
 }
 
@@ -127,7 +127,7 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
         <h2 id={titleId} className={`text-lg font-semibold ${hideTitle ? 'sr-only' : hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
           {title}
         </h2>
-        {children && <div className={`dialog-body text-muted ${hideTitle ? '' : hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
+        {children && <div className={`text-muted ${hideTitle ? '' : hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
         {actions && <div className={`mt-5 flex flex-wrap justify-end gap-2 max-sm:[&>*]:flex-1 ${actionsDesktopOnly ? 'max-sm:hidden' : ''}`}>{actions}</div>}
       </div>
     </div>,
