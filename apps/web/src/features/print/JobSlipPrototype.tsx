@@ -26,6 +26,7 @@ export const JOB_SLIP_VARIANTS = {
   G: 'D, the strip split by group (body, sleeve, neck) under spanning labels, notes and fitting changes side by side',
   H: 'E tighter: no sketch box, the swatch square beside the title, so two garments fit a page',
   I: 'E with the strip from D on top in place of the table, then notes, swatch and a wide sketch box',
+  J: 'D as it is, plus a fabric swatch square to the right of the notes',
 };
 
 export function useJobSlipVariant() {
@@ -298,8 +299,8 @@ function PagePerGarment(props: JobSlipPaperProps) {
 }
 
 /** D: every garment on one page, its numbers as a strip of cells like a ruler, the notes beside. */
-function Chart(props: JobSlipPaperProps) {
-  const { language, mayMeasure } = props;
+function Chart(props: JobSlipPaperProps & { swatch?: boolean }) {
+  const { language, mayMeasure, swatch = false } = props;
   const garments = useGarments(props);
   return (
     <>
@@ -339,7 +340,16 @@ function Chart(props: JobSlipPaperProps) {
                 <caption className="caption-bottom pt-0.5 text-end text-[10px] text-muted">{g.unit}</caption>
               </table>
             )}
-            <Notes item={g.item} language={language} />
+            {swatch ? (
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <Notes item={g.item} language={language} />
+                </div>
+                <Swatch language={language} className="w-24" />
+              </div>
+            ) : (
+              <Notes item={g.item} language={language} />
+            )}
           </section>
         );
       })}
@@ -673,6 +683,7 @@ export function JobSlipPaper(props: JobSlipPaperProps): ReactNode {
   if (props.variant === 'G') return <GroupedChart {...props} />;
   if (props.variant === 'H') return <TightDocket {...props} />;
   if (props.variant === 'I') return <DocketWithStrip {...props} />;
+  if (props.variant === 'J') return <Chart {...props} swatch />;
 
   if (props.variant === 'B') return <BenchCards {...props} />;
   if (props.variant === 'C') return <PagePerGarment {...props} />;
