@@ -164,11 +164,28 @@ describe('Order detail', () => {
     expect(within(menu).getByRole('button', { name: 'অন্য ধাপ…' })).toBeTruthy();
     expect(within(menu).queryByRole('button', { name: 'আইটেম বাতিল' })).toBeNull();
     expect(within(menu).queryByRole('button', { name: 'আইটেম বদলান' })).toBeNull();
-    await userEvent.click(within(menu).getByRole('button', { name: 'বন্ধ করুন' }));
+    await userEvent.keyboard('{Escape}');
     await userEvent.click(within(screen.getByRole('region', { name: 'অর্ডারের বিস্তারিত' })).getByRole('button', { name: 'আরও: রসিদ, স্লিপ, ট্যাগ, আবার অর্ডার' }));
     const more = await screen.findByRole('dialog', { name: 'আরও' });
     expect(within(more).queryByRole('link', { name: 'রসিদ প্রিন্ট' })).toBeNull();
     expect(within(more).getByRole('link', { name: 'কাজের স্লিপ' })).toBeTruthy();
+  });
+
+  it('opens the order’s menu as a popup headed by the order, with its papers and actions in labelled groups', async () => {
+    const { order } = await openOrder('rahman', (o) => o.items.some((i) => itemSummaryGroup(i) === 'unfinished'));
+    await userEvent.click(within(screen.getByRole('region', { name: 'অর্ডারের বিস্তারিত' })).getByRole('button', { name: 'আরও: রসিদ, স্লিপ, ট্যাগ, আবার অর্ডার' }));
+    const more = await screen.findByRole('dialog', { name: 'আরও' });
+    expect(within(more).getByText(order.number)).toBeTruthy();
+    const papers = within(more).getByRole('region', { name: 'এই অর্ডারের কাগজ' });
+    expect(within(papers).getByRole('link', { name: 'রসিদ প্রিন্ট' }).getAttribute('href')).toBe(`/print/receipt/${order.id}`);
+    expect(within(within(more).getByRole('region', { name: 'অর্ডার' })).getByRole('link', { name: 'আবার অর্ডার' })).toBeTruthy();
+    expect(within(more).queryByRole('button', { name: 'বন্ধ করুন' })).toBeNull();
+
+    await userEvent.keyboard('{Escape}');
+    const item = order.items.find((i) => itemSummaryGroup(i) === 'unfinished')!;
+    await userEvent.click(within(screen.getByRole('region', { name: title(order, item) })).getByRole('button', { name: `আরও কাজ: ${title(order, item)}` }));
+    const menu = await screen.findByRole('dialog', { name: title(order, item) });
+    expect(within(within(menu).getByRole('region', { name: 'এই পোশাক' })).getByRole('button', { name: 'আইটেম বদলান' })).toBeTruthy();
   });
 
   it('does not overwrite an item changed elsewhere while its dialog was open', async () => {

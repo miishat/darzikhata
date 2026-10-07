@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
-import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
+import { ActionGroup, ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
 import { Avatar } from '../../ui/Avatar';
 import { Button, buttonClasses } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
@@ -133,12 +133,20 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
             >
               <ExternalLink aria-hidden="true" size={18} />
             </Link>
-            <ActionSheet label={t('order.more')} icon={EllipsisVertical} title={t('nav.more')}>
+            <ActionSheet
+              label={t('order.more')}
+              icon={EllipsisVertical}
+              title={t('nav.more')}
+              heading={{ title: order.number, sub: [customer?.name, byline].filter(Boolean).join(' · ') }}
+            >
               {(close) => (
                 <>
-                  {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`} icon={Printer} tone="brand">{t('order.printReceipt')}</ActionSheetItem>}
-                  <ActionSheetItem to={`/print/job/${order.id}`} icon={FileText} tone="ok">{t('order.jobSlip')}</ActionSheetItem>
-                  <ActionSheetItem to={`/print/tags/${order.id}`} icon={Tag} tone="warn">{t('order.tags')}</ActionSheetItem>
+                  <ActionGroup label={t('print.papers')}>
+                    {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`} icon={Printer} tone="brand">{t('order.printReceipt')}</ActionSheetItem>}
+                    <ActionSheetItem to={`/print/job/${order.id}`} icon={FileText} tone="ok">{t('order.jobSlip')}</ActionSheetItem>
+                    <ActionSheetItem to={`/print/tags/${order.id}`} icon={Tag} tone="warn">{t('order.tags')}</ActionSheetItem>
+                  </ActionGroup>
+                  <ActionGroup label={t('nav.orders')}>
                   {can('orders.create') && (
                     <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} icon={Repeat} tone="neutral" data-tour="order-again">
                       {t('order.orderAgain')}
@@ -156,6 +164,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
                       {t('order.share')}
                     </ActionSheetItem>
                   )}
+                  </ActionGroup>
                 </>
               )}
             </ActionSheet>
@@ -294,17 +303,26 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
           </div>
           <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, group, Math.max(stageIndex, 0))} />
           {menu && !item.cancelled && (
-            <ActionSheet label={t('item.moreActions', { item: title })} icon={Ellipsis} title={title}>
+            <ActionSheet
+              label={t('item.moreActions', { item: title })}
+              icon={Ellipsis}
+              title={title}
+              heading={{ title, sub: [item.wearer, stage ? label(stage.label) : ''].filter(Boolean).join(' · ') }}
+            >
               {(done) => (
                 <>
-                  {canMove && menuItem('stage', t('item.otherStage'), ArrowRightLeft, done)}
-                  {can('orders.edit') && (
-                    <>
-                      {menuItem('adjust', t('item.addAdjustment'), MessageSquare, done)}
-                      {menuItem('edit', t('item.edit'), Pencil, done)}
-                    </>
+                  {(canMove || can('orders.edit')) && (
+                    <ActionGroup label={t('item.thisGarment')}>
+                      {canMove && menuItem('stage', t('item.otherStage'), ArrowRightLeft, done)}
+                      {can('orders.edit') && (
+                        <>
+                          {menuItem('adjust', t('item.addAdjustment'), MessageSquare, done)}
+                          {menuItem('edit', t('item.edit'), Pencil, done)}
+                        </>
+                      )}
+                    </ActionGroup>
                   )}
-                  {can('orders.cancel') && !delivered && !item.cancelled && menuItem('cancel', t('item.cancel'), Ban, done, true)}
+                  {can('orders.cancel') && !delivered && !item.cancelled && <ActionGroup>{menuItem('cancel', t('item.cancel'), Ban, done, true)}</ActionGroup>}
                 </>
               )}
             </ActionSheet>
