@@ -90,6 +90,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The Nakshi Boutique sample shop's summary said "QC" even in Bangla. It now says মান যাচাই, the same name its quality check stage uses, and "quality check" in English.
 - The New Customer plus button beside the narrowed customer list shows a full-size plus; it had been squeezed to a dot.
 - The Open Full Page button in the order beside the list is the same size as the More and Close buttons next to it, so the three line up.
 - The desktop customer directory card keeps its full height when the list is short.
