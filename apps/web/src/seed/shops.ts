@@ -27,7 +27,7 @@ export const SEED_SHOPS: SeedShopInfo[] = [
   {
     key: 'nakshi',
     name: { bn: 'নকশী বুটিক', en: 'Nakshi Boutique' },
-    summary: { bn: 'মেয়েদের পোশাক, ৪ জন স্টাফ, ট্রায়াল ও QC', en: 'Women’s wear, 4 staff, trial and QC' },
+    summary: { bn: 'মেয়েদের পোশাক, ৪ জন স্টাফ, ট্রায়াল ও মান যাচাই', en: 'Women’s wear, 4 staff, trial and quality check' },
   },
   {
     key: 'uniform',
