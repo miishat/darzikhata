@@ -66,7 +66,11 @@ describe('Tour targets', () => {
     await screen.findByRole('heading', { name: 'যাচাইয়ের তালিকা' });
     expectMarked(['review-item']);
     await act(() => router.navigate('/app/settings/templates/blouse'));
-    await screen.findByRole('table', { name: 'ধাপ' });
+    // On a desktop the Stages tab carries the mark until it is open, then the Add Stage button inside it does.
+    const stagesTab = await screen.findByRole('tab', { name: /^ধাপ/ });
+    expectMarked(['add-stage']);
+    await userEvent.click(stagesTab);
+    expect(stagesTab.hasAttribute('data-tour')).toBe(false);
     expectMarked(['add-stage']);
   });
 });

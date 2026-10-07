@@ -1,7 +1,20 @@
 import { STANDARD_STAGES, STARTER_TEMPLATES, type GarmentTemplate } from '@darzikhata/domain';
 import { describe, expect, it } from 'vitest';
 import { slugKey } from './keys';
-import { addField, addStage, moveRow, newTemplateForm, readTemplate, removeRow, templateForm, type TemplateForm } from './templateInput';
+import {
+  addField,
+  addStage,
+  addStageTo,
+  groupNeighbour,
+  moveInGroup,
+  moveRow,
+  newTemplateForm,
+  readTemplate,
+  removeRow,
+  setStageGroup,
+  templateForm,
+  type TemplateForm,
+} from './templateInput';
 
 const shirt = STARTER_TEMPLATES.find((t) => t.id === 'shirt')!;
 
@@ -104,5 +117,43 @@ describe('templateForm and readTemplate', () => {
     expect(coat).toMatchObject({ id: 'shirt-2', name: { bn: 'শার্ট', en: 'Shirt' }, defaultPrice: 250000, active: true, fields: [] });
     expect(coat.stages).toEqual(STANDARD_STAGES);
     expect(read({ ...form, nameBn: 'কোট', price: 0 }).id).toBe('template');
+  });
+});
+
+describe('grouped editing', () => {
+  it('moves a field past rows of other groups to the next one of its own group', () => {
+    const form = templateForm(shirt);
+    const groups = form.fields.map((f) => f.group);
+    const i = form.fields.findIndex((f, j) => groups.indexOf(f.group) !== j);
+    const above = groupNeighbour(form, 'fields', i, -1);
+    expect(form.fields[above]!.group).toBe(form.fields[i]!.group);
+    const moved = moveInGroup(form, 'fields', i, -1);
+    expect(moved.fields[above]!.key).toBe(form.fields[i]!.key);
+    expect(moved.fields[i]!.key).toBe(form.fields[above]!.key);
+    expect(moveInGroup(form, 'fields', groups.indexOf(form.fields[i]!.group), -1)).toBe(form);
+  });
+
+  it('adds a stage at the end of its kind', () => {
+    const form = newTemplateForm();
+    const ready = addStageTo(form, 'ready');
+    const at = ready.stages.findIndex((s) => s.key === '');
+    expect(ready.stages[at]!.group).toBe('ready');
+    expect(ready.stages[at + 1]!.group).toBe('delivered');
+    expect(ready.stages.slice(0, at).every((s) => s.group !== 'delivered')).toBe(true);
+    const first = addStageTo(form, 'unfinished');
+    const added = first.stages.findIndex((s) => s.key === '');
+    expect(first.stages[added - 1]!.group).toBe('unfinished');
+    expect(first.stages[added + 1]!.group).toBe('ready');
+  });
+
+  it('moves a stage to its new kind when the kind changes, keeping the kinds in order', () => {
+    const form = newTemplateForm();
+    const stitching = form.stages.findIndex((s) => s.group === 'unfinished' && s !== form.stages[0]);
+    const changed = setStageGroup(form, stitching, 'ready');
+    const order = ['unfinished', 'ready', 'delivered'];
+    const kinds = changed.stages.map((s) => order.indexOf(s.group));
+    expect(kinds).toEqual([...kinds].sort());
+    expect(changed.stages.find((s) => s.key === form.stages[stitching]!.key)!.group).toBe('ready');
+    expect(setStageGroup(form, stitching, 'unfinished')).toBe(form);
   });
 });

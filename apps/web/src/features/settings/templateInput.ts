@@ -204,3 +204,54 @@ export function readTemplate(form: TemplateForm, existing: GarmentTemplate[]): T
     template: { id, name: label(form.nameBn, form.nameEn), defaultPrice: form.price!, fields, stages, active: form.active },
   };
 }
+
+/**
+ * Swaps a row with the nearest row of the same group above or below it, as the desktop editor shows rows
+ * under their group. Returns the same form when there is none.
+ */
+export function moveInGroup(form: TemplateForm, list: ListName, index: number, direction: -1 | 1): TemplateForm {
+  const other = groupNeighbour(form, list, index, direction);
+  if (other < 0) return form;
+  const swapAt = <T>(rows: T[]): T[] => {
+    const next = [...rows];
+    [next[index], next[other]] = [next[other]!, next[index]!];
+    return next;
+  };
+  return list === 'fields' ? { ...form, fields: swapAt(form.fields) } : { ...form, stages: swapAt(form.stages) };
+}
+
+/** The index of the nearest row of the same group in that direction, or -1. */
+export function groupNeighbour(form: TemplateForm, list: ListName, index: number, direction: -1 | 1): number {
+  const rows: Array<{ group: string }> = form[list];
+  const group = rows[index]?.group;
+  if (group === undefined) return -1;
+  for (let i = index + direction; i >= 0 && i < rows.length; i += direction) if (rows[i]!.group === group) return i;
+  return -1;
+}
+
+const STAGE_ORDER: StageGroup[] = ['unfinished', 'ready', 'delivered'];
+
+/** Where a stage of this kind goes: after the last stage of its kind or an earlier one. */
+function bandEnd(stages: StageRow[], group: StageGroup): number {
+  let at = 0;
+  stages.forEach((s, i) => {
+    if (STAGE_ORDER.indexOf(s.group) <= STAGE_ORDER.indexOf(group)) at = i + 1;
+  });
+  return at;
+}
+
+/** Adds a required stage of this kind at the end of its kind's stages. */
+export function addStageTo(form: TemplateForm, group: StageGroup): TemplateForm {
+  const row: StageRow = { rowId: `new-${form.nextRow}`, key: '', labelBn: '', labelEn: '', group, optional: false };
+  const at = bandEnd(form.stages, group);
+  return { ...form, stages: [...form.stages.slice(0, at), row, ...form.stages.slice(at)], nextRow: form.nextRow + 1 };
+}
+
+/** Changes a stage's kind and moves it to the end of that kind's stages, so the kinds stay in order. */
+export function setStageGroup(form: TemplateForm, index: number, group: StageGroup): TemplateForm {
+  const row = form.stages[index];
+  if (!row || row.group === group) return form;
+  const rest = form.stages.filter((_, i) => i !== index);
+  const at = bandEnd(rest, group);
+  return { ...form, stages: [...rest.slice(0, at), { ...row, group }, ...rest.slice(at)] };
+}
