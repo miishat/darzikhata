@@ -1,10 +1,11 @@
 // PROTOTYPE (throwaway): desktop full order page variants behind ?variant=. A is the current page.
 import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
-import { ArrowLeft, ChevronDown, FileText, Phone, Printer, Repeat, Share2, Shirt, Tag, Wallet, X, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ChevronDown, EllipsisVertical, FileText, PackageCheck, Phone, Printer, Repeat, Share2, Shirt, Tag, Wallet, X, type LucideIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
 import { Avatar } from '../../ui/Avatar';
 import { Button, buttonClasses } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
@@ -27,11 +28,10 @@ import { wearerGroups } from './wearers';
 export const FULL_VARIANTS = {
   A: 'Current page',
   C: 'Panel stretched: summary tiles, garment grid, sticky action bar',
-  D: 'Key numbers strip, then tabs: Garments / Money / Status link',
-  E: 'C with a wearer list down the side, money in the action bar',
-  F: 'C with garments as compact rows that open in place',
-  G: 'D on a navy header band',
-  H: 'D with tabs down the left, wearers under Garments',
+  D: 'Fixed top; Hand Over and Take Payment inside their numbers, papers joined',
+  E: 'D with the actions in the header, papers in a menu',
+  F: 'D with an action column on the right, every action labelled',
+  G: 'D with an action bar pinned to the bottom, papers joined in the header',
 };
 const KEYS = Object.keys(FULL_VARIANTS);
 
@@ -222,7 +222,7 @@ function Garments({ order, cols, only = null, rows = false }: { order: Order; co
 }
 
 export function ProtoFullOrder({ variant, order, onClose }: { variant: string; order: Order; onClose(): void }) {
-  if (variant === 'C' || variant === 'E' || variant === 'F') return <FullC order={order} onClose={onClose} take={variant} />;
+  if (variant === 'C') return <FullC order={order} onClose={onClose} take="C" />;
   return <FullD order={order} onClose={onClose} take={variant} />;
 }
 
@@ -337,7 +337,7 @@ function FullC({ order, onClose, take }: { order: Order; onClose(): void; take: 
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
         <div className="grid grid-cols-4 gap-3">
-          <div className="col-span-2">
+          <div className="col-span-2 grid">
             <CustomerCard order={order} />
           </div>
           <div className={tile}>
@@ -418,15 +418,77 @@ function FullC({ order, onClose, take }: { order: Order; onClose(): void; take: 
 
 type Tab = 'garments' | 'money' | 'link';
 
-/** D: a strip of key numbers under the header, then tabs so each part gets the full width. */
+/** The order's papers as one joined row of icon buttons. */
+function PaperGroup({ order, onShare }: { order: Order; onShare(): void }) {
+  const { t } = useI18n();
+  const can = useCan();
+  const cell = 'flex size-10 items-center justify-center text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
+  const link = (to: string, icon: LucideIcon, text: string) => {
+    const Icon = icon;
+    return (
+      <Link key={to} to={to} title={text} aria-label={text} className={cell}>
+        <Icon size={17} aria-hidden="true" />
+      </Link>
+    );
+  };
+  return (
+    <div className="flex divide-x divide-line overflow-hidden rounded-xl border border-line bg-panel">
+      {can('money.view') && link(`/print/receipt/${order.id}`, Printer, t('order.printReceipt'))}
+      {link(`/print/job/${order.id}`, FileText, t('order.jobSlip'))}
+      {link(`/print/tags/${order.id}`, Tag, t('order.tags'))}
+      {can('links.manage') && (
+        <button type="button" title={t('order.share')} aria-label={t('order.share')} onClick={onShare} className={cell}>
+          <Share2 size={17} aria-hidden="true" />
+        </button>
+      )}
+      {can('orders.create') && link(`/app/orders/new?repeat=${order.id}`, Repeat, t('order.orderAgain'))}
+    </div>
+  );
+}
+
+/** The papers and order again behind one menu button. */
+function PaperMenu({ order, onShare }: { order: Order; onShare(): void }) {
+  const { t } = useI18n();
+  const can = useCan();
+  return (
+    <ActionSheet label={t('order.more')} icon={EllipsisVertical} title={t('nav.more')} triggerClassName="border border-line bg-panel">
+      {(close) => (
+        <>
+          {can('money.view') && <ActionSheetItem to={`/print/receipt/${order.id}`} icon={Printer} tone="brand">{t('order.printReceipt')}</ActionSheetItem>}
+          <ActionSheetItem to={`/print/job/${order.id}`} icon={FileText} tone="ok">{t('order.jobSlip')}</ActionSheetItem>
+          <ActionSheetItem to={`/print/tags/${order.id}`} icon={Tag} tone="warn">{t('order.tags')}</ActionSheetItem>
+          {can('orders.create') && <ActionSheetItem to={`/app/orders/new?repeat=${order.id}`} icon={Repeat} tone="neutral">{t('order.orderAgain')}</ActionSheetItem>}
+          {can('links.manage') && (
+            <ActionSheetItem
+              icon={Share2}
+              tone="brand"
+              onClick={() => {
+                close();
+                onShare();
+              }}
+            >
+              {t('order.share')}
+            </ActionSheetItem>
+          )}
+        </>
+      )}
+    </ActionSheet>
+  );
+}
+
+/**
+ * D and its takes: the header and key numbers stay in place while only the tab's content scrolls.
+ * They differ in where the quick actions live:
+ * D in the numbers they act on (Hand Over under Ready, Take Payment under the amount owed) with the papers as one joined group;
+ * E as buttons in the header beside the customer, papers in a menu;
+ * F as a column on the right with every action labelled;
+ * G as a bar pinned to the bottom like C, with the papers joined in the header.
+ */
 function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: string }) {
   const { t, language, money, date, number } = useI18n();
   const can = useCan();
   const f = useFullOrder(order);
   const [tab, setTab] = useState<Tab>('garments');
-  const [only, setOnly] = useState<number | null>(null);
-  const navy = take === 'G';
-  const side = take === 'H';
   const progress = orderProgress(order);
   const live = order.items.filter((i) => !i.cancelled);
   const done = progress.ready + progress.delivered;
@@ -434,28 +496,73 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
     .filter((i) => i.deliveryDate && (itemSummaryGroup(i) === 'unfinished' || itemSummaryGroup(i) === 'ready'))
     .map((i) => i.deliveryDate!)
     .sort()[0];
+  const credit = f.summary.creditDue > 0;
+  const owed = { label: credit ? t('money.creditDue') : t('money.balance'), amount: credit ? f.summary.creditDue : f.summary.balance, tone: f.summary.balance > 0 ? 'text-warn' : 'text-ok' };
   const tabs: Array<{ key: Tab; label: string; show: boolean }> = [
     { key: 'garments', label: `${t('receipt.garments')} · ${number(live.length)}`, show: true },
     { key: 'money', label: t('payments.section'), show: can('money.view') },
     { key: 'link', label: t('link.section'), show: can('links.manage') },
   ];
-  const stat = (label: string, value: ReactNode, tone = '') => (
-    <div className="flex flex-col gap-0.5 px-5 py-3">
-      <span className={`text-xs ${navy ? 'text-on-navy-muted' : 'text-muted'}`}>{label}</span>
-      <span className={`font-display text-xl font-bold ${navy ? '' : tone}`}>{value}</span>
+  const share = () => setTab('link');
+  const handOver = f.ready.length > 0 && (
+    <Button variant="secondary" onClick={f.handOver}>
+      <PackageCheck size={16} aria-hidden="true" />
+      {t('order.handOverBar')}
+    </Button>
+  );
+  const takePay = f.showTake && (
+    <Button onClick={() => f.money.open({ kind: 'take' })}>
+      <Wallet size={16} aria-hidden="true" />
+      {t('payments.take')}
+    </Button>
+  );
+  const stat = (label: string, value: ReactNode, tone = '', action?: ReactNode) => (
+    <div className="flex items-center gap-3 px-5 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-xs text-muted">{label}</span>
+        <span className={`font-display text-xl font-bold ${tone}`}>{value}</span>
+      </div>
+      {action}
     </div>
   );
-  const groups = wearerGroups(order);
-  return (
-    <div className="flex flex-col gap-4">
-      <div className={`overflow-hidden rounded-2xl ${navy ? 'bg-navy text-on-navy' : 'border border-line bg-panel'}`}>
-        <header className="flex items-center gap-4 p-5">
+  const small = 'min-h-8! px-3! text-xs!';
+
+  const tabList = (
+    <div role="tablist" className="flex w-fit rounded-xl bg-line/60 p-1">
+      {tabs
+        .filter((x) => x.show)
+        .map((x) => (
           <button
+            key={x.key}
             type="button"
-            aria-label={t('common.close')}
-            onClick={onClose}
-            className={`flex size-10 items-center justify-center rounded-full ${navy ? 'ring-1 ring-white/30 hover:bg-white/15' : 'border border-line hover:bg-surface'}`}
+            role="tab"
+            aria-selected={tab === x.key}
+            onClick={() => setTab(x.key)}
+            className={`min-h-9 rounded-lg px-4 text-sm ${tab === x.key ? 'bg-panel font-semibold text-brand-strong shadow-sm' : 'text-muted'}`}
           >
+            {x.label}
+          </button>
+        ))}
+    </div>
+  );
+  const content = (
+    <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto rounded-2xl">
+      {tab === 'garments' && <Garments order={order} cols={take === 'F' ? 'grid-cols-2' : 'grid-cols-2 2xl:grid-cols-3'} />}
+      {tab === 'money' && <OrderMoney order={order} />}
+      {tab === 'link' && (
+        <div className="max-w-2xl">
+          <StatusLinkSection order={order} />
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    // The window less the shell header (3.5rem) and the page padding (2 × 1.5rem): the top stays put, the tab content scrolls.
+    <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-4">
+      <div className="shrink-0 overflow-hidden rounded-2xl border border-line bg-panel">
+        <header className="flex items-center gap-4 p-5">
+          <button type="button" aria-label={t('common.close')} onClick={onClose} className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line hover:bg-surface">
             <X size={18} aria-hidden="true" />
           </button>
           <div className="min-w-0 flex-1">
@@ -463,129 +570,126 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
               <h1 className="font-display text-2xl font-bold tracking-wide">{order.number}</h1>
               <StatusPill order={order} />
             </div>
-            <p className={`text-sm ${navy ? 'text-on-navy-muted' : 'text-muted'}`}>{f.byline}</p>
+            <p className="truncate text-sm text-muted">{f.byline}</p>
           </div>
-          <div className="w-72 text-ink">
+          {take === 'G' && <PaperGroup order={order} onShare={share} />}
+          {take === 'E' && (
+            <div className="flex items-center gap-2">
+              {handOver}
+              {takePay}
+              <PaperMenu order={order} onShare={share} />
+            </div>
+          )}
+          <div className="w-72 shrink-0">
             <CustomerCard order={order} compact />
           </div>
         </header>
-        {navy && (
-          <div className="px-5">
-            <GarmentBars order={order} dark />
-          </div>
-        )}
-        <div className={`grid grid-cols-5 divide-x ${navy ? 'mt-2 divide-white/15 border-t border-white/15' : 'divide-line border-t border-line bg-surface/50'}`}>
-          {stat(pick(language, 'রেডি', 'Ready'), `${number(done)} / ${number(live.length)}`)}
+        <div className="grid grid-cols-5 divide-x divide-line border-t border-line bg-surface/50">
+          {stat(
+            pick(language, 'রেডি', 'Ready'),
+            `${number(done)} / ${number(live.length)}`,
+            '',
+            take === 'D' && f.ready.length > 0 && (
+              <Button variant="secondary" className={small} onClick={f.handOver}>
+                {t('order.handOverBar')}
+              </Button>
+            ),
+          )}
           {stat(pick(language, 'পরের ডেলিভারি', 'Next Delivery'), next ? date(next) : '-')}
           {can('money.view') && stat(t('money.total'), money(f.summary.total))}
           {can('money.view') && stat(t('money.paid'), money(f.summary.paid), 'text-ok')}
           {can('money.view') &&
             stat(
-              f.summary.creditDue > 0 ? t('money.creditDue') : t('money.balance'),
-              money(f.summary.creditDue > 0 ? f.summary.creditDue : f.summary.balance),
-              f.summary.balance > 0 ? 'text-warn' : 'text-ok',
+              owed.label,
+              money(owed.amount),
+              owed.tone,
+              take === 'D' && f.showTake && (
+                <Button className={small} onClick={() => f.money.open({ kind: 'take' })}>
+                  {t('payments.take')}
+                </Button>
+              ),
             )}
         </div>
       </div>
-      {side ? (
-        <div className="grid grid-cols-[240px_minmax(0,1fr)] items-start gap-4">
-          <div className="sticky top-4 flex flex-col gap-3">
-            <div role="tablist" aria-orientation="vertical" className="flex flex-col gap-1 rounded-2xl border border-line bg-panel p-2">
-              {tabs
-                .filter((x) => x.show)
-                .map((x) => (
-                  <div key={x.key}>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={tab === x.key}
-                      onClick={() => {
-                        setTab(x.key);
-                        setOnly(null);
-                      }}
-                      className={`w-full rounded-xl px-3 py-2.5 text-start text-sm ${tab === x.key && only === null ? 'bg-brand-soft font-semibold text-brand-strong' : 'hover:bg-surface'}`}
-                    >
-                      {x.label}
-                    </button>
-                    {x.key === 'garments' && tab === 'garments' && groups.length > 0 && (
-                      <div className="ms-3 mt-1 border-s border-line ps-2">
-                        <WearerList order={order} active={only} onPick={(index) => setOnly(index)} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-            <div className="flex flex-col gap-2">
-              {f.ready.length > 0 && (
-                <Button variant="secondary" onClick={f.handOver}>
-                  {t('order.handOverBar')}
-                </Button>
-              )}
-              {f.showTake && (
-                <Button onClick={() => f.money.open({ kind: 'take' })}>
-                  <Wallet size={16} aria-hidden="true" />
-                  {t('payments.take')}
-                </Button>
-              )}
-              <PaperLinks order={order} onShare={() => setTab('link')} iconsOnly />
-            </div>
+
+      {take === 'F' ? (
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            {tabList}
+            {content}
           </div>
-          <div role="tabpanel">
-            {tab === 'garments' && <Garments order={order} cols="grid-cols-2" only={only} />}
-            {tab === 'money' && <OrderMoney order={order} />}
-            {tab === 'link' && (
-              <div className="max-w-2xl">
-                <StatusLinkSection order={order} />
-              </div>
-            )}
-          </div>
+          <aside className="flex w-64 shrink-0 flex-col gap-2 overflow-y-auto rounded-2xl border border-line bg-panel p-3">
+            {takePay}
+            {handOver}
+            {(f.showTake || f.ready.length > 0) && <hr className="my-1 border-line" />}
+            <PaperLinksColumn order={order} onShare={share} />
+          </aside>
         </div>
       ) : (
         <>
-      <div className="flex items-center gap-3">
-        <div role="tablist" className="flex rounded-xl bg-line/60 p-1">
-          {tabs
-            .filter((x) => x.show)
-            .map((x) => (
-              <button
-                key={x.key}
-                type="button"
-                role="tab"
-                aria-selected={tab === x.key}
-                onClick={() => setTab(x.key)}
-                className={`min-h-9 rounded-lg px-4 text-sm ${tab === x.key ? 'bg-panel font-semibold text-brand-strong shadow-sm' : 'text-muted'}`}
-              >
-                {x.label}
-              </button>
-            ))}
-        </div>
-        <div className="ms-auto flex items-center gap-2">
-          {f.ready.length > 0 && (
-            <Button variant="secondary" onClick={f.handOver}>
-              {t('order.handOverBar')}
-            </Button>
-          )}
-          {f.showTake && (
-            <Button onClick={() => f.money.open({ kind: 'take' })}>
-              <Wallet size={16} aria-hidden="true" />
-              {t('payments.take')}
-            </Button>
-          )}
-          <PaperLinks order={order} onShare={() => setTab('link')} iconsOnly />
-        </div>
-      </div>
-      <div role="tabpanel">
-        {tab === 'garments' && <Garments order={order} cols="grid-cols-2 2xl:grid-cols-3" />}
-        {tab === 'money' && <OrderMoney order={order} />}
-        {tab === 'link' && (
-          <div className="max-w-2xl">
-            <StatusLinkSection order={order} />
+          <div className="flex shrink-0 items-center gap-3">
+            {tabList}
+            {take === 'D' && (
+              <div className="ms-auto">
+                <PaperGroup order={order} onShare={share} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+          {content}
+          {take === 'G' && (f.ready.length > 0 || f.showTake) && (
+            <div className="-mt-1 flex shrink-0 items-center justify-end gap-2 rounded-2xl border border-line bg-panel px-5 py-3">
+              <span className="me-auto flex items-baseline gap-4 text-sm text-muted">
+                {can('money.view') && (
+                  <span>
+                    {owed.label} <b className={`font-display text-lg ${owed.tone}`}>{money(owed.amount)}</b>
+                  </span>
+                )}
+                <span>{progressText(progress, language)}</span>
+              </span>
+              {handOver}
+              {takePay}
+            </div>
+          )}
         </>
       )}
       {f.dialogs}
     </div>
+  );
+}
+
+/** F's right column: each paper as a full-width labelled button. */
+function PaperLinksColumn({ order, onShare }: { order: Order; onShare(): void }) {
+  const { t } = useI18n();
+  const can = useCan();
+  const row = 'flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
+  return (
+    <nav className="flex flex-col">
+      {can('money.view') && (
+        <Link to={`/print/receipt/${order.id}`} className={row}>
+          <Printer size={16} aria-hidden="true" className="text-muted" />
+          {t('order.printReceipt')}
+        </Link>
+      )}
+      <Link to={`/print/job/${order.id}`} className={row}>
+        <FileText size={16} aria-hidden="true" className="text-muted" />
+        {t('order.jobSlip')}
+      </Link>
+      <Link to={`/print/tags/${order.id}`} className={row}>
+        <Tag size={16} aria-hidden="true" className="text-muted" />
+        {t('order.tags')}
+      </Link>
+      {can('links.manage') && (
+        <button type="button" onClick={onShare} className={`${row} text-start`}>
+          <Share2 size={16} aria-hidden="true" className="text-muted" />
+          {t('order.share')}
+        </button>
+      )}
+      {can('orders.create') && (
+        <Link to={`/app/orders/new?repeat=${order.id}`} className={row}>
+          <Repeat size={16} aria-hidden="true" className="text-muted" />
+          {t('order.orderAgain')}
+        </Link>
+      )}
+    </nav>
   );
 }
