@@ -13,7 +13,7 @@ export interface DialogProps {
   actionsDesktopOnly?: boolean;
   /** The title is announced but not shown on any screen, when the content makes it plain. */
   hideTitle?: boolean;
-  /** On a larger screen it grows out of the button that opened it, its sections settle in turn, and it shrinks away on closing. */
+  /** On a larger screen it grows out of the button that opened it, its sections fade in turn, and it shrinks away on closing. */
   animated?: boolean;
 }
 
@@ -112,6 +112,9 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
     >
       <div
         ref={panel}
+        onAnimationEnd={(e) => {
+          if (e.target === e.currentTarget) e.currentTarget.setAttribute('data-landed', '');
+        }}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
