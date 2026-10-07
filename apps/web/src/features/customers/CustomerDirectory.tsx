@@ -82,9 +82,9 @@ export function CustomerDirectory({ query, onQueryChange, activeId, compact }: P
               to="/app/customers/new"
               aria-label={compact ? t('customers.new') : undefined}
               title={compact ? t('customers.new') : undefined}
-              className={`${buttonClasses(compact ? 'secondary' : 'primary')} shrink-0 ${compact ? 'w-10 px-0' : ''}`}
+              className={`${buttonClasses(compact ? 'secondary' : 'primary')} shrink-0 ${compact ? 'w-10 px-0!' : ''}`}
             >
-              <Plus size={16} aria-hidden="true" />
+              <Plus size={compact ? 20 : 16} aria-hidden="true" />
               {!compact && t('customers.new')}
             </Link>
           )}

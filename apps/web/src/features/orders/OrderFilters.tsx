@@ -184,7 +184,8 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex min-h-10 w-72 max-w-full items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-focus">
+        {/* Starts from 11rem and grows to 18rem, so it gives way before the sort has to wrap to a second line. */}
+        <label className="flex min-h-10 min-w-0 max-w-72 grow basis-44 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-focus">
           <Search aria-hidden="true" size={18} />
           <input
             type="search"
