@@ -91,11 +91,11 @@ export function usePanelMotion(open: boolean, list: RefObject<HTMLElement | null
   const variant = useMotionVariant();
   const was = useRef(open);
   const before = useRef<number>(0);
-  // The list's width while closed, for D on the customers page.
-  if (!open && list.current) before.current = list.current.getBoundingClientRect().width;
   useLayoutEffect(() => {
     const opening = open && !was.current;
     was.current = open;
+    // The list's width once the closed layout has settled, for D on the customers page.
+    if (!open && list.current) before.current = list.current.getBoundingClientRect().width;
     if (!opening || reduced() || typeof Element.prototype.animate !== 'function') return;
     const l = list.current;
     const p = panel.current;
