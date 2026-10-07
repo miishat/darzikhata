@@ -515,6 +515,7 @@ export const bn = {
   'item.handOverTitle': 'হস্তান্তর নিশ্চিত করুন',
   'item.handOverBody': '{item} কাস্টমারকে দেওয়া হচ্ছে।',
   'item.balanceDue': 'এই অর্ডারে এখনো বাকি {amount}',
+  'item.thisGarment': 'এই পোশাক',
   'item.otherStage': 'অন্য ধাপ…',
   'item.changeStage': 'ধাপ বদলান',
   'item.newStage': 'নতুন ধাপ',

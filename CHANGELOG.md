@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- On a desktop, the order's More menu and each garment's menu open as a popup that grows out of the button, like the account menu. A header names the order (with the customer, date and branch) or the garment (with who wears it and its stage); the actions sit as rows in labelled cards: the order's papers, the order's actions, and the garment's actions with Cancel in a card of its own. There is no Close button; Esc or a click outside closes it. Phones keep the sheet.
 - The desktop review queue:
   - The waiting changes are listed on the left with who made them, when, and how many fields differ (or that the server refused the change). The chosen one fills the right.
   - Each field reads as one line: what the record holds now, an arrow, and what the change wanted. Ticking Take New on some fields and pressing Save My Picks keeps just those, replacing the separate Merge by Hand step.

@@ -516,6 +516,7 @@ export const en: Messages = {
   'item.handOverTitle': 'Confirm Hand-over',
   'item.handOverBody': '{item} is being handed to the customer.',
   'item.balanceDue': 'This order still has {amount} due',
+  'item.thisGarment': 'This Garment',
   'item.otherStage': 'Other Stage…',
   'item.changeStage': 'Change Stage',
   'item.newStage': 'New Stage',
