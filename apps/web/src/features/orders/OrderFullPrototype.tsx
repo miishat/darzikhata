@@ -29,10 +29,10 @@ export const FULL_VARIANTS = {
   A: 'Current page',
   C: 'Panel stretched: summary tiles, garment grid, sticky action bar',
   G: 'Fixed top, action bar pinned to the bottom, papers joined in the header',
-  H: 'G with the actions beside the tabs, the amount owed beside them',
-  I: 'G with the actions and the joined papers all beside the tabs',
-  J: 'G with the actions in a track matching the tabs',
-  K: 'G with the actions beside the tabs, papers in a menu',
+  H: 'G with the joined paper icons beside the tabs',
+  I: 'G with the papers beside the tabs as labelled buttons',
+  J: 'G with the paper icons in a track matching the tabs',
+  K: 'G with the three papers joined, Share and Order Again labelled',
 };
 const KEYS = Object.keys(FULL_VARIANTS);
 
@@ -419,32 +419,51 @@ function FullC({ order, onClose, take }: { order: Order; onClose(): void; take: 
 
 type Tab = 'garments' | 'money' | 'link';
 
-/** The order's papers as one joined row of icon buttons. */
-function PaperGroup({ order, onShare }: { order: Order; onShare(): void }) {
+/** The order's papers, share and order again: joined icons, labelled buttons, a track like the tabs, or the papers joined with the other two labelled. */
+function PaperGroup({ order, onShare, look = 'joined' }: { order: Order; onShare(): void; look?: 'joined' | 'labelled' | 'track' | 'split' }) {
   const { t } = useI18n();
   const can = useCan();
-  const cell = 'flex size-10 items-center justify-center text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
-  const link = (to: string, icon: LucideIcon, text: string) => {
-    const Icon = icon;
-    return (
-      <Link key={to} to={to} title={text} aria-label={text} className={cell}>
-        <Icon size={17} aria-hidden="true" />
+  const items: Array<{ key: string; icon: LucideIcon; text: string; to?: string; paper: boolean }> = [
+    ...(can('money.view') ? [{ key: 'receipt', icon: Printer, text: t('order.printReceipt'), to: `/print/receipt/${order.id}`, paper: true }] : []),
+    { key: 'job', icon: FileText, text: t('order.jobSlip'), to: `/print/job/${order.id}`, paper: true },
+    { key: 'tags', icon: Tag, text: t('order.tags'), to: `/print/tags/${order.id}`, paper: true },
+    ...(can('links.manage') ? [{ key: 'share', icon: Share2, text: t('order.share'), paper: false }] : []),
+    ...(can('orders.create') ? [{ key: 'again', icon: Repeat, text: t('order.orderAgain'), to: `/app/orders/new?repeat=${order.id}`, paper: false }] : []),
+  ];
+  const draw = (item: (typeof items)[number], className: string, label: boolean) => {
+    const Icon = item.icon;
+    const inner = (
+      <>
+        <Icon size={label ? 16 : 17} aria-hidden="true" />
+        {label && item.text}
+      </>
+    );
+    return item.to ? (
+      <Link key={item.key} to={item.to} title={item.text} aria-label={label ? undefined : item.text} className={className}>
+        {inner}
       </Link>
+    ) : (
+      <button key={item.key} type="button" title={item.text} aria-label={label ? undefined : item.text} onClick={onShare} className={className}>
+        {inner}
+      </button>
     );
   };
-  return (
-    <div className="flex divide-x divide-line overflow-hidden rounded-xl border border-line bg-panel">
-      {can('money.view') && link(`/print/receipt/${order.id}`, Printer, t('order.printReceipt'))}
-      {link(`/print/job/${order.id}`, FileText, t('order.jobSlip'))}
-      {link(`/print/tags/${order.id}`, Tag, t('order.tags'))}
-      {can('links.manage') && (
-        <button type="button" title={t('order.share')} aria-label={t('order.share')} onClick={onShare} className={cell}>
-          <Share2 size={17} aria-hidden="true" />
-        </button>
-      )}
-      {can('orders.create') && link(`/app/orders/new?repeat=${order.id}`, Repeat, t('order.orderAgain'))}
-    </div>
-  );
+  const cell = 'flex size-10 items-center justify-center text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus';
+  if (look === 'labelled') return <div className="flex items-center gap-2">{items.map((item) => draw(item, buttonClasses('secondary'), true))}</div>;
+  if (look === 'track')
+    return (
+      <div className="flex rounded-xl bg-line/60 p-1">
+        {items.map((item) => draw(item, 'flex size-9 items-center justify-center rounded-lg text-muted hover:bg-panel hover:text-ink hover:shadow-sm focus-visible:outline-2 focus-visible:outline-focus', false))}
+      </div>
+    );
+  if (look === 'split')
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex divide-x divide-line overflow-hidden rounded-xl border border-line bg-panel">{items.filter((i) => i.paper).map((item) => draw(item, cell, false))}</div>
+        {items.filter((i) => !i.paper).map((item) => draw(item, buttonClasses('secondary'), true))}
+      </div>
+    );
+  return <div className="flex divide-x divide-line overflow-hidden rounded-xl border border-line bg-panel">{items.map((item) => draw(item, cell, false))}</div>;
 }
 
 /** The papers and order again behind one menu button. */
@@ -573,7 +592,7 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
             </div>
             <p className="truncate text-sm text-muted">{f.byline}</p>
           </div>
-          {(take === 'G' || take === 'H' || take === 'J') && <PaperGroup order={order} onShare={share} />}
+          {take === 'G' && <PaperGroup order={order} onShare={share} />}
           {take === 'E' && (
             <div className="flex items-center gap-2">
               {handOver}
@@ -635,59 +654,14 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
                 <PaperGroup order={order} onShare={share} />
               </div>
             )}
-            {take === 'H' && (
-              <div className="ms-auto flex items-center gap-3">
-                <span className="flex items-baseline gap-4 text-sm text-muted">
-                  <span>{progressText(progress, language)}</span>
-                  {can('money.view') && (
-                    <span>
-                      {owed.label} <b className={`font-display text-lg ${owed.tone}`}>{money(owed.amount)}</b>
-                    </span>
-                  )}
-                </span>
-                {handOver}
-                {takePay}
-              </div>
-            )}
-            {take === 'I' && (
-              <div className="ms-auto flex items-center gap-2">
-                {handOver}
-                {takePay}
-                {(f.ready.length > 0 || f.showTake) && <span className="mx-1 h-7 w-px bg-line" />}
-                <PaperGroup order={order} onShare={share} />
-              </div>
-            )}
-            {take === 'J' && (f.ready.length > 0 || f.showTake) && (
-              <div className="ms-auto flex rounded-xl bg-line/60 p-1">
-                {f.ready.length > 0 && (
-                  <button type="button" onClick={f.handOver} className="flex min-h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-ink hover:bg-panel">
-                    <PackageCheck size={16} aria-hidden="true" />
-                    {t('order.handOverBar')}
-                  </button>
-                )}
-                {f.showTake && (
-                  <button
-                    type="button"
-                    onClick={() => f.money.open({ kind: 'take' })}
-                    className="flex min-h-9 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-on-brand shadow-sm hover:bg-brand-hover"
-                  >
-                    <Wallet size={16} aria-hidden="true" />
-                    {t('payments.take')}
-                    {can('money.view') && <span className="rounded-md bg-white/20 px-1.5 text-xs">{money(owed.amount)}</span>}
-                  </button>
-                )}
-              </div>
-            )}
-            {take === 'K' && (
-              <div className="ms-auto flex items-center gap-2">
-                {handOver}
-                {takePay}
-                <PaperMenu order={order} onShare={share} />
+            {(take === 'H' || take === 'I' || take === 'J' || take === 'K') && (
+              <div className="ms-auto">
+                <PaperGroup order={order} onShare={share} look={take === 'I' ? 'labelled' : take === 'J' ? 'track' : take === 'K' ? 'split' : 'joined'} />
               </div>
             )}
           </div>
           {content}
-          {take === 'G' && (f.ready.length > 0 || f.showTake) && (
+          {['G', 'H', 'I', 'J', 'K'].includes(take) && (f.ready.length > 0 || f.showTake) && (
             <div className="-mt-1 flex shrink-0 items-center justify-end gap-2 rounded-2xl border border-line bg-panel px-5 py-3">
               <span className="me-auto flex items-baseline gap-4 text-sm text-muted">
                 {can('money.view') && (
