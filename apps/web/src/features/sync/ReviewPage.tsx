@@ -7,6 +7,8 @@ import { Button } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { mergeBody, reviewEntry, type ReviewField, type ReviewRow, type ReviewValue } from './reviewView';
 import { useVisibleReview } from './useSync';
+import { ReviewPrototype, ReviewSwitcher, useReviewVariant } from './ReviewPrototype';
+import { useShell } from '../../shell/ShellPreference';
 
 type Side = 'current' | 'waiting';
 
@@ -18,14 +20,18 @@ export function ReviewPage() {
   const [outcome, setOutcome] = useState<{ ok: boolean; n: number } | null>(null);
   const result = outcome ? (outcome.ok ? 'settled' : 'gone') : null;
   const message = useRef<HTMLParagraphElement>(null);
+  const variant = useReviewVariant();
+  const { kind } = useShell();
 
   // The button that was pressed is gone by now, so keep the keyboard user's place on the result.
   useEffect(() => {
     if (outcome) message.current?.focus();
   }, [outcome]);
 
+  if (kind === 'desktop' && variant !== 'A') return <ReviewPrototype />;
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      {kind === 'desktop' && <ReviewSwitcher />}
       <h1 className="text-xl font-semibold">{t('review.title')}</h1>
       <p>{t('review.intro')}</p>
       {!sync.online && <p>{t('review.offline')}</p>}
@@ -202,7 +208,7 @@ function Shown({ value }: { value: ReviewValue }) {
 }
 
 /** How a stored value reads on screen. */
-function useValueText(): (value: ReviewValue) => string {
+export function useValueText(): (value: ReviewValue) => string {
   const { t, money, date } = useI18n();
   const { state, config } = useSnapshot();
   const blank = t('review.blank');
