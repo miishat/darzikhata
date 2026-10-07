@@ -11,6 +11,7 @@ import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useToday } from '../common/hooks';
 import { OrderCards } from './OrderCards';
 import { OrderDetail } from './OrderDetail';
+import { FullSwitcher, ProtoFullOrder, useFullVariant } from './OrderFullPrototype';
 import { OrderFilters, SortButton } from './OrderFilters';
 import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
@@ -66,6 +67,7 @@ export function OrdersPage() {
   const update = (next: OrderListQuery) => setParams(writeListQuery(next), { replace: true });
   const change = (fields: Partial<OrderListQuery>) => update({ ...query, ...fields, page: fields.page ?? 1 });
   const full = params.get('full') === '1';
+  const fullVariant = useFullVariant();
   // Closing an order, or leaving its own page, keeps the list's filters in the address.
   const listSearch = () => {
     const next = new URLSearchParams(search);
@@ -113,14 +115,26 @@ export function OrdersPage() {
     );
   }
 
+  if (orderId && full && fullVariant !== 'A' && state.orders[orderId]) {
+    return (
+      <>
+        <ProtoFullOrder variant={fullVariant} order={state.orders[orderId]!} onClose={closeOrder} />
+        <FullSwitcher />
+      </>
+    );
+  }
+
   if (orderId && full) {
     return (
+      <>
       <div className="flex flex-col gap-3">
         <h1 className="text-xl font-semibold">{t('nav.orders')}</h1>
         <section aria-label={t('orders.detail')} className="max-w-4xl rounded-xl border border-line bg-panel p-4">
           <OrderDetail orderId={orderId} onClose={closeOrder} full />
         </section>
       </div>
+      <FullSwitcher />
+      </>
     );
   }
 

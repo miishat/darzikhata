@@ -217,7 +217,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign';
 
 /** One garment in the panel: stage, a strip of progress, the usual next move, and the rest behind a menu. */
-function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
+export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
   const { t, language, label, date, number } = useI18n();
   const can = useCan();
   const hasAccess = useMeasurementAccess();
