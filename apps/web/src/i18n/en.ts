@@ -11,6 +11,13 @@ export const en: Messages = {
   'welcome.title': 'DarziKhata Demo',
   'welcome.subtitle': 'Measurements, orders and balances in one place. Pick a sample shop.',
   'welcome.note': 'All data stays in this browser only. You can reset it at any time.',
+  'welcome.features': 'What You Can Try',
+  'welcome.feature.measurements': 'Measurement Book',
+  'welcome.feature.orders': 'Orders and Delivery',
+  'welcome.feature.payments': 'Balances and Payments',
+  'welcome.feature.work': 'Work List',
+  'welcome.feature.printing': 'Receipts, Slips and Tags',
+  'welcome.feature.offline': 'Works Offline',
   'welcome.open': 'Open This Shop',
 
   'auth.whoIsUsing': 'Who is using this device?',
