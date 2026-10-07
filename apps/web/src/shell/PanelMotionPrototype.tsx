@@ -1,5 +1,5 @@
 // PROTOTYPE (throwaway): how the side panel arrives beside the orders and customers lists, switched with ?variant=.
-import { useLayoutEffect, useRef, type MouseEvent, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type MouseEvent, type RefObject } from 'react';
 import { useNavigate, useSearchParams, type NavigateOptions, type To } from 'react-router';
 import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
 
@@ -15,7 +15,23 @@ export function useMotionVariant() {
   return useVariant(Object.keys(MOTION_VARIANTS));
 }
 
+const STORED = 'prototype-panel-motion';
+
+/** The chosen variant also lives in this tab's session, so moving between pages (which drops ?variant=) keeps it. */
 export function MotionSwitcher() {
+  const [params, setParams] = useSearchParams();
+  const v = params.get('variant');
+  useEffect(() => {
+    try {
+      if (v) sessionStorage.setItem(STORED, v);
+      else {
+        const stored = sessionStorage.getItem(STORED);
+        if (stored) setParams((prev) => { const p = new URLSearchParams(prev); p.set('variant', stored); return p; }, { replace: true });
+      }
+    } catch {
+      // Storage can be off; the address still carries the variant.
+    }
+  }, [v, setParams]);
   return <PrototypeSwitcher variants={MOTION_VARIANTS} />;
 }
 
