@@ -1,12 +1,12 @@
 // PROTOTYPE (throwaway): desktop layouts for the review queue, switched with ?variant=. Never merged.
-import { ArrowRight, Check, ChevronLeft, ChevronRight, CircleAlert, ShoppingBag, WifiOff } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, CircleAlert, ShoppingBag, WifiOff } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MessageKey } from '../../i18n/bn';
 import { Avatar } from '../../ui/Avatar';
-import { Button } from '../../ui/Button';
+import { Button, buttonClasses } from '../../ui/Button';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { useValueText } from './ReviewPage';
 import { reviewEntry, mergeBody, type ReviewEntry, type ReviewField, type ReviewRow } from './reviewView';
@@ -14,11 +14,13 @@ import { useVisibleReview } from './useSync';
 
 export const REVIEW_VARIANTS = {
   A: 'Current page',
-  B: 'Inbox: the list on the left, the chosen change side by side on the right',
-  C: 'Stacked cards: two columns of values you tap to keep',
-  D: 'One sheet: every field of every change in a single table',
-  E: 'One at a time: a big comparison with next and back',
-  F: 'Inbox with a before → after line per field',
+  B: 'Inbox with bigger, easier values; the record opens from a button beside its name',
+  F: 'Inbox with a before → after line per field; the record opens from a button beside its name',
+  G: 'B with the name itself as the link and a small "view" chip after it',
+  H: 'F with the record link at the start of the bottom bar',
+  I: 'B with a card about the record (who, phone, garments) holding the link',
+  J: 'F with a card about the record holding the link',
+  K: 'F with a link icon on each row of the list',
 };
 
 export function useReviewVariant() {
@@ -193,47 +195,53 @@ function KindChip({ entry }: { entry: Entry }) {
 
 const fieldName = (t: ReturnType<typeof useI18n>['t'], field: ReviewField) => t(`review.field.${field}` as MessageKey);
 
-/** A value you can tap to keep. */
+/** A value to keep: both sides read in full ink; the kept one gets a coloured border, a tick and a tag. */
 function ValueTile({ text, on, tone, onClick, label }: { text: string; on: boolean; tone: 'current' | 'waiting'; onClick(): void; label: string }) {
-  const ring = tone === 'current' ? 'border-brand bg-brand-soft' : 'border-warn bg-warn-soft';
+  const { language } = useI18n();
+  const ring = tone === 'current' ? 'border-brand bg-brand-soft/60' : 'border-warn bg-warn-soft/60';
+  const tag = tone === 'current' ? 'bg-brand text-on-brand' : 'bg-warn text-white';
   return (
     <button
       type="button"
       aria-pressed={on}
       aria-label={`${label}: ${text}`}
       onClick={onClick}
-      className={`flex min-h-12 w-full items-start gap-2 rounded-xl border-2 px-3 py-2 text-start text-sm focus-visible:outline-2 focus-visible:outline-focus ${on ? ring : 'border-line bg-panel hover:bg-surface'}`}
+      className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-start focus-visible:outline-2 focus-visible:outline-focus ${on ? ring : 'border-line bg-panel hover:border-muted'}`}
     >
-      <span className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${on ? 'border-transparent bg-ink text-panel' : 'border-line'}`}>
-        {on && <Check size={11} aria-hidden="true" />}
+      <span className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${on ? 'border-transparent bg-ink text-panel' : 'border-line'}`}>
+        {on && <Check size={12} aria-hidden="true" />}
       </span>
-      <span className={on ? 'font-semibold' : 'text-muted'}>{text}</span>
+      <span className={`min-w-0 flex-1 text-base text-ink ${on ? 'font-semibold' : ''}`}>{text}</span>
+      {on && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${tag}`}>{pick(language, 'থাকবে', 'Keep')}</span>}
     </button>
   );
 }
 
-/** The two columns of tiles, one row per field. */
-function CompareGrid({ entry, choice, onChoose, big }: { entry: Entry; choice: Choice; onChoose(field: ReviewField, side: Side): void; big?: boolean }) {
+/** One block per field: its name, then the two values side by side under their column names. */
+function CompareGrid({ entry, choice, onChoose }: { entry: Entry; choice: Choice; onChoose(field: ReviewField, side: Side): void }) {
   const { t } = useI18n();
   const text = useValueText();
   return (
-    <div className={`grid grid-cols-[minmax(7rem,auto)_1fr_1fr] items-stretch ${big ? 'gap-x-4 gap-y-3' : 'gap-x-3 gap-y-2'}`}>
-      <span />
-      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-strong">
-        <span className="size-2 rounded-full bg-brand" />
-        {t('review.current')}
-      </span>
-      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-warn-ink">
-        <span className="size-2 rounded-full bg-warn" />
-        {t('review.waiting')}
-      </span>
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3 px-4">
+        <span className="flex items-center gap-2 text-sm font-semibold text-brand-strong">
+          <span className="size-2.5 rounded-full bg-brand" />
+          {t('review.current')}
+        </span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-warn-ink">
+          <span className="size-2.5 rounded-full bg-warn" />
+          {t('review.waiting')}
+        </span>
+      </div>
       {entry.rows.map((row) => {
         const side = choice[row.field] ?? 'current';
         return (
-          <div key={row.field} role="group" aria-label={fieldName(t, row.field)} className="contents">
-            <span className={`self-center font-semibold ${big ? '' : 'text-sm'}`}>{fieldName(t, row.field)}</span>
-            <ValueTile text={text(row.current)} on={side === 'current'} tone="current" label={t('review.current')} onClick={() => onChoose(row.field, 'current')} />
-            <ValueTile text={text(row.waiting)} on={side === 'waiting'} tone="waiting" label={t('review.waiting')} onClick={() => onChoose(row.field, 'waiting')} />
+          <div key={row.field} role="group" aria-label={fieldName(t, row.field)} className="flex flex-col gap-2 rounded-2xl bg-surface/70 p-4">
+            <span className="font-display text-base font-bold">{fieldName(t, row.field)}</span>
+            <div className="grid grid-cols-2 gap-3">
+              <ValueTile text={text(row.current)} on={side === 'current'} tone="current" label={t('review.current')} onClick={() => onChoose(row.field, 'current')} />
+              <ValueTile text={text(row.waiting)} on={side === 'waiting'} tone="waiting" label={t('review.waiting')} onClick={() => onChoose(row.field, 'waiting')} />
+            </div>
           </div>
         );
       })}
@@ -321,7 +329,6 @@ function Empty() {
 
 const CARD = 'flex flex-col overflow-hidden rounded-2xl border border-line bg-panel';
 const FULL = 'h-[calc(100dvh-6.5rem)] min-h-96';
-
 export function ReviewPrototype() {
   const variant = useReviewVariant();
   const all = useEntries();
@@ -331,17 +338,25 @@ export function ReviewPrototype() {
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const choose = (id: string) => (field: ReviewField, side: Side) => setChoices((c) => ({ ...c, [id]: { ...c[id], [field]: side } }));
   const props = { entries, busy, offline: !sync.online, choices, choose, settle };
+  const shape = SHAPE[variant] ?? SHAPE.B!;
   return (
     <>
-      {variant === 'B' && <Inbox {...props} look="tiles" />}
-      {variant === 'C' && <Stacked {...props} />}
-      {variant === 'D' && <Sheet {...props} />}
-      {variant === 'E' && <OneAtATime {...props} />}
-      {variant === 'F' && <Inbox {...props} look="arrows" />}
+      <Inbox {...props} {...shape} />
       <ReviewSwitcher />
     </>
   );
 }
+
+type LinkAt = 'button' | 'title' | 'bar' | 'card' | 'list';
+const SHAPE: Record<string, { look: 'tiles' | 'arrows'; linkAt: LinkAt }> = {
+  B: { look: 'tiles', linkAt: 'button' },
+  F: { look: 'arrows', linkAt: 'button' },
+  G: { look: 'tiles', linkAt: 'title' },
+  H: { look: 'arrows', linkAt: 'bar' },
+  I: { look: 'tiles', linkAt: 'card' },
+  J: { look: 'arrows', linkAt: 'card' },
+  K: { look: 'arrows', linkAt: 'list' },
+};
 
 type Props = {
   entries: Entry[];
@@ -352,13 +367,74 @@ type Props = {
   settle(entry: Entry, decision: Decision, choice?: Choice): Promise<void>;
 };
 
-/** B and F: a list of changes on the left, the chosen one on the right. */
-function Inbox({ entries, busy, offline, choices, choose, settle, look }: Props & { look: 'tiles' | 'arrows' }) {
+function useViewLabel() {
+  const { language } = useI18n();
+  return (entry: Entry) => (entry.subject?.kind === 'customer' ? pick(language, 'প্রোফাইল দেখুন', 'View Profile') : pick(language, 'অর্ডার দেখুন', 'View Order'));
+}
+
+/** What the record is, so the person knows whose change it is before choosing. */
+function RecordCard({ entry }: { entry: Entry }) {
+  const { t, language, number, date, money } = useI18n();
+  const { state } = useSnapshot();
+  const view = useViewLabel();
+  const to = subjectLink(entry);
+  if (!entry.subject || !to) return null;
+  let facts: Array<[string, string]> = [];
+  let who: { id: string; name: string } | null = null;
+  if (entry.subject.kind === 'customer') {
+    const c = state.customers[entry.subject.customerId];
+    const count = Object.values(state.orders).filter((o) => o.customerId === c?.id).length;
+    who = c ? { id: c.id, name: c.name } : null;
+    facts = [
+      [t('review.field.phone'), c?.phone ?? '-'],
+      [pick(language, 'অর্ডার', 'Orders'), number(count)],
+    ];
+  } else {
+    const o = state.orders[entry.subject.orderId];
+    const c = o ? state.customers[o.customerId] : undefined;
+    who = c ? { id: c.id, name: c.name } : null;
+    const live = o?.items.filter((i) => !i.cancelled) ?? [];
+    const next = live.map((i) => i.deliveryDate).filter(Boolean).sort()[0];
+    facts = [
+      [pick(language, 'পোশাক', 'Garments'), number(live.length)],
+      [t('review.field.deliveryDate'), next ? date(next) : '-'],
+      [pick(language, 'মোট', 'Total'), money(live.reduce((sum, i) => sum + i.price, 0))],
+    ];
+  }
+  return (
+    <div className="mb-5 flex items-center gap-4 rounded-2xl border border-line p-4">
+      {who && <Avatar id={who.id} name={who.name} />}
+      <div className="flex min-w-0 flex-1 flex-wrap gap-x-8 gap-y-1">
+        {who && (
+          <div className="flex min-w-0 flex-col">
+            <span className="text-xs text-muted">{pick(language, 'কাস্টমার', 'Customer')}</span>
+            <span className="truncate font-semibold">{who.name}</span>
+          </div>
+        )}
+        {facts.map(([k, v]) => (
+          <div key={k} className="flex flex-col">
+            <span className="text-xs text-muted">{k}</span>
+            <span className="font-semibold">{v}</span>
+          </div>
+        ))}
+      </div>
+      <Link to={to} className={buttonClasses('secondary')}>
+        {view(entry)}
+        <ArrowUpRight size={16} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+/** A list of changes on the left, the chosen one on the right. */
+function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt }: Props & { look: 'tiles' | 'arrows'; linkAt: LinkAt }) {
   const { language } = useI18n();
   const title = useTitle();
   const by = useBy();
+  const view = useViewLabel();
   const [pickedId, setPickedId] = useState<string | null>(null);
   const picked = entries.find((e) => e.eventId === pickedId) ?? entries[0];
+  const to = picked ? subjectLink(picked) : null;
   return (
     <div className={`flex gap-4 ${FULL}`}>
       <section className={`${CARD} w-[22rem] shrink-0`}>
@@ -366,13 +442,14 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look }: Props 
         <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-2">
           {entries.map((entry) => {
             const on = entry === picked;
+            const rowTo = subjectLink(entry);
             return (
-              <li key={entry.eventId}>
+              <li key={entry.eventId} className={`flex items-center rounded-xl ${on ? 'bg-brand-soft' : 'hover:bg-surface'}`}>
                 <button
                   type="button"
                   aria-current={on ? 'true' : undefined}
                   onClick={() => setPickedId(entry.eventId)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-start focus-visible:outline-2 focus-visible:outline-focus ${on ? 'bg-brand-soft' : 'hover:bg-surface'}`}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-3 text-start focus-visible:outline-2 focus-visible:outline-focus"
                 >
                   <SubjectMark entry={entry} />
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -383,6 +460,16 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look }: Props 
                     </span>
                   </span>
                 </button>
+                {linkAt === 'list' && rowTo && (
+                  <Link
+                    to={rowTo}
+                    aria-label={`${view(entry)}: ${title(entry)}`}
+                    title={view(entry)}
+                    className="me-2 flex size-9 shrink-0 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
+                  >
+                    <ArrowUpRight size={18} aria-hidden="true" />
+                  </Link>
+                )}
               </li>
             );
           })}
@@ -396,28 +483,48 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look }: Props 
             <div className="flex items-center gap-4 border-b border-line p-5">
               <SubjectMark entry={picked} size="lg" />
               <div className="min-w-0 flex-1">
-                <h2 className="truncate font-display text-2xl font-bold">{title(picked)}</h2>
+                {linkAt === 'title' && to ? (
+                  <h2 className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                    <Link to={to} className="truncate font-display text-2xl font-bold hover:underline focus-visible:outline-2 focus-visible:outline-focus">
+                      {title(picked)}
+                    </Link>
+                    <Link to={to} className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-semibold text-brand-strong hover:underline">
+                      {view(picked)}
+                      <ArrowUpRight size={12} aria-hidden="true" />
+                    </Link>
+                  </h2>
+                ) : (
+                  <h2 className="truncate font-display text-2xl font-bold">{title(picked)}</h2>
+                )}
                 <p className="text-sm text-muted">{by(picked)}</p>
               </div>
-              {subjectLink(picked) && (
-                <Link to={subjectLink(picked)!} className="text-sm font-semibold text-brand-strong hover:underline">
-                  {picked.subject?.kind === 'customer' ? pick(language, 'প্রোফাইল দেখুন', 'View Profile') : pick(language, 'অর্ডার দেখুন', 'View Order')}
+              {linkAt === 'button' && to && (
+                <Link to={to} className={buttonClasses('secondary')}>
+                  {picked.subject?.kind === 'customer' ? <ArrowUpRight size={16} aria-hidden="true" /> : <ShoppingBag size={16} aria-hidden="true" />}
+                  {view(picked)}
                 </Link>
               )}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              {linkAt === 'card' && <RecordCard entry={picked} />}
               {picked.outcome === 'rejected' ? (
                 <Refused entry={picked} />
               ) : look === 'tiles' ? (
                 <>
                   <p className="mb-4 text-sm text-muted">{pick(language, 'প্রতিটি ঘরে যে মানটা থাকবে সেটিতে চাপুন।', 'Tap the value to keep in each field.')}</p>
-                  <CompareGrid entry={picked} choice={choices[picked.eventId] ?? {}} onChoose={choose(picked.eventId)} big />
+                  <CompareGrid entry={picked} choice={choices[picked.eventId] ?? {}} onChoose={choose(picked.eventId)} />
                 </>
               ) : (
                 <ArrowRows entry={picked} choice={choices[picked.eventId] ?? {}} onChoose={choose(picked.eventId)} />
               )}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-surface/50 px-5 py-3">
+              {linkAt === 'bar' && to && (
+                <Link to={to} className="me-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-focus">
+                  <ArrowUpRight size={16} aria-hidden="true" />
+                  {view(picked)}
+                </Link>
+              )}
               <Actions entry={picked} choice={choices[picked.eventId] ?? {}} busy={busy} offline={offline} onSettle={(d) => settle(picked, d, choices[picked.eventId])} />
             </div>
           </>
@@ -451,187 +558,3 @@ function ArrowRows({ entry, choice, onChoose }: { entry: Entry; choice: Choice; 
     </ul>
   );
 }
-
-/** C: every change as a full-width card with tiles to tap. */
-function Stacked({ entries, busy, offline, choices, choose, settle }: Props) {
-  const title = useTitle();
-  const by = useBy();
-  return (
-    <div className={`${CARD} ${FULL}`}>
-      <PageHeader count={entries.length} />
-      <div className="min-h-0 flex-1 overflow-y-auto bg-surface/40 p-5">
-        {entries.length === 0 ? (
-          <Empty />
-        ) : (
-          <div className="mx-auto flex max-w-5xl flex-col gap-4">
-            {entries.map((entry) => (
-              <section key={entry.eventId} aria-label={title(entry)} className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-5">
-                <div className="flex items-center gap-3">
-                  <SubjectMark entry={entry} />
-                  <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-display text-lg font-bold">{title(entry)}</h2>
-                    <p className="text-sm text-muted">{by(entry)}</p>
-                  </div>
-                  <KindChip entry={entry} />
-                </div>
-                {entry.outcome === 'rejected' ? (
-                  <Refused entry={entry} />
-                ) : (
-                  <CompareGrid entry={entry} choice={choices[entry.eventId] ?? {}} onChoose={choose(entry.eventId)} />
-                )}
-                <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-4">
-                  <Actions entry={entry} choice={choices[entry.eventId] ?? {}} busy={busy} offline={offline} onSettle={(d) => settle(entry, d, choices[entry.eventId])} />
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** D: one table, a band per record, a row per field, a radio pair per row. */
-function Sheet({ entries, busy, offline, choices, choose, settle }: Props) {
-  const { t, language } = useI18n();
-  const title = useTitle();
-  const by = useBy();
-  const text = useValueText();
-  const head = 'sticky top-0 z-10 border-b border-line bg-panel px-4 py-2 text-start text-xs font-semibold uppercase tracking-wide text-muted';
-  return (
-    <div className={`${CARD} ${FULL}`}>
-      <PageHeader count={entries.length} />
-      {entries.length === 0 ? (
-        <Empty />
-      ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th scope="col" className={`${head} w-48`}>{t('review.field')}</th>
-                <th scope="col" className={head}>{t('review.current')}</th>
-                <th scope="col" className={head}>{t('review.waiting')}</th>
-              </tr>
-            </thead>
-            {entries.map((entry) => {
-              const choice = choices[entry.eventId] ?? {};
-              return (
-                <tbody key={entry.eventId}>
-                  <tr className="bg-surface">
-                    <th scope="colgroup" colSpan={3} className="border-y border-line px-4 py-2.5 text-start font-normal">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <SubjectMark entry={entry} size="sm" />
-                        <span className="font-semibold">{title(entry)}</span>
-                        <span className="text-muted">{by(entry)}</span>
-                        <KindChip entry={entry} />
-                        <span className="ms-auto flex gap-2">
-                          <Actions entry={entry} choice={choice} busy={busy} offline={offline} onSettle={(d) => settle(entry, d, choice)} />
-                        </span>
-                      </div>
-                    </th>
-                  </tr>
-                  {entry.outcome === 'rejected' ? (
-                    <tr className="border-b border-line">
-                      <td colSpan={3} className="px-4 py-3 text-danger">
-                        {t('review.refused', { reason: entry.reason })}
-                      </td>
-                    </tr>
-                  ) : (
-                    entry.rows.map((row) => {
-                      const side = choice[row.field] ?? 'current';
-                      const cell = (s: Side) => (
-                        <label className={`flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 ${side === s ? (s === 'current' ? 'bg-brand-soft font-semibold' : 'bg-warn-soft font-semibold') : 'text-muted'}`}>
-                          <input type="radio" name={`${entry.eventId}-${row.field}`} checked={side === s} onChange={() => choose(entry.eventId)(row.field, s)} className="mt-1" />
-                          {text(s === 'current' ? row.current : row.waiting)}
-                        </label>
-                      );
-                      return (
-                        <tr key={row.field} className="border-b border-line">
-                          <th scope="row" className="px-4 py-2 text-start font-semibold">
-                            {fieldName(t, row.field)}
-                          </th>
-                          <td className="px-2 py-1.5">{cell('current')}</td>
-                          <td className="px-2 py-1.5">{cell('waiting')}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              );
-            })}
-          </table>
-          <p className="p-4 text-xs text-muted">{pick(language, 'একটি ঘরে নতুনটা বাছলে "বাছাই করা মান সেভ করুন" চালু হয়।', 'Picking a new value in any field turns on Save My Picks.')}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** E: one change fills the page, with back and next and a dot per change. */
-function OneAtATime({ entries, busy, offline, choices, choose, settle }: Props) {
-  const { language, number } = useI18n();
-  const title = useTitle();
-  const by = useBy();
-  const [at, setAt] = useState(0);
-  const i = Math.min(at, Math.max(entries.length - 1, 0));
-  const entry = entries[i];
-  return (
-    <div className={`${CARD} ${FULL}`}>
-      <PageHeader
-        count={entries.length}
-        extra={
-          entries.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" disabled={i === 0} onClick={() => setAt(i - 1)} aria-label={pick(language, 'আগেরটা', 'Previous')}>
-                <ChevronLeft size={16} aria-hidden="true" />
-              </Button>
-              <span className="text-sm font-semibold">
-                {number(i + 1)} / {number(entries.length)}
-              </span>
-              <Button variant="secondary" disabled={i >= entries.length - 1} onClick={() => setAt(i + 1)} aria-label={pick(language, 'পরেরটা', 'Next')}>
-                <ChevronRight size={16} aria-hidden="true" />
-              </Button>
-            </div>
-          )
-        }
-      />
-      {!entry ? (
-        <Empty />
-      ) : (
-        <>
-          <div className="flex justify-center gap-1.5 pt-4">
-            {entries.map((e, n) => (
-              <button
-                key={e.eventId}
-                type="button"
-                aria-label={title(e)}
-                aria-current={n === i ? 'step' : undefined}
-                onClick={() => setAt(n)}
-                className={`h-2 rounded-full ${n === i ? 'w-8 bg-brand' : 'w-2 bg-line hover:bg-muted'}`}
-              />
-            ))}
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto flex max-w-4xl flex-col gap-6 p-8">
-              <div className="flex flex-col items-center gap-2 text-center">
-                <SubjectMark entry={entry} size="lg" />
-                <h2 className="font-display text-2xl font-bold">{title(entry)}</h2>
-                <p className="text-sm text-muted">{by(entry)}</p>
-                <KindChip entry={entry} />
-              </div>
-              {entry.outcome === 'rejected' ? (
-                <Refused entry={entry} />
-              ) : (
-                <CompareGrid entry={entry} choice={choices[entry.eventId] ?? {}} onChoose={choose(entry.eventId)} big />
-              )}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 border-t border-line bg-surface/50 px-5 py-4">
-            <Actions entry={entry} choice={choices[entry.eventId] ?? {}} busy={busy} offline={offline} size="lg" onSettle={(d) => settle(entry, d, choices[entry.eventId])} />
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
