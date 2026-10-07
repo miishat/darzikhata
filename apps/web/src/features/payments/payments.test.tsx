@@ -41,7 +41,7 @@ describe('Payments on an order', () => {
 
     await userEvent.click(within(dialog).getByRole('radio', { name: 'বিকাশ' }));
     await userEvent.type(within(dialog).getByLabelText('রেফারেন্স / TrxID (ঐচ্ছিক)'), 'TX99');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'জমা করুন' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /জমা করুন$/ }));
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'টাকা জমা' })).toBeNull());
     const after = latest(store, order.id);
@@ -56,14 +56,14 @@ describe('Payments on an order', () => {
     await userEvent.click(within(money).getByRole('button', { name: 'টাকা ফেরত দিন' }));
     const dialog = await screen.findByRole('dialog', { name: 'টাকা ফেরত' });
     await userEvent.type(within(dialog).getByLabelText('টাকার অঙ্ক'), String(paid / 100 + 1));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'ফেরত দিন' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /ফেরত দিন$/ }));
     expect(within(dialog).getByText('কারণ লিখুন')).toBeTruthy();
     expect(within(dialog).getByText('যত টাকা জমা আছে তার বেশি ফেরত দেওয়া যাবে না')).toBeTruthy();
 
     await userEvent.clear(within(dialog).getByLabelText('টাকার অঙ্ক'));
     await userEvent.type(within(dialog).getByLabelText('টাকার অঙ্ক'), '100');
     await userEvent.type(within(dialog).getByLabelText('ফেরতের কারণ'), 'কাপড় কম লেগেছে');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'ফেরত দিন' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /ফেরত দিন$/ }));
 
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'টাকা ফেরত' })).toBeNull());
     expect(netPaid(latest(store, order.id).payments)).toBe(paid - 10000);
@@ -116,7 +116,7 @@ describe('Payments on an order', () => {
     await userEvent.click(within(money).getByRole('button', { name: 'টাকা ফেরত দিন' }));
     const dialog = await screen.findByRole('dialog', { name: 'টাকা ফেরত' });
     await userEvent.type(within(dialog).getByLabelText('ফেরতের কারণ'), 'বাতিল আইটেমের টাকা');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'ফেরত দিন' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /ফেরত দিন$/ }));
     await waitFor(() => expect(moneySummary(latest(app.store, order.id)).creditDue).toBe(0));
   });
 
@@ -177,7 +177,7 @@ describe('Payments page', () => {
     expect(within(card).getByRole('link', { name: 'অর্ডার খুলুন' }).getAttribute('href')).toBe(`/app/orders/${order.id}`);
     await userEvent.click(within(card).getByRole('button', { name: 'টাকা নিন' }));
     const dialog = await screen.findByRole('dialog', { name: 'টাকা জমা' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'জমা করুন' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /জমা করুন$/ }));
     await waitFor(() => expect(balanceDue(latest(store, order.id))).toBe(0));
     expect(netPaid(latest(store, order.id).payments)).toBe(netPaid(order.payments) + balance);
 
