@@ -20,10 +20,12 @@ import { fieldGroups, groupLabel } from '../customers/measurementView';
 
 export const JOB_SLIP_VARIANTS = {
   A: 'Current slip',
-  B: 'Bench card: receipt-style header, a bordered card per garment, notes left, measurements as big tiles right, stages to fill in',
-  C: 'One garment a page: big measurement boxes, a sketch box, and a tear-off stub to pin to the fabric',
   D: 'Chart: all garments on one page, each with its measurements as a ruler strip and the notes beside',
   E: 'Docket: ruled measurement table with the unit once, a sketch box and a fabric swatch square, fitting changes to tick off',
+  F: 'D, with the fabric square, fitting changes to tick off and a sketch box from E in a row under the strip',
+  G: 'D, the strip split by group (body, sleeve, neck) under spanning labels, notes and fitting changes side by side',
+  H: 'E tighter: no sketch box, the swatch square beside the title, so two garments fit a page',
+  I: 'E with the strip from D on top in place of the table, then notes, swatch and a wide sketch box',
 };
 
 export function useJobSlipVariant() {
@@ -438,7 +440,240 @@ function Docket(props: JobSlipPaperProps) {
   );
 }
 
+function Strip({ g, language, grouped = false }: { g: Garment; language: Language; grouped?: boolean }) {
+  const fields = g.groups.flatMap((group) => group.fields);
+  return (
+    <table className="w-full table-fixed border-collapse border-2 border-ink text-center">
+      <thead>
+        {grouped && (
+          <tr>
+            {g.groups.map((group) => (
+              <th key={group.label} scope="colgroup" colSpan={group.fields.length} className="border-2 border-ink px-1 py-0.5 text-[10px] font-bold">
+                {group.label}
+              </th>
+            ))}
+          </tr>
+        )}
+        <tr>
+          {fields.map((f) => (
+            <th key={f.key} scope="col" className="border border-ink px-1 py-0.5 text-[10px] font-semibold text-muted">
+              {f.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {fields.map((f) => (
+            <td key={f.key} className="border border-ink py-1 font-display text-xl font-bold tabular-nums">
+              {num(f.value, language)}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+      <caption className="caption-bottom pt-0.5 text-end text-[10px] text-muted">{g.unit}</caption>
+    </table>
+  );
+}
+
+function Fittings({ item, language }: { item: OrderItem; language: Language }) {
+  if (item.adjustments.length === 0) return null;
+  return (
+    <div className="rounded-md border-2 border-ink p-2 text-sm">
+      <p className="text-xs font-bold">{translate(language, 'print.adjustments')}</p>
+      <ul className="m-0 list-none p-0">
+        {item.adjustments.map((a) => (
+          <li key={a.id} className="flex items-center gap-2">
+            <span aria-hidden="true" className="size-3.5 shrink-0 rounded-full border-2 border-ink" />
+            {a.note}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DesignFabric({ item, language }: { item: OrderItem; language: Language }) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  return (
+    <div className="space-y-1 text-sm">
+      {item.designNotes && (
+        <p>
+          <span className="text-xs font-semibold text-muted">{t('print.designNotes')}: </span>
+          <b>{item.designNotes}</b>
+        </p>
+      )}
+      {item.fabricNote && (
+        <p>
+          <span className="text-xs font-semibold text-muted">{t('print.fabricNote')}: </span>
+          {item.fabricNote}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const Swatch = ({ language, className = 'w-24' }: { language: Language; className?: string }) => (
+  <div className={`flex aspect-square shrink-0 items-center justify-center rounded-md border-2 border-dashed border-muted p-1 text-center text-[10px] text-muted ${className}`}>
+    {pick(language, 'কাপড়ের টুকরো', 'Fabric swatch')}
+  </div>
+);
+
+function GarmentHead({ g, language, children }: { g: Garment; language: Language; children?: ReactNode }) {
+  return (
+    <div className="mb-2 flex items-end justify-between gap-4 border-b-2 border-ink pb-1">
+      <div className="flex items-end gap-3">
+        {children}
+        <div>
+          <h2 className="font-display text-xl font-bold">{g.title}</h2>
+          <p className="text-sm text-muted">{[g.item.wearer, g.worker].filter(Boolean).join(' · ')}</p>
+        </div>
+      </div>
+      <Dates item={g.item} language={language} />
+    </div>
+  );
+}
+
+function MeasureTable({ g, language }: { g: Garment; language: Language }) {
+  return (
+    <table className="w-full border-collapse text-sm">
+      <thead>
+        <tr className="border-b-2 border-ink text-xs text-muted">
+          <th scope="col" className="py-1 text-start font-semibold">
+            {pick(language, 'মাপ', 'Measurement')}
+          </th>
+          <th scope="col" className="py-1 text-end font-semibold">
+            {g.unit}
+          </th>
+        </tr>
+      </thead>
+      {g.groups.map((group) => (
+        <tbody key={group.label}>
+          <tr>
+            <th scope="rowgroup" colSpan={2} className="pt-2 text-start text-[10px] font-semibold text-muted">
+              {group.label}
+            </th>
+          </tr>
+          {group.fields.map((f) => (
+            <tr key={f.key} className="border-b border-line">
+              <th scope="row" className="py-1 text-start font-normal">
+                {f.label}
+              </th>
+              <td className="py-1 text-end font-display text-lg font-bold tabular-nums">{num(f.value, language)}</td>
+            </tr>
+          ))}
+        </tbody>
+      ))}
+    </table>
+  );
+}
+
+/** F: D's strip, then a row of notes and fitting changes, the swatch square and a sketch box. */
+function ChartWithBoxes(props: JobSlipPaperProps) {
+  const { language, mayMeasure } = props;
+  const garments = useGarments(props);
+  return (
+    <>
+      <Header {...props} title={translate(language, 'print.jobSlip')} />
+      {garments.map((g) => (
+        <section key={g.item.id} aria-label={g.title} className="print-block mb-6">
+          <GarmentHead g={g} language={language} />
+          {mayMeasure ? <Strip g={g} language={language} /> : <Hidden language={language} />}
+          <div className="mt-2 grid grid-cols-[1fr_6rem_1.2fr] gap-3">
+            <div className="flex flex-col gap-2">
+              <DesignFabric item={g.item} language={language} />
+              <Fittings item={g.item} language={language} />
+            </div>
+            <Swatch language={language} className="w-full self-start" />
+            <SketchBox language={language} className="min-h-28" />
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** G: D with the strip grouped under spanning labels; notes and fitting changes side by side. */
+function GroupedChart(props: JobSlipPaperProps) {
+  const { language, mayMeasure } = props;
+  const garments = useGarments(props);
+  return (
+    <>
+      <Header {...props} title={translate(language, 'print.jobSlip')} />
+      {garments.map((g) => (
+        <section key={g.item.id} aria-label={g.title} className="print-block mb-5 border-b-2 border-ink pb-4">
+          <GarmentHead g={g} language={language} />
+          {mayMeasure ? <Strip g={g} language={language} grouped /> : <Hidden language={language} />}
+          <div className="mt-2 grid grid-cols-2 gap-4">
+            <DesignFabric item={g.item} language={language} />
+            <Fittings item={g.item} language={language} />
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** H: E without the sketch box; the swatch beside the title, the table and notes side by side. */
+function TightDocket(props: JobSlipPaperProps) {
+  const { language, mayMeasure } = props;
+  const garments = useGarments(props);
+  return (
+    <>
+      <Header {...props} title={translate(language, 'print.jobSlip')} />
+      {garments.map((g) => (
+        <section key={g.item.id} aria-label={g.title} className="print-block mb-5">
+          <GarmentHead g={g} language={language}>
+            <Swatch language={language} className="w-14" />
+          </GarmentHead>
+          <div className="grid grid-cols-[16rem_1fr] gap-5">
+            {mayMeasure ? <MeasureTable g={g} language={language} /> : <Hidden language={language} />}
+            <div className="flex flex-col gap-2">
+              <DesignFabric item={g.item} language={language} />
+              <Fittings item={g.item} language={language} />
+            </div>
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** I: E with the strip on top in place of the table, then notes, swatch and a wide sketch box. */
+function DocketWithStrip(props: JobSlipPaperProps) {
+  const { language, mayMeasure } = props;
+  const garments = useGarments(props);
+  return (
+    <>
+      <Header {...props} title={translate(language, 'print.jobSlip')} />
+      {garments.map((g) => (
+        <section key={g.item.id} aria-label={g.title} className="print-block mb-6">
+          <GarmentHead g={g} language={language} />
+          {mayMeasure ? <Strip g={g} language={language} /> : <Hidden language={language} />}
+          <div className="mt-2 grid grid-cols-[16rem_1fr] gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <DesignFabric item={g.item} language={language} />
+                </div>
+                <Swatch language={language} className="w-20" />
+              </div>
+              <Fittings item={g.item} language={language} />
+            </div>
+            <SketchBox language={language} className="min-h-40" />
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
 export function JobSlipPaper(props: JobSlipPaperProps): ReactNode {
+  if (props.variant === 'F') return <ChartWithBoxes {...props} />;
+  if (props.variant === 'G') return <GroupedChart {...props} />;
+  if (props.variant === 'H') return <TightDocket {...props} />;
+  if (props.variant === 'I') return <DocketWithStrip {...props} />;
+
   if (props.variant === 'B') return <BenchCards {...props} />;
   if (props.variant === 'C') return <PagePerGarment {...props} />;
   if (props.variant === 'D') return <Chart {...props} />;
