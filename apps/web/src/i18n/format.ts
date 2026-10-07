@@ -24,11 +24,28 @@ export function formatDate(value: string, language: Language, options: { year?: 
   return toScript(text, language);
 }
 
-/** An ISO timestamp as Dhaka date and 24-hour time: "৩ অক্টোবর, ১২:০৫" / "3 Oct, 12:05". */
-export function formatDateTime(value: string, language: Language): string {
+const WEEKDAYS: Record<Language, string[]> = {
+  bn: ['রবিবার', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+};
+
+/** An ISO timestamp as Dhaka 24-hour time: "১২:০৫" / "12:05". */
+export function formatTime(value: string, language: Language): string {
   const dhaka = new Date(new Date(value).getTime() + 6 * 60 * 60 * 1000);
   const time = `${String(dhaka.getUTCHours()).padStart(2, '0')}:${String(dhaka.getUTCMinutes()).padStart(2, '0')}`;
-  return `${formatDate(value, language, { year: false })}, ${toScript(time, language)}`;
+  return toScript(time, language);
+}
+
+/** An ISO timestamp as Dhaka date and 24-hour time: "৩ অক্টোবর, ১২:০৫" / "3 Oct, 12:05". */
+export function formatDateTime(value: string, language: Language): string {
+  return `${formatDate(value, language, { year: false })}, ${formatTime(value, language)}`;
+}
+
+/** An ISO timestamp as the Dhaka weekday and date: "বুধবার, ৭ অক্টোবর" / "Wednesday, 7 Oct". */
+export function formatDayDate(value: string, language: Language): string {
+  const date = todayInDhaka(new Date(value));
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return `${WEEKDAYS[language][weekday]}, ${formatDate(date, language, { year: false })}`;
 }
 
 export function formatMoney(amount: Poisha, language: Language): string {

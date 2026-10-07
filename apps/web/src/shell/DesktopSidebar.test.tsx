@@ -85,7 +85,7 @@ describe('Desktop sidebar and top bar', () => {
     await act(async () => {});
     expect(router.state.location.pathname).toBe('/sign-in');
     expect(store.getSnapshot().session?.staffId).toBe('rahman-owner');
-    await userEvent.click(await screen.findByRole('button', { name: 'বাতিল' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'কাজে ফিরে যান' }));
     expect(router.state.location.pathname).toMatch(/^\/app/);
   });
 
