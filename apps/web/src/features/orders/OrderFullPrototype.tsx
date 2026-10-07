@@ -28,10 +28,11 @@ import { wearerGroups } from './wearers';
 export const FULL_VARIANTS = {
   A: 'Current page',
   C: 'Panel stretched: summary tiles, garment grid, sticky action bar',
-  D: 'Fixed top; Hand Over and Take Payment inside their numbers, papers joined',
-  E: 'D with the actions in the header, papers in a menu',
-  F: 'D with an action column on the right, every action labelled',
-  G: 'D with an action bar pinned to the bottom, papers joined in the header',
+  G: 'Fixed top, action bar pinned to the bottom, papers joined in the header',
+  H: 'G with the actions beside the tabs, the amount owed beside them',
+  I: 'G with the actions and the joined papers all beside the tabs',
+  J: 'G with the actions in a track matching the tabs',
+  K: 'G with the actions beside the tabs, papers in a menu',
 };
 const KEYS = Object.keys(FULL_VARIANTS);
 
@@ -572,7 +573,7 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
             </div>
             <p className="truncate text-sm text-muted">{f.byline}</p>
           </div>
-          {take === 'G' && <PaperGroup order={order} onShare={share} />}
+          {(take === 'G' || take === 'H' || take === 'J') && <PaperGroup order={order} onShare={share} />}
           {take === 'E' && (
             <div className="flex items-center gap-2">
               {handOver}
@@ -632,6 +633,56 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
             {take === 'D' && (
               <div className="ms-auto">
                 <PaperGroup order={order} onShare={share} />
+              </div>
+            )}
+            {take === 'H' && (
+              <div className="ms-auto flex items-center gap-3">
+                <span className="flex items-baseline gap-4 text-sm text-muted">
+                  <span>{progressText(progress, language)}</span>
+                  {can('money.view') && (
+                    <span>
+                      {owed.label} <b className={`font-display text-lg ${owed.tone}`}>{money(owed.amount)}</b>
+                    </span>
+                  )}
+                </span>
+                {handOver}
+                {takePay}
+              </div>
+            )}
+            {take === 'I' && (
+              <div className="ms-auto flex items-center gap-2">
+                {handOver}
+                {takePay}
+                {(f.ready.length > 0 || f.showTake) && <span className="mx-1 h-7 w-px bg-line" />}
+                <PaperGroup order={order} onShare={share} />
+              </div>
+            )}
+            {take === 'J' && (f.ready.length > 0 || f.showTake) && (
+              <div className="ms-auto flex rounded-xl bg-line/60 p-1">
+                {f.ready.length > 0 && (
+                  <button type="button" onClick={f.handOver} className="flex min-h-9 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-ink hover:bg-panel">
+                    <PackageCheck size={16} aria-hidden="true" />
+                    {t('order.handOverBar')}
+                  </button>
+                )}
+                {f.showTake && (
+                  <button
+                    type="button"
+                    onClick={() => f.money.open({ kind: 'take' })}
+                    className="flex min-h-9 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-on-brand shadow-sm hover:bg-brand-hover"
+                  >
+                    <Wallet size={16} aria-hidden="true" />
+                    {t('payments.take')}
+                    {can('money.view') && <span className="rounded-md bg-white/20 px-1.5 text-xs">{money(owed.amount)}</span>}
+                  </button>
+                )}
+              </div>
+            )}
+            {take === 'K' && (
+              <div className="ms-auto flex items-center gap-2">
+                {handOver}
+                {takePay}
+                <PaperMenu order={order} onShare={share} />
               </div>
             )}
           </div>
