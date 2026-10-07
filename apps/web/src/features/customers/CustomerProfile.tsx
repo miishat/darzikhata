@@ -1,3 +1,4 @@
+import { useKeepVariant, useMotionLink } from '../../shell/PanelMotionPrototype';
 import { balanceDue, orderProgress, orderTotal, type Order } from '@darzikhata/domain';
 import { Phone, X } from 'lucide-react';
 import { Link } from 'react-router';
@@ -52,6 +53,8 @@ function orderPill(order: Order, t: (key: MessageKey) => string): { label: strin
  */
 function DesktopCustomerProfile({ customerId }: { customerId: string }) {
   const { t, language, money, date, number } = useI18n();
+  const motionLink = useMotionLink();
+  const keep = useKeepVariant();
   const can = useCan();
   const { state } = useSnapshot();
   const scoped = useScopedState();
@@ -115,7 +118,8 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
             )}
           </div>
           <Link
-            to="/app/customers"
+            {...motionLink(keep('/app/customers'), {}, false)}
+            to={keep('/app/customers')}
             aria-label={t('common.close')}
             title={t('common.close')}
             className="rounded-lg p-2 hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"

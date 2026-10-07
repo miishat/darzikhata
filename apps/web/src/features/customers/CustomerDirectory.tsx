@@ -1,3 +1,4 @@
+import { useKeepVariant, useMotionLink } from '../../shell/PanelMotionPrototype';
 import { searchCustomers, type GarmentTemplate } from '@darzikhata/domain';
 import { Plus, Scissors, Search, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -130,11 +131,13 @@ function DirectoryRowLink({ row, active, compact, showMoney }: { row: DirectoryR
   const { customer } = row;
   const name = customer.name;
   const owed = showMoney && row.owed > 0 ? <span className="font-display font-semibold text-warn">{money(row.owed)}</span> : <span className="text-muted">–</span>;
+  const motionLink = useMotionLink();
+  const keep = useKeepVariant();
   const linkClass = `px-4 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${active ? 'bg-brand-soft' : 'hover:bg-surface'}`;
 
   if (compact) {
     return (
-      <Link to={`/app/customers/${customer.id}`} aria-current={active ? 'page' : undefined} className={`flex items-center gap-3 ${linkClass}`}>
+      <Link {...motionLink(keep(`/app/customers/${customer.id}`), {}, true)} to={keep(`/app/customers/${customer.id}`)} aria-current={active ? 'page' : undefined} className={`flex items-center gap-3 ${linkClass}`}>
         <Avatar id={customer.id} name={name} size="sm" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="font-semibold [overflow-wrap:anywhere]">{name}</span>
@@ -149,7 +152,7 @@ function DirectoryRowLink({ row, active, compact, showMoney }: { row: DirectoryR
     ? (config?.templates ?? []).filter((tpl) => (state.profiles[`${customer.id}:${tpl.id}`]?.versions.length ?? 0) > 0)
     : [];
   return (
-    <Link to={`/app/customers/${customer.id}`} aria-current={active ? 'page' : undefined} className={`${WIDE_COLUMNS} ${linkClass}`}>
+    <Link {...motionLink(keep(`/app/customers/${customer.id}`), {}, true)} to={keep(`/app/customers/${customer.id}`)} aria-current={active ? 'page' : undefined} className={`${WIDE_COLUMNS} ${linkClass}`}>
       <span className="flex min-w-0 items-center gap-3">
         <Avatar id={customer.id} name={name} size="sm" />
         <span className="font-semibold [overflow-wrap:anywhere]">{name}</span>

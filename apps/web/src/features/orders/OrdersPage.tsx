@@ -17,6 +17,8 @@ import { OrderTable } from './OrderTable';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
+import { MotionSwitcher, useMotionNavigate, usePanelMotion, vtName } from '../../shell/PanelMotionPrototype';
+
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 
 const VIEW_ICONS: Record<OrderView, LucideIcon> = {
@@ -73,7 +75,11 @@ export function OrdersPage() {
     const text = next.toString();
     return text ? `?${text}` : '';
   };
-  const closeOrder = () => navigate({ pathname: '/app/orders', search: listSearch() });
+  const go = useMotionNavigate();
+  const closeOrder = () => go({ pathname: '/app/orders', search: listSearch() }, {}, false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const motion = usePanelMotion(kind === 'desktop' && Boolean(orderId) && !full, listRef, panelRef, 'panel');
   const view = viewOfQuery(query, money) ?? '';
   const tabViews = ORDER_VIEWS.filter((v) => v !== 'owed' || money);
   const panelId = 'orders-view-panel';
@@ -124,7 +130,8 @@ export function OrdersPage() {
   return (
     // The window less the shell header (3.5rem) and the page padding (2 × 1.5rem).
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 gap-4">
-      <div className={`${CARD} min-w-0 flex-1`}>
+      <MotionSwitcher />
+      <div ref={listRef} {...vtName(motion, 'vt-list')} className={`${CARD} min-w-0 flex-1`}>
         <div className="flex flex-col gap-3 border-b border-line p-4">
           <h1 className="font-display text-xl font-bold">{t('nav.orders')}</h1>
           <ViewTabs
@@ -186,7 +193,7 @@ export function OrdersPage() {
         </div>
       </div>
       {orderId && (
-        <section aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
+        <section ref={panelRef} {...vtName(motion, 'vt-panel')} aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
           <OrderDetail orderId={orderId} onClose={closeOrder} />
         </section>
       )}

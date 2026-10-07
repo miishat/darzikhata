@@ -1,3 +1,4 @@
+import { useMotionLink, useMotionNavigate } from '../../shell/PanelMotionPrototype';
 import { itemSummaryGroup, type Order } from '@darzikhata/domain';
 import { TriangleAlert } from 'lucide-react';
 import { useRef, type KeyboardEvent } from 'react';
@@ -58,6 +59,8 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const can = useCan();
   const { search } = useLocation();
   const navigate = useNavigate();
+  const go = useMotionNavigate();
+  const motionLink = useMotionLink();
   const balanceText = useBalanceText();
   const workerNames = useWorkerNames();
   const body = useRef<HTMLTableSectionElement>(null);
@@ -73,7 +76,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const move = (from: number, step: number) => {
     const next = rows[Math.min(rows.length - 1, Math.max(0, from + step))];
     if (!next) return;
-    navigate(target(next.order.id), { replace: true });
+    go(target(next.order.id), { replace: true }, true);
     body.current?.querySelector<HTMLElement>(`[data-order-id="${next.order.id}"]`)?.focus();
   };
 
@@ -117,7 +120,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
               data-order-id={order.id}
               aria-selected={selected}
               tabIndex={order.id === stop ? 0 : -1}
-              onClick={() => navigate(target(order.id), { replace: true })}
+              onClick={() => go(target(order.id), { replace: true }, true)}
               className={`cursor-pointer border-b border-line focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
                 selected ? 'bg-brand-soft' : 'hover:bg-surface'
               }`}
@@ -130,7 +133,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                       to={target(order.id)}
                       replace
                       aria-current={selected ? 'page' : undefined}
-                      onClick={(event) => event.stopPropagation()}
+                      {...motionLink(target(order.id), { replace: true }, true, (event) => event.stopPropagation())}
                       className="truncate font-semibold text-ink focus-visible:outline-2 focus-visible:outline-focus"
                     >
                       {row.customer?.name ?? order.number}
