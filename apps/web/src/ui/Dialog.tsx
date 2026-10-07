@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface DialogProps {
@@ -11,7 +11,13 @@ export interface DialogProps {
   hideTitleOnPhone?: boolean;
   /** The action buttons show only on larger screens; on a phone the sheet closes by tapping outside it. */
   actionsDesktopOnly?: boolean;
+  /** PROTOTYPE: on a larger screen it grows out of the button that opened it, its sections settle in turn, and it shrinks away on closing. */
+  animated?: boolean;
 }
+
+/** Matches dialog-pop-out in index.css. */
+const POP_LEAVE_MS = 150;
+const pops = () => typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 640px) and (prefers-reduced-motion: no-preference)').matches;
 
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
@@ -68,16 +74,36 @@ export function useModalFocus(open: boolean, panel: RefObject<HTMLElement | null
 }
 
 /** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
-export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false }: DialogProps) {
+export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false, animated = false }: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const [wasOpen, setWasOpen] = useState(open);
+  const [leaving, setLeaving] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setLeaving(!open && animated && pops());
+  }
+  useEffect(() => {
+    if (!leaving) return;
+    const id = window.setTimeout(() => setLeaving(false), POP_LEAVE_MS);
+    return () => window.clearTimeout(id);
+  }, [leaving]);
+  // Grow out of the button that opened it: it still has focus here, before useModalFocus moves it.
+  useLayoutEffect(() => {
+    const el = panel.current;
+    const from = document.activeElement;
+    if (!open || !animated || !el || !(from instanceof HTMLElement) || from === document.body) return;
+    const r = from.getBoundingClientRect();
+    el.style.setProperty('--dialog-origin', `${r.left + r.width / 2 - el.offsetLeft}px ${r.top + r.height / 2 - el.offsetTop}px`);
+  }, [open, animated]);
   useModalFocus(open, panel, onClose);
 
-  if (!open) return null;
+  if (!open && !leaving) return null;
   // Portalled to the body so a header's or panel's stacking context cannot put the page's fixed bars over it.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center sm:p-4"
+      data-leaving={leaving || undefined}
+      className={`fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center sm:p-4 ${animated ? 'dialog-pop' : ''} ${leaving ? 'pointer-events-none' : ''}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -96,7 +122,7 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
         <h2 id={titleId} className={`text-lg font-semibold ${hideTitleOnPhone ? 'max-sm:sr-only' : ''}`}>
           {title}
         </h2>
-        {children && <div className={`text-muted ${hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
+        {children && <div className={`dialog-body text-muted ${hideTitleOnPhone ? 'sm:mt-2' : 'mt-2'}`}>{children}</div>}
         {actions && <div className={`mt-5 flex flex-wrap justify-end gap-2 max-sm:[&>*]:flex-1 ${actionsDesktopOnly ? 'max-sm:hidden' : ''}`}>{actions}</div>}
       </div>
     </div>,

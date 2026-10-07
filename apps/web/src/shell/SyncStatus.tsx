@@ -108,6 +108,7 @@ function SyncDialog({ open, onClose }: { open: boolean; onClose(): void }) {
       onClose={onClose}
       hideTitleOnPhone
       actionsDesktopOnly
+      animated
       actions={
         <Button variant="secondary" onClick={onClose}>
           {t('common.close')}

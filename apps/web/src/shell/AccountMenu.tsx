@@ -1,6 +1,6 @@
 import type { Language } from '@darzikhata/domain';
 import { ChevronRight, RotateCcw, Settings, Store, Wallet, type LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { BranchSwitcher, useBranchScope } from '../features/branches/BranchScopeProvider';
 import { usePresenterSetting } from '../features/presenter/PresenterSetting';
@@ -35,6 +35,9 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState<'reset' | 'change' | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // The confirm keeps its wording while it fades away.
+  const shownConfirm = useRef<'reset' | 'change'>('reset');
+  if (confirming) shownConfirm.current = confirming;
 
   const extra = current ? visibleNav(current.role).filter((item) => !item.mobileTab) : [];
   const languages: Array<{ value: Language; label: string }> = [
@@ -72,17 +75,33 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
           <span className="text-sm text-muted">{options.find((o) => o.value === value)?.label}</span>
           <ChevronRight size={18} aria-hidden="true" className={`text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`} />
         </button>
-        {isOpen && (
-          <div className="px-3 pb-3">
-            <SegmentedControl legend={legend} value={value} options={options} onChange={onChange} />
+        {kind === 'mobile' ? (
+          isOpen && (
+            <div className="px-3 pb-3">
+              <SegmentedControl legend={legend} value={value} options={options} onChange={onChange} />
+            </div>
+          )
+        ) : (
+          // PROTOTYPE: on a desktop it opens smoothly to its height; closed, it stays out of reach.
+          <div
+          inert={!isOpen}
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+            isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="px-3 pb-3">
+              <SegmentedControl legend={legend} value={value} options={options} onChange={onChange} />
+            </div>
           </div>
+        </div>
         )}
       </div>
     );
   };
 
   return (
-    <Dialog open={open} title={t('shell.account')} onClose={onClose} hideTitleOnPhone>
+    <Dialog open={open} title={t('shell.account')} onClose={onClose} hideTitleOnPhone animated>
       <div className="space-y-3 text-ink">
         {current && (
           <div className="flex items-center gap-3">
@@ -162,8 +181,9 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
       </div>
       <Dialog
         open={confirming !== null}
-        title={t(confirming === 'reset' ? 'more.reset' : 'more.changeShop')}
+        title={t(shownConfirm.current === 'reset' ? 'more.reset' : 'more.changeShop')}
         onClose={() => setConfirming(null)}
+        animated
         actions={
           <>
             <Button variant="secondary" onClick={() => setConfirming(null)}>
@@ -175,7 +195,7 @@ export function AccountMenu({ open, onClose }: { open: boolean; onClose(): void 
           </>
         }
       >
-        {t(confirming === 'reset' ? 'more.resetConfirm' : 'more.changeShopConfirm')}
+        {t(shownConfirm.current === 'reset' ? 'more.resetConfirm' : 'more.changeShopConfirm')}
       </Dialog>
     </Dialog>
   );
