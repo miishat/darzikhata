@@ -1,6 +1,6 @@
 // PROTOTYPE (throwaway): desktop print page and status page variants behind ?variant=. A is the current pages; B to E are takes on the chosen C.
 import { type Language, type PublicOrderView, type SummaryGroup } from '@darzikhata/domain';
-import { ArrowLeft, Check, FileText, Phone, Printer, Scissors, Share2, Tag, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Ban, Check, FileText, PackageCheck, Phone, Printer, Scissors, Share2, Tag, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { formatDate, formatMoney, translate } from '../../i18n/format';
@@ -13,17 +13,25 @@ import { SegmentedControl } from '../../ui/SegmentedControl';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import type { ReceiptModel } from './receipt';
 
-export const PROTO_VARIANTS = {
-  A: 'Current pages',
-  B: 'C as chosen, Share before language',
-  C: 'Tabs beside the title, letterhead memo, tracker dates',
-  D: 'Memo with a tear-off customer stub, two-line banner',
-  E: 'Navy toolbar, split memo header, garment cards with timelines',
+export const STATUS_VARIANTS = {
+  A: 'Current page',
+  B: 'Two columns: navy order card, garment cards',
+  C: 'Navy banner, garment rows with trackers',
+  D: 'Light header, progress ring, garments as a table',
+  E: 'Banner and trackers, dates under the steps',
+  F: 'Banner and trackers, Call beside the shop',
+  G: 'Banner, garment cards with upright timelines',
 };
-const KEYS = Object.keys(PROTO_VARIANTS);
+const KEYS = Object.keys(STATUS_VARIANTS);
 
-/** The variant to show: always A on a phone, so phones stay unchanged. */
+/** The print pages use the chosen layout (D: memo with a tear-off stub) on a desktop and stay as they are on a phone. */
 export function useProtoVariant(): string {
+  const { kind } = useShell();
+  return kind === 'desktop' ? 'D' : 'A';
+}
+
+/** The status page variant: always A on a phone, so phones stay unchanged. */
+export function useStatusVariant(): string {
   const { kind } = useShell();
   const v = useVariant(KEYS);
   return kind === 'desktop' ? v : 'A';
@@ -31,7 +39,7 @@ export function useProtoVariant(): string {
 
 export function ProtoSwitcher() {
   const { kind } = useShell();
-  return kind === 'desktop' ? <PrototypeSwitcher variants={PROTO_VARIANTS} /> : null;
+  return kind === 'desktop' ? <PrototypeSwitcher variants={STATUS_VARIANTS} /> : null;
 }
 
 const pick = (language: Language, bn: string, en: string) => (language === 'bn' ? bn : en);
@@ -423,7 +431,15 @@ function Dot({ s, at }: { s: number; at: number }) {
  * The navy banner with each garment's three-step tracker. B is C as chosen; C adds the dates under the steps;
  * D splits the banner into two lines with the call button beside the shop; E shows garments as cards with an upright timeline.
  */
-export function ProtoStatus({ variant, view, headline }: ProtoStatusProps) {
+/** The status mockups: B and D are the first round's layouts, C, E, F and G are the banner with trackers and its takes. */
+export function ProtoStatus(props: ProtoStatusProps) {
+  if (props.variant === 'B') return <StatusTwoColumn {...props} />;
+  if (props.variant === 'D') return <StatusTable {...props} />;
+  const take = ({ C: 'B', E: 'C', F: 'D', G: 'E' } as Record<string, string>)[props.variant] ?? 'B';
+  return <BannerStatus {...props} variant={take} />;
+}
+
+function BannerStatus({ variant, view, headline }: ProtoStatusProps) {
   const { t, label, date, dateTime, language } = useI18n();
   const counted = view.items.filter((item) => item.group !== 'cancelled');
   const stateText = (item: Item) =>
@@ -536,6 +552,171 @@ export function ProtoStatus({ variant, view, headline }: ProtoStatusProps) {
           {t('status.updated', { date: dateTime(view.lastUpdatedAt) })}. {t('status.privacy')}
         </p>
         {variant === 'D' && view.shop.phone && <p className="mt-1 text-center text-sm text-muted">{t('status.phone', { phone: view.shop.phone })}</p>}
+      </main>
+    </div>
+  );
+}
+
+const LOOK: Record<SummaryGroup, { icon: LucideIcon; chip: string }> = {
+  unfinished: { icon: Scissors, chip: 'bg-tone-working-bg text-tone-working-fg' },
+  ready: { icon: Check, chip: 'bg-tone-ready-bg text-tone-ready-fg' },
+  delivered: { icon: PackageCheck, chip: 'bg-tone-done-bg text-tone-done-fg' },
+  cancelled: { icon: Ban, chip: 'bg-tone-cancelled-bg text-tone-cancelled-fg' },
+};
+
+function useStatusText(view: PublicOrderView) {
+  const { t, label } = useI18n();
+  const counted = view.items.filter((item) => item.group !== 'cancelled');
+  const done = counted.filter((item) => item.group === 'ready' || item.group === 'delivered').length;
+  const stateText = (item: PublicOrderView['items'][number]) =>
+    item.group === 'unfinished' ? t('status.state.unfinished', { stage: label(item.stageLabel) }) : t(`status.group.${item.group}`);
+  return { counted, done, stateText };
+}
+
+function CallButton({ phone, className = '' }: { phone: string; className?: string }) {
+  const { t } = useI18n();
+  return (
+    <a href={`tel:${phone}`} className={`${buttonClasses('primary', 'lg')} ${className}`}>
+      <Phone aria-hidden="true" size={20} />
+      {t('status.call')}
+    </a>
+  );
+}
+
+/** B: the navy order card stays on the left with the call button; the garments are cards on the right. */
+function StatusTwoColumn({ view, headline, languageToggle }: ProtoStatusProps) {
+  const { t, label, date, dateTime } = useI18n();
+  const { counted, stateText } = useStatusText(view);
+  return (
+    <div className="min-h-dvh bg-surface text-ink">
+      <main className="mx-auto grid max-w-6xl grid-cols-[400px_1fr] items-start gap-8 px-8 py-10">
+        <section className="sticky top-10 rounded-[28px] bg-navy p-7 text-on-navy ring-1 ring-inset ring-navy-line">
+          <div className="flex items-center gap-3">
+            <ShopTile name={view.shop.name} className="size-12 bg-on-navy! text-xl text-navy!" />
+            <div className="min-w-0">
+              <h1 className="font-display text-lg font-semibold">{view.shop.name}</h1>
+              {view.shop.address && <p className="text-sm text-on-navy-muted">{view.shop.address}</p>}
+            </div>
+          </div>
+          <p className="mt-8 text-sm text-on-navy-muted">{t('status.yourOrder', { number: view.orderNumber })}</p>
+          <h2 className="mb-4 font-display text-3xl leading-tight font-bold">{headline}</h2>
+          {counted.length > 0 && <Bars counted={counted} />}
+          {view.shop.phone && (
+            <>
+              <CallButton phone={view.shop.phone} className="mt-8 w-full rounded-2xl!" />
+              <p className="mt-2 text-center text-sm text-on-navy-muted">{view.shop.phone}</p>
+            </>
+          )}
+        </section>
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold">{t('status.garments')}</h2>
+            {languageToggle}
+          </div>
+          <ul aria-label={t('status.garments')} className="grid grid-cols-2 gap-3">
+            {view.items.map((item, i) => {
+              const look = LOOK[item.group];
+              const Icon = look.icon;
+              return (
+                <li key={i} className="flex flex-col gap-3 rounded-2xl bg-panel p-5 ring-1 ring-line">
+                  <div className="flex items-center gap-3">
+                    <span aria-hidden="true" className={`flex size-11 shrink-0 items-center justify-center rounded-full ${look.chip}`}>
+                      <Icon size={20} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold">{label(item.garmentName)}</p>
+                      {item.wearer && <p className="text-sm text-muted">{item.wearer}</p>}
+                    </div>
+                  </div>
+                  <p className="font-semibold">{stateText(item)}</p>
+                  <div className="flex gap-4 text-sm text-muted">
+                    {item.trialDate && <span>{t('item.trial', { date: date(item.trialDate) })}</span>}
+                    {item.deliveryDate && <span>{t('item.delivery', { date: date(item.deliveryDate) })}</span>}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-6 text-sm text-muted">
+            {t('status.updated', { date: dateTime(view.lastUpdatedAt) })}. {t('status.privacy')}
+          </p>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/** C: a full-width navy banner, then each garment with a three-step tracker. */
+/** D: a light header with the call button, a progress ring beside the headline, and the garments as one table. */
+function StatusTable({ view, headline, languageToggle }: ProtoStatusProps) {
+  const { t, label, date, dateTime, number, language } = useI18n();
+  const { counted, done, stateText } = useStatusText(view);
+  const share = counted.length ? done / counted.length : 0;
+  const r = 34;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="min-h-dvh bg-surface text-ink">
+      <header className="border-b border-line bg-panel">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-8 py-4">
+          <ShopTile name={view.shop.name} className="size-10 text-lg" />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-lg font-bold leading-tight">{view.shop.name}</h1>
+            {view.shop.address && <p className="text-sm text-muted">{view.shop.address}</p>}
+          </div>
+          {languageToggle}
+          {view.shop.phone && <CallButton phone={view.shop.phone} className="rounded-xl!" />}
+        </div>
+      </header>
+      <main className="mx-auto max-w-5xl px-8 py-10">
+        <section className="flex items-center gap-6">
+          <svg viewBox="0 0 80 80" className="size-24 shrink-0 -rotate-90" aria-hidden="true">
+            <circle cx="40" cy="40" r={r} fill="none" strokeWidth="8" className="stroke-line" />
+            <circle cx="40" cy="40" r={r} fill="none" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${c * share} ${c}`} className="stroke-tone-ready-dot" />
+            <text x="40" y="40" textAnchor="middle" dominantBaseline="central" className="rotate-90 fill-ink text-lg font-bold" style={{ transformOrigin: '40px 40px' }}>
+              {number(done)}/{number(counted.length)}
+            </text>
+          </svg>
+          <div>
+            <p className="text-muted">{t('status.yourOrder', { number: view.orderNumber })}</p>
+            <h2 className="font-display text-4xl leading-tight font-bold">{headline}</h2>
+          </div>
+        </section>
+        <div className="mt-8 overflow-hidden rounded-2xl bg-panel ring-1 ring-line">
+          <table aria-label={t('status.garments')} className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-surface text-xs uppercase tracking-wide text-muted">
+                <th scope="col" className="px-5 py-3 font-semibold">{t('receipt.garment')}</th>
+                <th scope="col" className="px-5 py-3 font-semibold">{t('receipt.wearer')}</th>
+                <th scope="col" className="px-5 py-3 font-semibold">{pick(language, 'অবস্থা', 'Status')}</th>
+                <th scope="col" className="px-5 py-3 font-semibold">{t('print.trial')}</th>
+                <th scope="col" className="px-5 py-3 font-semibold">{t('receipt.delivery')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {view.items.map((item, i) => {
+                const look = LOOK[item.group];
+                const Icon = look.icon;
+                return (
+                  <tr key={i} className="border-t border-line">
+                    <td className="px-5 py-4 font-semibold">{label(item.garmentName)}</td>
+                    <td className="px-5 py-4 text-muted">{item.wearer ?? ''}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold ${look.chip}`}>
+                        <Icon size={14} aria-hidden="true" />
+                        {stateText(item)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">{item.trialDate ? date(item.trialDate) : ''}</td>
+                    <td className="px-5 py-4">{item.deliveryDate ? date(item.deliveryDate) : ''}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-4 text-sm text-muted">
+          {t('status.updated', { date: dateTime(view.lastUpdatedAt) })}. {t('status.privacy')}
+        </p>
       </main>
     </div>
   );

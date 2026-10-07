@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
-import { ProtoPrintFrame, ProtoSwitcher, useProtoVariant } from './PrintStatusPrototype';
+import { ProtoPrintFrame, useProtoVariant } from './PrintStatusPrototype';
 
 /** The document's own language: starts as the app language and never changes it. */
 export function usePrintLanguage(): [Language, (language: Language) => void] {
@@ -35,7 +35,6 @@ export function PrintLayout(props: PrintLayoutProps) {
   return (
     <>
       {variant === 'A' ? <CurrentPrintLayout {...props} /> : <ProtoPrintFrame variant={variant} {...props} />}
-      <ProtoSwitcher />
     </>
   );
 }

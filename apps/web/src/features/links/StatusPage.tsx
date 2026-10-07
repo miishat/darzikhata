@@ -8,7 +8,7 @@ import { LanguageToggle } from '../../shell/ShellParts';
 import { initialsOf } from '../../ui/Avatar';
 import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
 import { buttonClasses } from '../../ui/Button';
-import { ProtoStatus, ProtoSwitcher, useProtoVariant } from '../print/PrintStatusPrototype';
+import { ProtoStatus, ProtoSwitcher, useStatusVariant } from '../print/PrintStatusPrototype';
 
 function Notice({ message }: { message: string }) {
   return (
@@ -36,7 +36,7 @@ export function StatusPage() {
   const { token = '' } = useParams();
   const { t, label, date, dateTime, number, language } = useI18n();
   const { status, config, state } = useSnapshot();
-  const variant = useProtoVariant();
+  const variant = useStatusVariant();
   if (status === 'loading') return <Loading />;
   const order = config ? findOrderByToken(Object.values(state.orders), token) : null;
   if (!config || !order) return <Notice message={t('status.notFound')} />;
