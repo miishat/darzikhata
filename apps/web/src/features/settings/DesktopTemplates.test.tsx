@@ -1,5 +1,5 @@
 import { toBanglaDigits } from '@darzikhata/domain';
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -24,8 +24,11 @@ describe('Desktop garment editor', () => {
 
     expect((await screen.findByText('সেভ হয়েছে')).getAttribute('role')).toBe('status');
     expect(screen.queryByRole('dialog')).toBeNull();
-    const row = within(screen.getByRole('table', { name: 'পোশাকের ধরন' })).getByRole('link', { name: 'শার্ট' }).closest('tr')!;
-    expect(within(row).getByText('৳৮০০')).toBeTruthy();
+    // The table can catch up a moment after the note on a slow machine.
+    await waitFor(() => {
+      const row = within(screen.getByRole('table', { name: 'পোশাকের ধরন' })).getByRole('link', { name: 'শার্ট' }).closest('tr')!;
+      expect(within(row).getByText('৳৮০০')).toBeTruthy();
+    });
     const shirt = store.getSnapshot().config!.templates.find((t) => t.id === 'shirt')!;
     expect(shirt.defaultPrice).toBe(80000);
     expect(shirt.fields.at(-1)).toEqual({ key: 'back', label: { bn: 'পিঠ', en: 'Back' }, unit: 'cm', group: 'body', required: true });
