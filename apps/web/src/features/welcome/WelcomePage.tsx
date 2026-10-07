@@ -6,6 +6,8 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { SEED_SHOPS, type SeedShopKey } from '../../seed/shops';
 import { LanguageToggle } from '../../shell/ShellParts';
 import { BrandMark } from '../../ui/BrandMark';
+import { useShell } from '../../shell/ShellPreference';
+import { WelcomeScreen, WelcomeSwitcher, useWelcomeVariant } from './WelcomePrototype';
 
 const ICON: Record<SeedShopKey, LucideIcon> = { rahman: Shirt, nakshi: Sparkles, uniform: Building2 };
 
@@ -15,6 +17,8 @@ export function WelcomePage() {
   const store = useStore();
   const navigate = useNavigate();
   const [opening, setOpening] = useState<SeedShopKey | null>(null);
+  const { kind } = useShell();
+  const variant = useWelcomeVariant();
 
   const open = async (key: SeedShopKey) => {
     setOpening(key);
@@ -22,8 +26,18 @@ export function WelcomePage() {
     navigate('/app');
   };
 
+  if (kind === 'desktop' && variant !== 'A') {
+    return (
+      <>
+        <WelcomeSwitcher />
+        <WelcomeScreen variant={variant} opening={opening} onOpen={open} />
+      </>
+    );
+  }
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col">
+      {kind === 'desktop' && <WelcomeSwitcher />}
       <header className="rounded-b-3xl bg-navy px-5 pt-5 pb-8 text-on-navy">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
