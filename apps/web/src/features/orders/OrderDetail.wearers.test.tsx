@@ -12,20 +12,20 @@ async function openDetail(shop: 'rahman' | 'uniform', orderId: string) {
 describe('Group order detail', () => {
   it('groups the garments by wearer with each wearer’s progress', async () => {
     const detail = await openDetail('uniform', 'uniform-o27');
-    const summary = within(detail).getByRole('table', { name: 'কে পরবেন অনুযায়ী' });
-    expect(within(summary).getAllByRole('row')).toHaveLength(13);
-    expect(within(summary).getByRole('row', { name: /ক্লাস ৭ - রাফি/ }).textContent).toContain('মোট ২টি: ২টি ডেলিভারি হয়েছে');
-
-    const rafi = within(detail).getByRole('region', { name: 'ক্লাস ৭ - রাফি' });
+    const garments = within(detail).getByRole('tabpanel');
+    const rafi = within(garments).getByRole('region', { name: 'ক্লাস ৭ - রাফি' });
     expect(within(rafi).getByText('মোট ২টি: ২টি ডেলিভারি হয়েছে')).toBeTruthy();
     expect(within(rafi).getByRole('region', { name: 'স্কুল শার্ট ১' })).toBeTruthy();
     expect(within(rafi).getByRole('region', { name: 'স্কুল প্যান্ট ২' })).toBeTruthy();
-    const sadia = within(detail).getByRole('region', { name: 'ক্লাস ৭ - সাদিয়া' });
+    const sadia = within(garments).getByRole('region', { name: 'ক্লাস ৭ - সাদিয়া' });
     expect(within(sadia).getByText('মোট ২টি: ২টি চলছে')).toBeTruthy();
   });
 
   it('keeps the plain garment list when nobody is named', async () => {
-    const detail = await openDetail('rahman', 'rahman-o40');
-    expect(within(detail).queryByRole('table', { name: 'কে পরবেন অনুযায়ী' })).toBeNull();
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/rahman-o40?full=1' });
+    const order = store.getSnapshot().state.orders['rahman-o40']!;
+    const garments = await screen.findByRole('tabpanel');
+    expect(within(garments).queryByRole('heading', { level: 3, name: 'নাম ছাড়া পোশাক' })).toBeNull();
+    expect(within(garments).getAllByRole('region')).toHaveLength(order.items.length);
   });
 });

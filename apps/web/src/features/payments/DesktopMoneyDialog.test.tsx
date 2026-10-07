@@ -11,6 +11,7 @@ async function openOrder(keep: (order: Order) => boolean, language: 'bn' | 'en' 
     .sort((a, b) => a.number.localeCompare(b.number))
     .find(keep)!;
   await act(() => app.router.navigate(`/app/orders/${order.id}?full=1`));
+  await userEvent.click(await screen.findByRole('tab', { name: language === 'bn' ? 'টাকার হিসাব' : 'Money' }));
   const money = await screen.findByRole('region', { name: language === 'bn' ? 'টাকার হিসাব' : 'Money' });
   return { ...app, order, money };
 }
