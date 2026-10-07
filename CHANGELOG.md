@@ -18,6 +18,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Print pages and the status page on a desktop:
+  - Print pages have one toolbar along the top: back and the page's name, tabs between the order's receipt, job slip and fabric tags (the receipt only for staff who may see money), then Share, the paper's language and Print. The paper shows as an A4 sheet.
+  - The receipt is a cash memo: the shop's name centred at the top, the order and customer, each garment with a dotted line out to its price, the totals with the amount owed boxed, and a tear-off slip at the bottom for the customer to bring when collecting, with the order number, the number of garments, the next delivery date and the amount owed.
+  - The customer's status page is a navy banner with the shop, a Call the Shop button and the language button, then the headline and one bar per garment. Each garment is a card whose steps (making, ready, delivered) run top to bottom, with the trial and delivery dates.
+  - Phones are unchanged.
 - Account and sync popups on a desktop:
   - The account popup shows who is signed in with Switch User, then language, colour theme and screen layout always in view instead of rows that expand, then the demo controls.
   - The sync popup shows the status with the online switch, a full-width Sync Now button with what is waiting, a highlighted link when changes need review, and the other-device button with its hint centred under it.

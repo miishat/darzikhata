@@ -78,6 +78,42 @@ describe('Receipt page', () => {
   });
 });
 
+describe('Desktop print pages', () => {
+  it('prints the receipt as a cash memo with a tear-off slip, and tabs to the order’s other papers', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/print/receipt/rahman-o40' });
+    const order = store.getSnapshot().state.orders['rahman-o40']!;
+    const money = moneySummary(order);
+    const papers = await screen.findByRole('navigation', { name: 'এই অর্ডারের কাগজ' });
+    expect(within(papers).getByRole('link', { name: 'রসিদ' }).getAttribute('aria-current')).toBe('page');
+    expect(within(papers).getByRole('link', { name: 'কাজের স্লিপ' }).getAttribute('href')).toBe('/print/job/rahman-o40');
+    expect(within(papers).getByRole('link', { name: 'কাপড়ের ট্যাগ' }).getAttribute('href')).toBe('/print/tags/rahman-o40');
+
+    const slip = screen.getByRole('region', { name: 'গ্রাহকের অংশ' });
+    expect(slip.textContent).toContain(order.number);
+    expect(slip.textContent).toContain(formatTaka(money.creditDue > 0 ? money.creditDue : money.balance, 'bn'));
+    expect(slip.textContent).toContain('পোশাক নিতে আসার সময় এই অংশটি সঙ্গে আনুন।');
+
+    const share = screen.getByRole('button', { name: 'শেয়ার করুন' });
+    const english = screen.getByRole('button', { name: 'English' });
+    expect(share.compareDocumentPosition(english) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('leaves the receipt tab out for staff who may not see money', async () => {
+    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/print/job/nakshi-o1', as: { staffId: 'nakshi-tailor', pin: '4444' } });
+    const papers = await screen.findByRole('navigation', { name: 'এই অর্ডারের কাগজ' });
+    expect(within(papers).getAllByRole('link').map((link) => link.textContent)).toEqual(['কাজের স্লিপ', 'কাপড়ের ট্যাগ']);
+    expect(within(papers).getByRole('link', { name: 'কাজের স্লিপ' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('keeps the phone receipt as it was, without tabs or a slip', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/receipt/rahman-o40' });
+    expect(await screen.findByRole('heading', { name: 'রসিদ' })).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'এই অর্ডারের কাগজ' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'গ্রাহকের অংশ' })).toBeNull();
+    expect(screen.getByRole('table', { name: 'হিসাব' })).toBeTruthy();
+  });
+});
+
 describe('Job slip', () => {
   it('shows each garment’s measurements and notes but no money', async () => {
     // Sample data: the first Rahman order with a measured garment (rahman-o40 may be an alteration without measurements).

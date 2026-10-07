@@ -14,8 +14,9 @@ async function openAsCustomer(
   shop: SeedShopKey,
   keep: (order: Order) => boolean,
   before?: (store: ShopStore, order: Order) => Promise<unknown>,
+  layout: 'mobile' | 'desktop' = 'mobile',
 ) {
-  const app = await renderApp({ layout: 'mobile', shop, path: '/app' });
+  const app = await renderApp({ layout, shop, path: '/app' });
   const order = Object.values(app.store.getSnapshot().state.orders).find(keep)!;
   await act(async () => {
     await app.store.dispatch({ type: 'link.created', orderId: order.id, token: TOKEN });
@@ -95,6 +96,24 @@ describe('Public status page', () => {
       await screen.findByText('এই লিংকটি পাওয়া যায়নি। ডেমোতে লিংক শুধু যে ব্রাউজারে তৈরি হয়েছে সেখানেই খোলে।'),
     ).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'দর্জিখাতা ডেমো' })).toBeNull();
+  });
+
+  it('on a desktop shows each garment as a card with its three steps, and Call before the language button', async () => {
+    const { order } = await openAsCustomer('rahman', (o) => !isOrderClosed(o) && o.items.length > 1, undefined, 'desktop');
+    const garments = await screen.findByRole('list', { name: 'পোশাকের অবস্থা' });
+    const cards = [...garments.children] as HTMLElement[];
+    expect(cards).toHaveLength(order.items.length);
+    order.items.forEach((item, index) => {
+      if (item.cancelled) return;
+      const steps = within(cards[index]!).getAllByRole('listitem');
+      expect(steps).toHaveLength(3);
+      expect(steps.filter((step) => step.getAttribute('aria-current') === 'step')).toHaveLength(1);
+    });
+    const call = screen.getByRole('link', { name: 'দোকানে কল করুন' });
+    const english = screen.getByRole('button', { name: 'English' });
+    expect(call.compareDocumentPosition(english) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole('img', { name: /টির মধ্যে/ })).toBeTruthy();
+    expect(document.body.textContent).not.toContain('৳');
   });
 
   it('switches to English', async () => {
