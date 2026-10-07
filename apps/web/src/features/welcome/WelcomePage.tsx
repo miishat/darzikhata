@@ -5,22 +5,27 @@ import { useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { SEED_SHOPS, type SeedShopKey } from '../../seed/shops';
 import { LanguageToggle } from '../../shell/ShellParts';
+import { useShell } from '../../shell/ShellPreference';
 import { BrandMark } from '../../ui/BrandMark';
+import { DesktopWelcome } from './DesktopWelcome';
 
 const ICON: Record<SeedShopKey, LucideIcon> = { rahman: Shirt, nakshi: Sparkles, uniform: Building2 };
 
-/** First screen: pick one of the sample shops to explore. */
+/** First screen: pick one of the sample shops to explore. The desktop centres it, with the shops side by side. */
 export function WelcomePage() {
   const { t, label } = useI18n();
   const store = useStore();
   const navigate = useNavigate();
   const [opening, setOpening] = useState<SeedShopKey | null>(null);
+  const { kind } = useShell();
 
   const open = async (key: SeedShopKey) => {
     setOpening(key);
     await store.startDemo(key);
     navigate('/app');
   };
+
+  if (kind === 'desktop') return <DesktopWelcome icons={ICON} opening={opening} onOpen={open} />;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col">

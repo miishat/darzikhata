@@ -10,6 +10,13 @@ export const bn = {
   'welcome.title': 'দর্জিখাতা ডেমো',
   'welcome.subtitle': 'মাপ, অর্ডার আর বাকি টাকার হিসাব এক জায়গায়। একটি নমুনা দোকান বেছে নিন।',
   'welcome.note': 'সব তথ্য শুধু এই ব্রাউজারে থাকে। যেকোনো সময় রিসেট করা যায়।',
+  'welcome.features': 'যা যা করে দেখতে পারেন',
+  'welcome.feature.measurements': 'মাপের খাতা',
+  'welcome.feature.orders': 'অর্ডার ও ডেলিভারি',
+  'welcome.feature.payments': 'বাকি ও পেমেন্ট',
+  'welcome.feature.work': 'কাজের তালিকা',
+  'welcome.feature.printing': 'রসিদ, স্লিপ ও ট্যাগ প্রিন্ট',
+  'welcome.feature.offline': 'ইন্টারনেট ছাড়াও চলে',
   'welcome.open': 'এই দোকান খুলুন',
 
   'auth.whoIsUsing': 'কে ব্যবহার করছেন?',
