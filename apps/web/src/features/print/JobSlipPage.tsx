@@ -6,6 +6,8 @@ import { itemTitle } from '../common/orderText';
 import { useMeasurementAccess } from '../common/hooks';
 import { MeasurementTable } from '../customers/MeasurementTable';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
+import { useShell } from '../../shell/ShellPreference';
+import { JobSlipPaper, JobSlipSwitcher, useJobSlipVariant } from './JobSlipPrototype';
 
 /** What the tailor needs at the bench: notes and measurements per garment, with no prices. */
 export function JobSlipPage() {
@@ -14,6 +16,8 @@ export function JobSlipPage() {
   const { state, config } = useSnapshot();
   const hasAccess = useMeasurementAccess();
   const [language, setLanguage] = usePrintLanguage();
+  const { kind } = useShell();
+  const variant = useJobSlipVariant();
   const order = state.orders[orderId];
   if (!order || !config) {
     return (
@@ -28,6 +32,11 @@ export function JobSlipPage() {
 
   return (
     <PrintLayout back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }} title={t('print.jobSlip')} language={language} onLanguage={setLanguage} orderId={order.id}>
+      {kind === 'desktop' && <JobSlipSwitcher />}
+      {kind === 'desktop' && variant !== 'A' ? (
+        <JobSlipPaper variant={variant} language={language} config={config} order={order} customer={customer} mayMeasure={mayMeasure} />
+      ) : (
+      <>
       <h1 className="text-2xl font-semibold">{t('print.jobSlip')}</h1>
       <p className="mb-4">
         {t('receipt.orderNumber', { number: order.number })}
@@ -81,6 +90,8 @@ export function JobSlipPage() {
             </section>
           );
         })}
+      </>
+      )}
     </PrintLayout>
   );
 }
