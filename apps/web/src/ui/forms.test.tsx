@@ -6,6 +6,7 @@ import { Checkbox } from './Checkbox';
 import { ChoiceGroup } from './ChoiceGroup';
 import { SelectField } from './SelectField';
 import { TextAreaField } from './TextAreaField';
+import { chooseOption } from '../test/chooseOption';
 
 describe('SelectField', () => {
   it('links its label and reports the chosen value', async () => {
@@ -21,7 +22,7 @@ describe('SelectField', () => {
         onChange={onChange}
       />,
     );
-    await userEvent.selectOptions(screen.getByLabelText('পোশাক'), 'প্যান্ট');
+    await chooseOption(screen.getByLabelText('পোশাক'), 'প্যান্ট');
     expect(onChange).toHaveBeenCalledWith('pant');
   });
 

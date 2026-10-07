@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders } from './orderList';
 import { countViews } from './orderViews';
+import { chooseOption, optionLabels } from '../../test/chooseOption';
 
 const table = () => screen.getByRole('table', { name: 'অর্ডার তালিকা' });
 const bodyRows = () => within(table()).getAllByRole('row').slice(1);
@@ -96,7 +97,7 @@ describe('Orders list', () => {
   it('shows a branch chip for a chosen branch and takes it off with the chip', async () => {
     await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/orders' });
     await userEvent.click(await screen.findByRole('button', { name: /সব শাখা/ }));
-    await userEvent.selectOptions(await screen.findByLabelText('শাখা'), 'কারখানা');
+    await chooseOption(await screen.findByLabelText('শাখা'), 'কারখানা');
     const chips = within(await screen.findByRole('list', { name: 'চালু ফিল্টার' }));
     expect(chips.getByText('শাখা: কারখানা')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'শাখা: কারখানা সরান' }));
@@ -294,7 +295,9 @@ describe('Orders list', () => {
       .map((h) => h.textContent);
     expect(headers).toEqual(['কাস্টমার', 'পোশাক ও ধাপ', 'ডেলিভারি', 'কারিগর']);
     expect(screen.queryByRole('tab', { name: /^বাকি আছে/ })).toBeNull();
-    expect(screen.queryByRole('option', { name: 'বাকি বেশি আগে' })).toBeNull();
+    const sorts = await optionLabels(screen.getByRole('combobox', { name: 'সাজান' }));
+    expect(sorts.length).toBeGreaterThan(0);
+    expect(sorts).not.toContain('বাকি বেশি আগে');
   });
 
   it('opens an order on its own screen on mobile, with a way back to the same list', async () => {

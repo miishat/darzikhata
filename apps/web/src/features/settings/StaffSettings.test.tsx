@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 async function trySignIn(store: ShopStore, staffId: string, pin: string): Promise<boolean> {
   let ok = false;
@@ -19,7 +20,7 @@ describe('Staff settings on a phone', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'নতুন স্টাফ' }));
     const dialog = await screen.findByRole('dialog', { name: 'নতুন স্টাফ' });
     await userEvent.type(within(dialog).getByLabelText('নাম'), 'নতুন দর্জি');
-    await userEvent.selectOptions(within(dialog).getByLabelText('দায়িত্ব'), 'দর্জি');
+    await chooseOption(within(dialog).getByLabelText('দায়িত্ব'), 'দর্জি');
     await userEvent.type(within(dialog).getByLabelText('পিন'), '৬৬৬৬');
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'সব শাখা' }));
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'কারখানা' }));
@@ -50,7 +51,7 @@ describe('Staff settings on a phone', () => {
     const before = store.getSnapshot().config;
     await userEvent.click(await screen.findByRole('button', { name: 'কামাল হোসেন: বদলান' }));
     const dialog = await screen.findByRole('dialog', { name: 'কামাল হোসেন' });
-    await userEvent.selectOptions(within(dialog).getByLabelText('দায়িত্ব'), 'ম্যানেজার');
+    await chooseOption(within(dialog).getByLabelText('দায়িত্ব'), 'ম্যানেজার');
     await userEvent.click(within(dialog).getByRole('button', { name: 'সেভ করুন' }));
     expect(await within(dialog).findByText('নিজের দায়িত্ব বদলানো বা নিজেকে নিষ্ক্রিয় করা যাবে না')).toBeTruthy();
     expect(store.getSnapshot().config).toBe(before);

@@ -52,6 +52,11 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
 }
 
+/** The layout in use, or the phone's when there is no shell around (a component rendered on its own). */
+export function useShellKind(): ShellKind {
+  return useContext(ShellContext)?.kind ?? 'mobile';
+}
+
 export function useShell(): ShellContextValue {
   const context = useContext(ShellContext);
   if (!context) throw new Error('useShell must be used inside ShellProvider');

@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 const title = (order: Order, item: OrderItem) => `${item.garmentName.bn} ${toBanglaDigits(String(order.items.indexOf(item) + 1))}`;
 
@@ -65,7 +66,7 @@ describe('Order detail', () => {
 
     await pick(order, item, 'অন্য ধাপ…');
     const picker = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
-    await userEvent.selectOptions(within(picker).getByLabelText('নতুন ধাপ'), 'ডেলিভারি হয়েছে');
+    await chooseOption(within(picker).getByLabelText('নতুন ধাপ'), 'ডেলিভারি হয়েছে');
     await userEvent.click(within(picker).getByRole('button', { name: 'সেভ করুন' }));
 
     const confirm = await screen.findByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
@@ -86,7 +87,7 @@ describe('Order detail', () => {
 
     await pick(order, item, 'অন্য ধাপ…');
     const dialog = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
-    await userEvent.selectOptions(within(dialog).getByLabelText('নতুন ধাপ'), 'কাটিং');
+    await chooseOption(within(dialog).getByLabelText('নতুন ধাপ'), 'কাটিং');
     await userEvent.click(within(dialog).getByRole('button', { name: 'সেভ করুন' }));
     expect(within(dialog).getByText('কারণ লিখুন')).toBeTruthy();
     await userEvent.type(within(dialog).getByLabelText('আবার কাজের কারণ'), 'কাঁধ ভুল কাটা হয়েছে');

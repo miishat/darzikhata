@@ -2,6 +2,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 const supervisor = { staffId: 'uniform-supervisor', pin: '3333' };
 
@@ -115,7 +116,7 @@ describe('Work board', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'কারিগর ঠিক করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'কারিগর ঠিক করুন' });
-    await userEvent.selectOptions(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
+    await chooseOption(within(dialog).getByLabelText('কারিগর'), 'সেলিম শেখ');
     const preview = within(within(dialog).getByRole('list', { name: 'যা হবে' })).getAllByRole('listitem');
     expect(preview).toHaveLength(3);
     const changing = preview.filter((li) => !li.textContent?.includes('আগে থেকেই')).length;

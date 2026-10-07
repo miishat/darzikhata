@@ -3,6 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 const bn = (n: number) => toBanglaDigits(String(n));
 
@@ -30,7 +31,7 @@ describe('Template editor on a phone', () => {
   it('explains a stage list that would break tracking, and saves nothing', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/settings/templates/shirt' });
     const before = store.getSnapshot().config;
-    await userEvent.selectOptions(await screen.findByLabelText('ধাপ ৫: ধরন'), 'কাজ চলছে');
+    await chooseOption(await screen.findByLabelText('ধাপ ৫: ধরন'), 'কাজ চলছে');
     await userEvent.click(screen.getByRole('button', { name: 'সেভ করুন' }));
     expect(await screen.findByText('অন্তত একটি রেডি ধাপ লাগবে যা বাদ দেওয়া যায় না')).toBeTruthy();
     expect(store.getSnapshot().config).toBe(before);

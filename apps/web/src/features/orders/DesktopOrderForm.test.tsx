@@ -3,6 +3,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption, optionLabels } from '../../test/chooseOption';
 
 const region = (name: string) => screen.getByRole('region', { name });
 const save = () => userEvent.click(within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }));
@@ -256,8 +257,8 @@ describe('Worker field on desktop', () => {
     await addCustomerAndAlteration();
     const middle = garments();
     const worker = within(middle).getByLabelText('কারিগর');
-    expect(within(worker).getByRole('option', { name: 'কেউ নেই' })).toBeTruthy();
-    await userEvent.selectOptions(worker, 'আব্দুর রহমান');
+    expect(await optionLabels(worker)).toContain('কেউ নেই');
+    await chooseOption(worker, 'আব্দুর রহমান');
     if (!(within(middle).getByLabelText('দাম (প্রতিটি)') as HTMLInputElement).value) {
       await userEvent.type(within(middle).getByLabelText('দাম (প্রতিটি)'), '200');
     }

@@ -24,6 +24,7 @@ import {
   type TemplateForm,
 } from './templateInput';
 import { TEMPLATES_PATH, useTemplateDraft } from './useTemplateDraft';
+import { Select } from '../../ui/Select';
 
 const cell = 'px-2 py-2 align-top';
 const control =
@@ -152,29 +153,27 @@ function EditorForm({ initial, isNew }: { initial: TemplateForm; isNew: boolean 
                         />
                       </td>
                       <td className={cell}>
-                        <select
-                          aria-label={t('settings.field.unit', { n })}
+                        <Select
+                          size="md"
+                          label={t('settings.field.unit', { n })}
                           value={row.unit}
-                          onChange={(e) => patchField(i, { unit: e.target.value as FieldRow['unit'] })}
-                          className={control}
-                        >
-                          <option value="inch">{t('unit.inch')}</option>
-                          <option value="cm">{t('unit.cm')}</option>
-                        </select>
+                          options={[
+                            { value: 'inch', label: t('unit.inch') },
+                            { value: 'cm', label: t('unit.cm') },
+                          ]}
+                          onChange={(unit) => patchField(i, { unit: unit as FieldRow['unit'] })}
+                          className="w-full min-w-28"
+                        />
                       </td>
                       <td className={cell}>
-                        <select
-                          aria-label={t('settings.field.group', { n })}
+                        <Select
+                          size="md"
+                          label={t('settings.field.group', { n })}
                           value={row.group}
-                          onChange={(e) => patchField(i, { group: e.target.value })}
-                          className={control}
-                        >
-                          {groupOptions(row.group).map((g) => (
-                            <option key={g} value={g}>
-                              {groupLabel(g, t)}
-                            </option>
-                          ))}
-                        </select>
+                          options={groupOptions(row.group).map((g) => ({ value: g, label: groupLabel(g, t) }))}
+                          onChange={(group) => patchField(i, { group })}
+                          className="w-full min-w-28"
+                        />
                       </td>
                       <td className={cell}>
                         <Checkbox
@@ -238,18 +237,14 @@ function EditorForm({ initial, isNew }: { initial: TemplateForm; isNew: boolean 
                         />
                       </td>
                       <td className={cell}>
-                        <select
-                          aria-label={t('settings.stage.group', { n })}
+                        <Select
+                          size="md"
+                          label={t('settings.stage.group', { n })}
                           value={row.group}
-                          onChange={(e) => patchStage(i, { group: e.target.value as StageRow['group'] })}
-                          className={control}
-                        >
-                          {stageKinds.map((g) => (
-                            <option key={g} value={g}>
-                              {t(`stageGroup.${g}`)}
-                            </option>
-                          ))}
-                        </select>
+                          options={stageKinds.map((g) => ({ value: g, label: t(`stageGroup.${g}`) }))}
+                          onChange={(group) => patchStage(i, { group: group as StageRow['group'] })}
+                          className="w-full min-w-28"
+                        />
                       </td>
                       <td className={cell}>
                         <Checkbox

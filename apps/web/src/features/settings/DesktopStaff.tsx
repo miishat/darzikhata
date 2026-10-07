@@ -12,6 +12,7 @@ import { TextField } from '../../ui/TextField';
 import { SECTION_BODY, SectionHeader } from './SettingsCards';
 import { staffForm, type StaffForm } from './staffInput';
 import { useStaffSave } from './useStaffSave';
+import { Select } from '../../ui/Select';
 
 /** The parts of the app a role reaches, named from the start of its capabilities. */
 const AREAS: Array<{ prefix: string; label: MessageKey }> = [
@@ -100,18 +101,13 @@ export function DesktopStaff() {
                   </span>
                 </th>
                 <td className="px-3 py-2">
-                  <select
-                    aria-label={t('settings.staff.roleOf', { name: staff.name })}
+                  <Select
+                    label={t('settings.staff.roleOf', { name: staff.name })}
                     value={staff.roleId}
-                    onChange={(e) => void quick(staff, { roleId: e.target.value })}
-                    className="min-h-10 rounded-lg border border-line bg-panel px-2 text-sm focus-visible:outline-2 focus-visible:outline-focus"
-                  >
-                    {config.roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name[language]}
-                      </option>
-                    ))}
-                  </select>
+                    options={config.roles.map((r) => ({ value: r.id, label: r.name[language] }))}
+                    onChange={(roleId) => void quick(staff, { roleId })}
+                    className="w-48"
+                  />
                 </td>
                 <td className="px-3 py-2 text-sm">{branchText(staff)}</td>
                 <td className="px-3 py-2">

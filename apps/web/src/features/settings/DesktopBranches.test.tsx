@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
+import { chooseOption } from '../../test/chooseOption';
 
 describe('Desktop branches', () => {
   it('adds a branch beside the list, after which the branch switcher appears', async () => {
@@ -25,7 +26,7 @@ describe('Desktop branches', () => {
 
   it('moves a device to another branch at once', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/settings/branches' });
-    await userEvent.selectOptions(await screen.findByLabelText('শাখা: দোকানের কম্পিউটার'), 'কারখানা');
+    await chooseOption(await screen.findByLabelText('শাখা: দোকানের কম্পিউটার'), 'কারখানা');
     expect(await screen.findByText('সেভ হয়েছে')).toBeTruthy();
     expect(store.getSnapshot().config!.devices[0]!.branchId).toBe('workshop');
     // It has left the chosen branch's list; the other branch now has it.
