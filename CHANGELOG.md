@@ -22,7 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - The account popup shows who is signed in with Switch User, then language, colour theme and screen layout always in view instead of rows that expand, then the demo controls.
   - The sync popup shows the status with the online switch, a full-width Sync Now button with what is waiting, a highlighted link when changes need review, and the other-device button with its hint centred under it.
   - Neither popup shows a title, since the first line already says what it is; screen readers still announce it.
-  - Both grow out of the button that opened them while the page dims, their sections fade in turn, and they shrink away on closing. The card grows as one picture and is drawn sharp once it lands, so its text does not shimmer. The Reset Demo Data and Choose Another Sample Shop confirms do the same. Reduced motion turns this off. Phones are unchanged.
+  - Both grow out of the button that opened them while the page dims, and they shrink away on closing. Only the card moves, grown as one picture and drawn sharp once it lands, so its text does not jitter. The Reset Demo Data and Choose Another Sample Shop confirms do the same. Reduced motion turns this off. Phones are unchanged.
 - Settings editors on a desktop:
   - Garments are a table with each garment's price, measurement count, stages and status. Opening one slides its editor in from the right with three tabs: Name and Price, Measurement Fields, and Stages. Fields sit under their group, with an inch / cm toggle on each. Stages sit in three boxes (In Progress, Ready, Delivered), each with its own Add button, so stages always stay in the order tracking needs. A refused save opens the tab with the problem.
   - Staff are a table where a person's role and on/off switch save at once. The pencil opens their name, PIN, role and branches in a side panel, where each role card says what that role can use.
@@ -63,6 +63,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The desktop customer directory card keeps its full height when the list is short.
+- The desktop customer profile panel shows the customer's second name under their name.
 - Switching garments on the measurement page no longer keeps the previous garment's values in the form.
 - On the desktop new order form, a newly added garment is chosen in the same click, so typing straight into its measurements can no longer land on the previous garment (which left the new one missing a measurement and the order refused on save).
 - Taking new measurements for a customer on a phone uses the in-app keypad when it is on, instead of always opening the phone's keyboard.
