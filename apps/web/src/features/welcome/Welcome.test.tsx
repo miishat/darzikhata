@@ -15,11 +15,15 @@ describe('Welcome on a desktop', () => {
     expect(screen.queryByText('যা যা করে দেখতে পারেন')).toBeNull();
   });
 
-  it('switches to English', async () => {
+  it('shows both languages with the current one pressed, and switches to English', async () => {
     await renderApp({ layout: 'desktop' });
-    await userEvent.click(await screen.findByRole('button', { name: 'English' }));
+    const switcher = within(await screen.findByRole('group', { name: 'ভাষা' }));
+    expect(switcher.getByRole('button', { name: 'বাংলা' }).getAttribute('aria-pressed')).toBe('true');
+    expect(switcher.getByRole('button', { name: 'English' }).getAttribute('aria-pressed')).toBe('false');
+    await userEvent.click(switcher.getByRole('button', { name: 'English' }));
     expect(await screen.findByRole('heading', { name: 'DarziKhata Demo' })).toBeTruthy();
     expect(within(screen.getByRole('list', { name: 'What You Can Try' })).getByText('Works Offline')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Language' })).getByRole('button', { name: 'English' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
 
