@@ -19,6 +19,7 @@ export const SIGN_IN_VARIANTS = {
   G: 'C with the number pad in a card under the faces, and "back to the app" as a link at the top left',
   H: 'C keyboard first: four PIN boxes you type into, the number pad only when you ask for it, a round close at the top right',
   I: 'C clock on top, then a D-style card: the staff list on the left and the PIN pad on the right',
+  J: 'F without the "someone else" key, since the faces above already switch, and the shop name large',
 };
 
 export function useSignInVariant() {
@@ -412,15 +413,22 @@ function Keys({ entry, onBack, small = false }: { entry: Entry; onBack?: (() => 
   );
 }
 
-function ShopClock({ config, compact = false }: { config: ShopConfig; compact?: boolean }) {
+function ShopClock({ config, compact = false, bigName = false }: { config: ShopConfig; compact?: boolean; bigName?: boolean }) {
   const { language } = useI18n();
   const today = useToday();
   return (
     <>
-      <p className="flex items-center gap-2 text-sm font-semibold text-muted">
-        <BrandMark size={22} />
-        {shopContact(config, language).name}
-      </p>
+      {bigName ? (
+        <p className="flex items-center gap-3 font-display text-4xl font-bold">
+          <BrandMark size={44} />
+          {shopContact(config, language).name}
+        </p>
+      ) : (
+        <p className="flex items-center gap-2 text-sm font-semibold text-muted">
+          <BrandMark size={22} />
+          {shopContact(config, language).name}
+        </p>
+      )}
       <p className={`font-display font-bold tabular-nums ${compact ? 'mt-3 text-5xl' : 'mt-6 text-7xl'}`}>{today.time}</p>
       <p className="mt-1 text-lg text-muted">{today.day}</p>
     </>
@@ -497,12 +505,12 @@ function Heading({ chosen }: { chosen: Staff | null }) {
   return <h1 className="mt-10 text-xl font-semibold">{chosen ? t('auth.enterPin', { name: chosen.name }) : t('auth.whoIsUsing')}</h1>;
 }
 
-function ChosenPad({ props, small = false }: { props: SignInScreenProps; small?: boolean }) {
+function ChosenPad({ props, small = false, back = true }: { props: SignInScreenProps; small?: boolean; back?: boolean }) {
   const entry = usePinEntry(props.onPin);
   return (
     <>
       <Dots entry={entry} error={props.error} />
-      <Keys entry={entry} onBack={() => props.onChoose(null)} small={small} />
+      <Keys entry={entry} onBack={back ? () => props.onChoose(null) : undefined} small={small} />
     </>
   );
 }
@@ -518,6 +526,26 @@ function LockKeys(props: SignInScreenProps) {
       {props.chosen && (
         <div key={props.chosen.id} className="mt-6 flex w-full max-w-xs flex-col gap-2">
           <ChosenPad props={props} />
+        </div>
+      )}
+      <div className="mt-auto pt-8">
+        <Demo />
+      </div>
+    </main>
+  );
+}
+
+/** J: F without the "someone else" key (the faces above already switch), and the shop name large. */
+function LockKeysBigName(props: SignInScreenProps) {
+  return (
+    <main className="flex min-h-dvh flex-col items-center bg-gradient-to-b from-brand-soft to-surface px-10 pt-[7vh] pb-10">
+      <CornerClose props={props} />
+      <ShopClock config={props.config} bigName />
+      <Heading chosen={props.chosen} />
+      <Faces props={props} />
+      {props.chosen && (
+        <div key={props.chosen.id} className="mt-6 flex w-full max-w-xs flex-col gap-2">
+          <ChosenPad props={props} back={false} />
         </div>
       )}
       <div className="mt-auto pt-8">
@@ -673,6 +701,7 @@ export function SignInScreen(props: SignInScreenProps): ReactNode {
   if (props.variant === 'G') return <LockCard {...props} />;
   if (props.variant === 'H') return <LockType {...props} />;
   if (props.variant === 'I') return <LockTwoColumn {...props} />;
+  if (props.variant === 'J') return <LockKeysBigName {...props} />;
   if (props.variant === 'B') return <Split {...props} />;
   if (props.variant === 'C') return <LockScreen {...props} />;
   if (props.variant === 'D') return <TwoColumn {...props} />;
