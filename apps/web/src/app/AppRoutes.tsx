@@ -31,6 +31,11 @@ const StaffSettings = lazyPage(() => import('../features/settings/StaffSettings'
 const BranchSettings = lazyPage(() => import('../features/settings/BranchSettings'), 'BranchSettings');
 const TemplatesSettings = lazyPage(() => import('../features/settings/TemplatesSettings'), 'TemplatesSettings');
 const TemplateEditor = lazyPage(() => import('../features/settings/TemplateEditor'), 'TemplateEditor');
+// PROTOTYPE wiring: settings editor variants behind ?variant=.
+const TemplatesProto = lazyPage(() => import('../features/settings/SettingsEditorsPrototype'), 'TemplatesProto');
+const TemplateEditorProto = lazyPage(() => import('../features/settings/SettingsEditorsPrototype'), 'TemplateEditorProto');
+const StaffProto = lazyPage(() => import('../features/settings/SettingsEditorsPrototype'), 'StaffProto');
+const BranchesProto = lazyPage(() => import('../features/settings/SettingsEditorsPrototype'), 'BranchesProto');
 const ReviewPage = lazyPage(() => import('../features/sync/ReviewPage'), 'ReviewPage');
 const StatusPage = lazyPage(() => import('../features/links/StatusPage'), 'StatusPage');
 
@@ -149,7 +154,7 @@ export function AppRoutes() {
             path="templates"
             element={
               <RequireCapability anyOf={['settings.edit']}>
-                <TemplatesSettings />
+                <TemplatesProto />
               </RequireCapability>
             }
           />
@@ -157,7 +162,7 @@ export function AppRoutes() {
             path="templates/new"
             element={
               <RequireCapability anyOf={['settings.edit']}>
-                <TemplateEditor />
+                <TemplateEditorProto />
               </RequireCapability>
             }
           />
@@ -165,7 +170,7 @@ export function AppRoutes() {
             path="templates/:templateId"
             element={
               <RequireCapability anyOf={['settings.edit']}>
-                <TemplateEditor />
+                <TemplateEditorProto />
               </RequireCapability>
             }
           />
@@ -173,7 +178,7 @@ export function AppRoutes() {
             path="staff"
             element={
               <RequireCapability anyOf={['staff.manage']}>
-                <StaffSettings />
+                <StaffProto />
               </RequireCapability>
             }
           />
@@ -181,7 +186,7 @@ export function AppRoutes() {
             path="branches"
             element={
               <RequireCapability anyOf={['settings.edit']}>
-                <BranchSettings />
+                <BranchesProto />
               </RequireCapability>
             }
           />
