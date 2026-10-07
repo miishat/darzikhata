@@ -7,6 +7,7 @@ import { NumberField } from '../../ui/NumberField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { TextField } from '../../ui/TextField';
 import { Shell, useSave } from '../orders/itemDialogs';
+import { MoneyPrototype } from './MoneyDialogsPrototype';
 
 interface Props {
   order: Order;
@@ -26,7 +27,7 @@ function useMethods() {
  */
 
 /** Takes money for the order. An order with no payments yet gets an advance. */
-export function TakePaymentDialog({ order, onClose }: Props) {
+function TakePaymentDialogA({ order, onClose }: Props) {
   const { t } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
@@ -72,7 +73,7 @@ export function TakePaymentDialog({ order, onClose }: Props) {
 }
 
 /** Gives money back. Needs a reason and never more than is held. */
-export function RefundDialog({ order, onClose }: Props) {
+function RefundDialogA({ order, onClose }: Props) {
   const { t } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
@@ -123,7 +124,7 @@ export function RefundDialog({ order, onClose }: Props) {
 }
 
 /** Fixes a wrong amount with a new record for the difference. The original stays in the history. */
-export function CorrectionDialog({ order, payment, onClose }: Props & { payment: Payment }) {
+function CorrectionDialogA({ order, payment, onClose }: Props & { payment: Payment }) {
   const { t, money } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
@@ -173,7 +174,7 @@ export function CorrectionDialog({ order, payment, onClose }: Props & { payment:
 }
 
 /** Sets or clears the discount. The edit carries the order version this dialog opened with. */
-export function DiscountDialog({ order, onClose }: Props) {
+function DiscountDialogA({ order, onClose }: Props) {
   const { t } = useI18n();
   const { problem, working, save } = useSave(onClose);
   const opened = useRef(order);
@@ -207,7 +208,7 @@ export function DiscountDialog({ order, onClose }: Props) {
 }
 
 /** Adds a signed line to the price, with the reason. */
-export function PriceAdjustmentDialog({ order, onClose }: Props) {
+function PriceAdjustmentDialogA({ order, onClose }: Props) {
   const { t } = useI18n();
   const store = useStore();
   const { problem, working, save } = useSave(onClose);
@@ -253,3 +254,10 @@ export function PriceAdjustmentDialog({ order, onClose }: Props) {
     </Shell>
   );
 }
+
+// PROTOTYPE wiring: each dialog goes through the variant switch.
+export const TakePaymentDialog = (p: Props) => <MoneyPrototype kind="take" {...p} current={<TakePaymentDialogA {...p} />} />;
+export const RefundDialog = (p: Props) => <MoneyPrototype kind="refund" {...p} current={<RefundDialogA {...p} />} />;
+export const DiscountDialog = (p: Props) => <MoneyPrototype kind="discount" {...p} current={<DiscountDialogA {...p} />} />;
+export const PriceAdjustmentDialog = (p: Props) => <MoneyPrototype kind="adjust" {...p} current={<PriceAdjustmentDialogA {...p} />} />;
+export const CorrectionDialog = (p: Props & { payment: Payment }) => <MoneyPrototype kind="correct" {...p} current={<CorrectionDialogA {...p} />} />;
