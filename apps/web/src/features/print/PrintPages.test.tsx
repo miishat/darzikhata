@@ -172,4 +172,22 @@ describe('Fabric tags', () => {
     expect(tags[0]!.textContent).toContain(order.number);
     expect(tags[0]!.textContent).toContain(first.wearer!);
   });
+
+  it('gives each desktop tag a claim stub with the order number and the date to collect', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/print/tags/uniform-o27' });
+    const order = store.getSnapshot().state.orders['uniform-o27']!;
+    expect(await screen.findByRole('heading', { name: 'কাপড়ের ট্যাগ' })).toBeTruthy();
+    expect(screen.getByText('২৪টি ট্যাগ · কেটে কাপড়ে লাগান')).toBeTruthy();
+    const stubs = screen.getAllByRole('group', { name: 'গ্রাহকের অংশ' });
+    expect(stubs).toHaveLength(24);
+    expect(stubs[0]!.textContent).toContain(order.number);
+    if (order.items[0]!.deliveryDate) expect(stubs[0]!.textContent).toContain('নিতে আসুন');
+  });
+
+  it('keeps the phone tags plain, with no stub', async () => {
+    await renderApp({ layout: 'mobile', shop: 'uniform', path: '/print/tags/uniform-o27' });
+    expect(await screen.findByRole('heading', { name: 'কাপড়ের ট্যাগ' })).toBeTruthy();
+    expect(within(screen.getByRole('list', { name: 'কাপড়ের ট্যাগ' })).getAllByRole('listitem')).toHaveLength(24);
+    expect(screen.queryByRole('group', { name: 'গ্রাহকের অংশ' })).toBeNull();
+  });
 });
