@@ -27,12 +27,26 @@ import { wearerGroups } from './wearers';
 
 export const FULL_VARIANTS = {
   A: 'Current page',
-  C: 'Panel stretched: summary tiles, garment grid, sticky action bar',
-  G: 'Fixed top, action bar pinned to the bottom, papers joined in the header',
-  H: 'G with the joined paper icons beside the tabs',
-  I: 'G with the papers beside the tabs as labelled buttons',
-  J: 'G with the paper icons in a track matching the tabs',
-  K: 'G with the three papers joined, Share and Order Again labelled',
+  I: 'Papers as labelled buttons beside the tabs, customer card in the header',
+  K: 'Three papers joined, Share and Order Again labelled, customer card in the header',
+  L: 'I with the customer on a line under the order number',
+  M: 'K with the customer on a line under the order number',
+  N: 'I with the customer as the first cell of the numbers strip',
+  O: 'K with the customer as the first cell of the numbers strip',
+  P: 'I led by the customer, order number on the right',
+  Q: 'K led by the customer, order number on the right',
+};
+
+/** Which paper buttons and which customer placement each variant uses. */
+const SHAPE: Record<string, { papers: 'labelled' | 'split'; customer: 'card' | 'inline' | 'strip' | 'lead' }> = {
+  I: { papers: 'labelled', customer: 'card' },
+  K: { papers: 'split', customer: 'card' },
+  L: { papers: 'labelled', customer: 'inline' },
+  M: { papers: 'split', customer: 'inline' },
+  N: { papers: 'labelled', customer: 'strip' },
+  O: { papers: 'split', customer: 'strip' },
+  P: { papers: 'labelled', customer: 'lead' },
+  Q: { papers: 'split', customer: 'lead' },
 };
 const KEYS = Object.keys(FULL_VARIANTS);
 
@@ -509,6 +523,8 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
   const can = useCan();
   const f = useFullOrder(order);
   const [tab, setTab] = useState<Tab>('garments');
+  const shape = SHAPE[take] ?? SHAPE.I!;
+  const customer = f.customer;
   const progress = orderProgress(order);
   const live = order.items.filter((i) => !i.cancelled);
   const done = progress.ready + progress.delivered;
@@ -585,13 +601,59 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
           <button type="button" aria-label={t('common.close')} onClick={onClose} className="flex size-10 shrink-0 items-center justify-center rounded-full border border-line hover:bg-surface">
             <X size={18} aria-hidden="true" />
           </button>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-2xl font-bold tracking-wide">{order.number}</h1>
-              <StatusPill order={order} />
+          {shape.customer === 'lead' && customer ? (
+            <>
+              <Avatar id={customer.id} name={customer.name} size="lg" />
+              <div className="min-w-0 flex-1">
+                <Link to={`/app/customers/${customer.id}`} className="block truncate font-display text-2xl font-bold hover:underline">
+                  {customer.name}
+                </Link>
+                <p className="flex items-center gap-3 text-sm text-muted">
+                  {customer.phone && <span>{customer.phone}</span>}
+                  {customer.phone && (
+                    <a href={`tel:${customer.phone}`} className="inline-flex items-center gap-1 rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok">
+                      <Phone size={12} aria-hidden="true" />
+                      {t('order.call')}
+                    </a>
+                  )}
+                  <Link to={`/app/customers/${customer.id}`} className="text-xs font-semibold text-brand-strong">
+                    {pick(language, 'প্রোফাইল দেখুন', 'View Profile')}
+                  </Link>
+                </p>
+              </div>
+              <div className="min-w-0 text-end">
+                <div className="flex items-center justify-end gap-3">
+                  <StatusPill order={order} />
+                  <h1 className="font-display text-2xl font-bold tracking-wide">{order.number}</h1>
+                </div>
+                <p className="truncate text-sm text-muted">{f.byline}</p>
+              </div>
+            </>
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-2xl font-bold tracking-wide">{order.number}</h1>
+                <StatusPill order={order} />
+              </div>
+              {shape.customer === 'inline' && customer ? (
+                <p className="mt-1 flex min-w-0 items-center gap-2 text-sm">
+                  <Avatar id={customer.id} name={customer.name} size="sm" />
+                  <Link to={`/app/customers/${customer.id}`} className="truncate font-semibold hover:underline">
+                    {customer.name}
+                  </Link>
+                  {customer.phone && <span className="text-muted">{customer.phone}</span>}
+                  {customer.phone && (
+                    <a href={`tel:${customer.phone}`} aria-label={t('order.call')} className="flex size-7 items-center justify-center rounded-full bg-ok-soft text-ok">
+                      <Phone size={14} aria-hidden="true" />
+                    </a>
+                  )}
+                  <span className="truncate text-muted">· {f.byline}</span>
+                </p>
+              ) : (
+                <p className="truncate text-sm text-muted">{f.byline}</p>
+              )}
             </div>
-            <p className="truncate text-sm text-muted">{f.byline}</p>
-          </div>
+          )}
           {take === 'G' && <PaperGroup order={order} onShare={share} />}
           {take === 'E' && (
             <div className="flex items-center gap-2">
@@ -600,11 +662,31 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
               <PaperMenu order={order} onShare={share} />
             </div>
           )}
-          <div className="w-72 shrink-0">
-            <CustomerCard order={order} compact />
-          </div>
+          {shape.customer === 'card' && (
+            <div className="w-72 shrink-0">
+              <CustomerCard order={order} compact />
+            </div>
+          )}
         </header>
-        <div className="grid grid-cols-5 divide-x divide-line border-t border-line bg-surface/50">
+        <div
+          className={`grid divide-x divide-line border-t border-line bg-surface/50 ${shape.customer === 'strip' ? 'grid-cols-[minmax(0,1.7fr)_repeat(5,minmax(0,1fr))]' : 'grid-cols-5'}`}
+        >
+          {shape.customer === 'strip' && customer && (
+            <div className="flex items-center gap-3 px-5 py-3">
+              <Avatar id={customer.id} name={customer.name} />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <Link to={`/app/customers/${customer.id}`} className="truncate font-semibold hover:underline">
+                  {customer.name}
+                </Link>
+                {customer.phone && <span className="truncate text-sm text-muted">{customer.phone}</span>}
+              </div>
+              {customer.phone && (
+                <a href={`tel:${customer.phone}`} aria-label={t('order.call')} className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ok-soft text-ok">
+                  <Phone size={16} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          )}
           {stat(
             pick(language, 'রেডি', 'Ready'),
             `${number(done)} / ${number(live.length)}`,
@@ -654,14 +736,14 @@ function FullD({ order, onClose, take }: { order: Order; onClose(): void; take: 
                 <PaperGroup order={order} onShare={share} />
               </div>
             )}
-            {(take === 'H' || take === 'I' || take === 'J' || take === 'K') && (
+            {shape && (
               <div className="ms-auto">
-                <PaperGroup order={order} onShare={share} look={take === 'I' ? 'labelled' : take === 'J' ? 'track' : take === 'K' ? 'split' : 'joined'} />
+                <PaperGroup order={order} onShare={share} look={shape.papers} />
               </div>
             )}
           </div>
           {content}
-          {['G', 'H', 'I', 'J', 'K'].includes(take) && (f.ready.length > 0 || f.showTake) && (
+          {(f.ready.length > 0 || f.showTake) && (
             <div className="-mt-1 flex shrink-0 items-center justify-end gap-2 rounded-2xl border border-line bg-panel px-5 py-3">
               <span className="me-auto flex items-baseline gap-4 text-sm text-muted">
                 {can('money.view') && (
