@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface DialogProps {
@@ -18,10 +18,11 @@ const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:n
 /** Open dialogs, oldest first; only the last one answers Escape. */
 const openStack: symbol[] = [];
 
-/** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
-export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false }: DialogProps) {
-  const panel = useRef<HTMLDivElement>(null);
-  const titleId = useId();
+/**
+ * What every modal shares: it takes focus (an element marked `data-autofocus` if there is one, else the panel),
+ * keeps Tab inside, closes on Escape when it is the top one, and returns focus afterwards.
+ */
+export function useModalFocus(open: boolean, panel: RefObject<HTMLElement | null>, onClose: () => void) {
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -30,7 +31,7 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
     const id = Symbol('dialog');
     openStack.push(id);
     const previous = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
+    (panel.current?.querySelector<HTMLElement>('[data-autofocus]') ?? panel.current)?.focus();
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (openStack[openStack.length - 1] !== id) return;
@@ -63,7 +64,14 @@ export function Dialog({ open, title, onClose, children, actions, hideTitleOnPho
       if (at >= 0) openStack.splice(at, 1);
       previous?.focus();
     };
-  }, [open]);
+  }, [open, panel]);
+}
+
+/** A modal that takes focus, closes on Escape or a backdrop click, and returns focus afterwards. */
+export function Dialog({ open, title, onClose, children, actions, hideTitleOnPhone = false, actionsDesktopOnly = false }: DialogProps) {
+  const panel = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useModalFocus(open, panel, onClose);
 
   if (!open) return null;
   // Portalled to the body so a header's or panel's stacking context cannot put the page's fixed bars over it.

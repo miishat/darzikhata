@@ -1,19 +1,15 @@
-import { correctedAmount, moneySummary, netPaid, type Order, type Payment, type PaymentMethod } from '@darzikhata/domain';
-import { useRef, useState } from 'react';
-import { useStore } from '../../data/StoreContext';
+import type { Payment } from '@darzikhata/domain';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShell } from '../../shell/ShellPreference';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
 import { NumberField } from '../../ui/NumberField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { TextField } from '../../ui/TextField';
-import { Shell, useSave } from '../orders/itemDialogs';
+import { Shell } from '../orders/itemDialogs';
+import { DesktopMoneyDialog } from './DesktopMoneyDialog';
+import { METHODS, useMoneyAction, type MoneyAction, type MoneyActionProps } from './useMoneyAction';
 
-interface Props {
-  order: Order;
-  onClose(): void;
-}
-
-const METHODS: PaymentMethod[] = ['cash', 'bkash', 'nagad', 'bank'];
+type Props = MoneyActionProps;
 
 function useMethods() {
   const { t } = useI18n();
@@ -23,233 +19,116 @@ function useMethods() {
 /*
  * Every dialog here is a plain frame with a save button, never a form, so pressing Enter
  * in a field records nothing. Money is recorded only by clicking the button.
+ * On a desktop each one opens as the wider money window instead.
  */
 
+function MoneyDialog({ kind, payment, ...props }: Props & { kind: MoneyAction; payment?: Payment }) {
+  const { kind: shell } = useShell();
+  if (shell === 'desktop') return <DesktopMoneyDialog kind={kind} payment={payment} {...props} />;
+  switch (kind) {
+    case 'take':
+      return <TakePaymentSheet {...props} />;
+    case 'refund':
+      return <RefundSheet {...props} />;
+    case 'discount':
+      return <DiscountSheet {...props} />;
+    case 'adjust':
+      return <PriceAdjustmentSheet {...props} />;
+    case 'correct':
+      return payment ? <CorrectionSheet payment={payment} {...props} /> : null;
+  }
+}
+
 /** Takes money for the order. An order with no payments yet gets an advance. */
-export function TakePaymentDialog({ order, onClose }: Props) {
-  const { t } = useI18n();
-  const store = useStore();
-  const { problem, working, save } = useSave(onClose);
-  const methods = useMethods();
-  const [id] = useState(() => store.createId());
-  const balance = moneySummary(order).balance;
-  const [amount, setAmount] = useState<number | null>(balance > 0 ? balance : null);
-  const [method, setMethod] = useState<PaymentMethod>('cash');
-  const [reference, setReference] = useState('');
-  const [tried, setTried] = useState(false);
-
-  const submit = () => {
-    setTried(true);
-    if (amount === null || amount <= 0) return;
-    void save({
-      type: 'payment.recorded',
-      orderId: order.id,
-      payment: {
-        id: id,
-        amount,
-        method,
-        reference: reference.trim(),
-        kind: order.payments.length === 0 ? 'advance' : 'payment',
-        corrects: null,
-        reason: '',
-      },
-    });
-  };
-
-  return (
-    <Shell title={t('payments.takeTitle')} onClose={onClose} onSave={submit} working={working} problem={problem} saveLabel={t('payments.record')}>
-      <NumberField
-        label={t('payments.amount')}
-        kind="money"
-        initialValue={balance > 0 ? balance : null}
-        onValueChange={setAmount}
-        error={tried && (amount === null || amount <= 0) ? t('payments.error.amount') : undefined}
-      />
-      <ChoiceGroup legend={t('payment.method')} value={method} options={methods} onChange={setMethod} />
-      <TextField label={t('payment.reference')} value={reference} onChange={(e) => setReference(e.target.value)} autoComplete="off" />
-    </Shell>
-  );
+export function TakePaymentDialog(props: Props) {
+  return <MoneyDialog kind="take" {...props} />;
 }
 
 /** Gives money back. Needs a reason and never more than is held. */
-export function RefundDialog({ order, onClose }: Props) {
-  const { t } = useI18n();
-  const store = useStore();
-  const { problem, working, save } = useSave(onClose);
-  const methods = useMethods();
-  const [id] = useState(() => store.createId());
-  const held = netPaid(order.payments);
-  const credit = moneySummary(order).creditDue;
-  const [amount, setAmount] = useState<number | null>(credit > 0 ? credit : null);
-  const [method, setMethod] = useState<PaymentMethod>('cash');
-  const [reason, setReason] = useState('');
-  const [tried, setTried] = useState(false);
-
-  const amountError = (): string | undefined => {
-    if (!tried) return undefined;
-    if (amount === null || amount <= 0) return t('payments.error.amount');
-    if (amount > held) return t('payments.error.refundTooMuch');
-    return undefined;
-  };
-
-  const submit = () => {
-    setTried(true);
-    if (amount === null || amount <= 0 || amount > held || !reason.trim()) return;
-    void save({
-      type: 'payment.recorded',
-      orderId: order.id,
-      payment: { id: id, amount, method, reference: '', kind: 'refund', corrects: null, reason: reason.trim() },
-    });
-  };
-
-  return (
-    <Shell title={t('payments.refundTitle')} onClose={onClose} onSave={submit} working={working} problem={problem} saveLabel={t('payments.doRefund')}>
-      <NumberField
-        label={t('payments.amount')}
-        kind="money"
-        initialValue={credit > 0 ? credit : null}
-        onValueChange={setAmount}
-        error={amountError()}
-      />
-      <ChoiceGroup legend={t('payment.method')} value={method} options={methods} onChange={setMethod} />
-      <TextAreaField
-        label={t('payments.refundReason')}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        error={tried && !reason.trim() ? t('item.reasonRequired') : undefined}
-      />
-    </Shell>
-  );
+export function RefundDialog(props: Props) {
+  return <MoneyDialog kind="refund" {...props} />;
 }
 
 /** Fixes a wrong amount with a new record for the difference. The original stays in the history. */
-export function CorrectionDialog({ order, payment, onClose }: Props & { payment: Payment }) {
-  const { t, money } = useI18n();
-  const store = useStore();
-  const { problem, working, save } = useSave(onClose);
-  const [id] = useState(() => store.createId());
-  const current = correctedAmount(order.payments, payment.id);
-  const [amount, setAmount] = useState<number | null>(null);
-  const [reason, setReason] = useState('');
-  const [tried, setTried] = useState(false);
-
-  const amountError = (): string | undefined => {
-    if (!tried) return undefined;
-    if (amount === null) return t('payments.error.amount');
-    if (amount === current) return t('payments.error.noChange');
-    return undefined;
-  };
-
-  const submit = () => {
-    setTried(true);
-    if (amount === null || amount === current || !reason.trim()) return;
-    void save({
-      type: 'payment.recorded',
-      orderId: order.id,
-      payment: {
-        id: id,
-        amount: amount - current,
-        method: payment.method,
-        reference: '',
-        kind: 'correction',
-        corrects: payment.id,
-        reason: reason.trim(),
-      },
-    });
-  };
-
-  return (
-    <Shell title={t('payments.correct')} onClose={onClose} onSave={submit} working={working} problem={problem}>
-      <p className="font-semibold">{t('payments.nowRecorded', { amount: money(current) })}</p>
-      <NumberField label={t('payments.correctAmount')} kind="money" onValueChange={setAmount} error={amountError()} />
-      <TextAreaField
-        label={t('payments.correctReason')}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        error={tried && !reason.trim() ? t('item.reasonRequired') : undefined}
-      />
-    </Shell>
-  );
+export function CorrectionDialog(props: Props & { payment: Payment }) {
+  return <MoneyDialog kind="correct" {...props} />;
 }
 
-/** Sets or clears the discount. The edit carries the order version this dialog opened with. */
-export function DiscountDialog({ order, onClose }: Props) {
-  const { t } = useI18n();
-  const { problem, working, save } = useSave(onClose);
-  const opened = useRef(order);
-  const [amount, setAmount] = useState<number | null>(order.discount?.amount ?? null);
-  const [reason, setReason] = useState(order.discount?.reason ?? '');
-  const [tried, setTried] = useState(false);
-
-  const submit = () => {
-    setTried(true);
-    if (amount === null) return;
-    void save({
-      type: 'order.discountSet',
-      orderId: order.id,
-      baseVersion: opened.current.version,
-      discount: amount === 0 ? null : { amount, reason: reason.trim() },
-    });
-  };
-
-  return (
-    <Shell title={t('payments.discount')} onClose={onClose} onSave={submit} working={working} problem={problem}>
-      <NumberField
-        label={t('entry.discount')}
-        kind="money"
-        initialValue={order.discount?.amount ?? null}
-        onValueChange={setAmount}
-        error={tried && amount === null ? t('payments.error.amount') : undefined}
-      />
-      <TextField label={t('entry.discountReason')} value={reason} onChange={(e) => setReason(e.target.value)} autoComplete="off" />
-    </Shell>
-  );
+/** Sets or clears the discount. */
+export function DiscountDialog(props: Props) {
+  return <MoneyDialog kind="discount" {...props} />;
 }
 
 /** Adds a signed line to the price, with the reason. */
-export function PriceAdjustmentDialog({ order, onClose }: Props) {
+export function PriceAdjustmentDialog(props: Props) {
+  return <MoneyDialog kind="adjust" {...props} />;
+}
+
+function TakePaymentSheet({ order, onClose }: Props) {
   const { t } = useI18n();
-  const store = useStore();
-  const { problem, working, save } = useSave(onClose);
-  const [id] = useState(() => store.createId());
-  const [kind, setKind] = useState<'up' | 'down'>('up');
-  const [amount, setAmount] = useState<number | null>(null);
-  const [reason, setReason] = useState('');
-  const [tried, setTried] = useState(false);
-
-  const submit = () => {
-    setTried(true);
-    if (amount === null || amount <= 0 || !reason.trim()) return;
-    void save({
-      type: 'order.priceAdjusted',
-      orderId: order.id,
-      adjustment: { id: id, amount: kind === 'up' ? amount : -amount, reason: reason.trim() },
-    });
-  };
-
+  const methods = useMethods();
+  const m = useMoneyAction('take', order, onClose);
   return (
-    <Shell title={t('payments.adjust')} onClose={onClose} onSave={submit} working={working} problem={problem}>
+    <Shell title={t('payments.takeTitle')} onClose={onClose} onSave={m.submit} working={m.working} problem={m.problem} saveLabel={t('payments.record')}>
+      <NumberField label={t('payments.amount')} kind="money" initialValue={m.initial} onValueChange={m.setAmount} error={m.amountError} />
+      <ChoiceGroup legend={t('payment.method')} value={m.method} options={methods} onChange={m.setMethod} />
+      <TextField label={t('payment.reference')} value={m.reference} onChange={(e) => m.setReference(e.target.value)} autoComplete="off" />
+    </Shell>
+  );
+}
+
+function RefundSheet({ order, onClose }: Props) {
+  const { t } = useI18n();
+  const methods = useMethods();
+  const m = useMoneyAction('refund', order, onClose);
+  return (
+    <Shell title={t('payments.refundTitle')} onClose={onClose} onSave={m.submit} working={m.working} problem={m.problem} saveLabel={t('payments.doRefund')}>
+      <NumberField label={t('payments.amount')} kind="money" initialValue={m.initial} onValueChange={m.setAmount} error={m.amountError} />
+      <ChoiceGroup legend={t('payment.method')} value={m.method} options={methods} onChange={m.setMethod} />
+      <TextAreaField label={t('payments.refundReason')} value={m.reason} onChange={(e) => m.setReason(e.target.value)} error={m.reasonError} />
+    </Shell>
+  );
+}
+
+function CorrectionSheet({ order, payment, onClose }: Props & { payment: Payment }) {
+  const { t, money } = useI18n();
+  const m = useMoneyAction('correct', order, onClose, payment);
+  return (
+    <Shell title={t('payments.correct')} onClose={onClose} onSave={m.submit} working={m.working} problem={m.problem}>
+      <p className="font-semibold">{t('payments.nowRecorded', { amount: money(m.current) })}</p>
+      <NumberField label={t('payments.correctAmount')} kind="money" onValueChange={m.setAmount} error={m.amountError} />
+      <TextAreaField label={t('payments.correctReason')} value={m.reason} onChange={(e) => m.setReason(e.target.value)} error={m.reasonError} />
+    </Shell>
+  );
+}
+
+function DiscountSheet({ order, onClose }: Props) {
+  const { t } = useI18n();
+  const m = useMoneyAction('discount', order, onClose);
+  return (
+    <Shell title={t('payments.discount')} onClose={onClose} onSave={m.submit} working={m.working} problem={m.problem}>
+      <NumberField label={t('entry.discount')} kind="money" initialValue={m.initial} onValueChange={m.setAmount} error={m.amountError} />
+      <TextField label={t('entry.discountReason')} value={m.reason} onChange={(e) => m.setReason(e.target.value)} autoComplete="off" />
+    </Shell>
+  );
+}
+
+function PriceAdjustmentSheet({ order, onClose }: Props) {
+  const { t } = useI18n();
+  const m = useMoneyAction('adjust', order, onClose);
+  return (
+    <Shell title={t('payments.adjust')} onClose={onClose} onSave={m.submit} working={m.working} problem={m.problem}>
       <ChoiceGroup
         legend={t('payments.adjustKind')}
-        value={kind}
+        value={m.direction}
         options={[
           { value: 'up', label: t('payments.adjustUp') },
           { value: 'down', label: t('payments.adjustDown') },
         ]}
-        onChange={setKind}
+        onChange={m.setDirection}
       />
-      <NumberField
-        label={t('payments.amount')}
-        kind="money"
-        onValueChange={setAmount}
-        error={tried && (amount === null || amount <= 0) ? t('payments.error.amount') : undefined}
-      />
-      <TextAreaField
-        label={t('payments.reason')}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        error={tried && !reason.trim() ? t('item.reasonRequired') : undefined}
-      />
+      <NumberField label={t('payments.amount')} kind="money" onValueChange={m.setAmount} error={m.amountError} />
+      <TextAreaField label={t('payments.reason')} value={m.reason} onChange={(e) => m.setReason(e.target.value)} error={m.reasonError} />
     </Shell>
   );
 }

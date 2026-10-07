@@ -21,7 +21,8 @@ export interface NumberFieldProps {
   className?: string;
 }
 
-function display(kind: NumberFieldProps['kind'], value: number | null, language: Language): string {
+/** How a value reads in the field: "৩৮½" for a measurement, "১২০০" or "১২০০.৫০" for money. */
+export function fieldText(kind: NumberFieldProps['kind'], value: number | null, language: Language): string {
   if (value === null) return '';
   if (kind === 'measurement') return formatMeasurement(value, language);
   const poisha: Poisha = value;
@@ -31,7 +32,7 @@ function display(kind: NumberFieldProps['kind'], value: number | null, language:
 /** A number input that understands Bangla digits and tailor-style fractions. */
 export function NumberField({ label, kind, initialValue = null, onValueChange, onInvalidChange, suffix, id, error, hint, tone, className }: NumberFieldProps) {
   const { language, t } = useI18n();
-  const [text, setText] = useState(() => display(kind, initialValue, language));
+  const [text, setText] = useState(() => fieldText(kind, initialValue, language));
   const [value, setValue] = useState<number | null>(initialValue);
   const [invalid, setInvalid] = useState(false);
   const parse = kind === 'measurement' ? parseMeasurement : parseTaka;
@@ -76,7 +77,7 @@ export function NumberField({ label, kind, initialValue = null, onValueChange, o
       error={invalid ? t(kind === 'measurement' ? 'input.invalidMeasurement' : 'input.invalidMoney') : error}
       onChange={(e) => change(e.target.value)}
       onBlur={() => {
-        if (!invalid) setText(display(kind, value, language));
+        if (!invalid) setText(fieldText(kind, value, language));
       }}
     />
   );
