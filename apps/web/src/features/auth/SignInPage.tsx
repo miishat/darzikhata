@@ -6,6 +6,8 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { BrandMark } from '../../ui/BrandMark';
 import { Button } from '../../ui/Button';
 import { PinPad } from '../../ui/PinPad';
+import { useShell } from '../../shell/ShellPreference';
+import { SignInScreen, SignInSwitcher, useSignInVariant } from './SignInPrototype';
 
 /** "Who is using this device?" then a PIN, for shops that share one phone or computer. */
 export function SignInPage() {
@@ -16,6 +18,8 @@ export function SignInPage() {
   const navigate = useNavigate();
   const [chosen, setChosen] = useState<Staff | null>(null);
   const [error, setError] = useState<string | undefined>();
+  const { kind } = useShell();
+  const variant = useSignInVariant();
 
   if (!config) return null;
   const staff = config.staff.filter((s) => s.active);
@@ -25,6 +29,27 @@ export function SignInPage() {
     if (await store.signIn(chosen.id, pin)) navigate('/app');
     else setError(t('auth.wrongPin'));
   };
+
+  if (kind === 'desktop' && variant !== 'A') {
+    return (
+      <>
+        <SignInSwitcher />
+        <SignInScreen
+          variant={variant}
+          config={config}
+          staff={staff}
+          chosen={chosen}
+          error={error}
+          onChoose={(person) => {
+            setChosen(person);
+            setError(undefined);
+          }}
+          onPin={submit}
+          onCancel={current ? () => navigate('/app') : undefined}
+        />
+      </>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 py-10">
@@ -68,6 +93,7 @@ export function SignInPage() {
         </Button>
       )}
       <p className="text-sm text-muted">{t('auth.demoPins')}</p>
+      {kind === 'desktop' && <SignInSwitcher />}
     </main>
   );
 }
