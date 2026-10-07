@@ -30,6 +30,10 @@ export const WELCOME_VARIANTS = {
   C: 'Three columns: a navy band across the top, then the shops side by side with their staff, branches and garments',
   D: 'Pick then open: the shops as a list on the left, a full preview of the picked one on the right with its people',
   E: 'Centred and light: the title, the three shops in a row, then a strip of what you can try',
+  F: 'E with the subtitle on one line, and what you can try as a row of chips with the label beside them',
+  G: 'E with the subtitle on one line, and what you can try as six small cards that each say what the feature does',
+  H: 'E with the subtitle on one line, no strip: each shop card lists what to try in that shop',
+  I: 'E with the subtitle on one line, and what you can try as one white bar split into six',
 };
 
 export function useWelcomeVariant() {
@@ -373,7 +377,164 @@ function Centred(props: WelcomeScreenProps) {
   );
 }
 
+const DETAILS: Record<string, { bn: string; en: string }> = {
+  'Measurement book': { bn: 'প্রত্যেক কাস্টমারের মাপ, পোশাক ধরে', en: 'Every customer’s measurements, by garment' },
+  'Orders and delivery': { bn: 'ট্রায়াল আর ডেলিভারির তারিখসহ', en: 'With trial and delivery dates' },
+  'Balances and payments': { bn: 'কে কত দিল, কত বাকি', en: 'Who paid what, and what is still due' },
+  'Work list': { bn: 'কে কী সেলাই করছে, কোন ধাপে', en: 'Who is making what, at which stage' },
+  'Receipts, slips and tags': { bn: 'রসিদ, কাজের স্লিপ, কাপড়ের ট্যাগ', en: 'Receipts, job slips and fabric tags' },
+  'Works offline': { bn: 'নেট ফিরলে নিজে মিলিয়ে নেয়', en: 'Syncs by itself when the internet is back' },
+};
+
+const TRY_HERE: Record<SeedShopKey, Array<{ bn: string; en: string }>> = {
+  rahman: [
+    { bn: 'মাপ নিয়ে নতুন অর্ডার', en: 'Take measurements and an order' },
+    { bn: 'রসিদ প্রিন্ট', en: 'Print a receipt' },
+    { bn: 'বাকি টাকা আদায়', en: 'Collect a balance' },
+  ],
+  nakshi: [
+    { bn: 'ট্রায়াল আর QC', en: 'Trials and QC' },
+    { bn: 'আলাদা স্টাফ হয়ে ঢোকা', en: 'Sign in as different staff' },
+    { bn: 'মেয়েদের মাপ গোপন রাখা', en: 'Keep women’s measurements private' },
+  ],
+  uniform: [
+    { bn: 'স্কুলের গ্রুপ অর্ডার', en: 'A school group order' },
+    { bn: 'দোকান আর কারখানা', en: 'Shop and workshop' },
+    { bn: 'অনেক কাপড়ের ট্যাগ', en: 'Tags for a big order' },
+  ],
+};
+
+/** E's page with the subtitle on one line; `children` is how "what you can try" shows. */
+function CentredBase({ props, children, perShop }: { props: WelcomeScreenProps; children?: ReactNode; perShop?: (shop: SeedShopInfo) => ReactNode }) {
+  const { t, label } = useI18n();
+  return (
+    <main className="flex min-h-dvh flex-col bg-gradient-to-b from-brand-soft to-surface px-12 py-6">
+      <div className="ms-auto">
+        <LanguageToggle />
+      </div>
+      <div className="mx-auto mt-[6vh] flex w-full max-w-5xl flex-col items-center text-center">
+        <BrandMark size={64} />
+        <h1 className="mt-5 font-display text-5xl font-bold">{t('welcome.title')}</h1>
+        <p className="mt-3 text-lg whitespace-nowrap text-muted">{t('welcome.subtitle')}</p>
+        <ul className="m-0 mt-10 grid w-full list-none grid-cols-3 gap-4 p-0">
+          {SEED_SHOPS.map((shop) => (
+            <li key={shop.key}>
+              <button
+                type="button"
+                disabled={props.opening !== null}
+                onClick={() => props.onOpen(shop.key)}
+                aria-label={`${t('welcome.open')}: ${label(shop.name)}`}
+                className="group flex h-full w-full flex-col items-center gap-3 rounded-3xl border border-line bg-panel px-5 py-7 text-center shadow-sm transition-shadow hover:border-brand hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
+              >
+                <ShopIcon shop={shop} big />
+                <span className="font-display text-xl font-bold">{label(shop.name)}</span>
+                <span className="text-sm text-muted">{label(shop.summary)}</span>
+                {perShop?.(shop)}
+                <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-brand-strong">
+                  {t('welcome.open')}
+                  <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {children}
+        <p className="mt-10 text-sm text-muted">{t('welcome.note')}</p>
+      </div>
+    </main>
+  );
+}
+
+const tryLabel = (language: Language) => pick(language, 'যা যা করে দেখতে পারেন', 'What you can try');
+
+/** F: features as a row of chips, the label on the same line. */
+function CentredChips(props: WelcomeScreenProps) {
+  const { language } = useI18n();
+  return (
+    <CentredBase props={props}>
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+        <span className="me-2 text-sm font-semibold text-muted">{tryLabel(language)}:</span>
+        {FEATURES.map((f) => (
+          <span key={f.en} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-sm">
+            <f.icon aria-hidden="true" className="size-4 text-brand-strong" />
+            {pick(language, f.bn, f.en)}
+          </span>
+        ))}
+      </div>
+    </CentredBase>
+  );
+}
+
+/** G: features as six small cards, each with a line on what it does. */
+function CentredCards(props: WelcomeScreenProps) {
+  const { language } = useI18n();
+  return (
+    <CentredBase props={props}>
+      <section className="mt-12 w-full text-start">
+        <h2 className="mb-4 text-center font-display text-xl font-bold">{tryLabel(language)}</h2>
+        <ul className="m-0 grid list-none grid-cols-3 gap-3 p-0">
+          {FEATURES.map((f) => (
+            <li key={f.en} className="flex items-start gap-3 rounded-2xl bg-panel/70 p-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong">
+                <f.icon aria-hidden="true" className="size-5" />
+              </span>
+              <span>
+                <span className="block font-semibold">{pick(language, f.bn, f.en)}</span>
+                <span className="block text-sm text-muted">{pick(language, DETAILS[f.en]!.bn, DETAILS[f.en]!.en)}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </CentredBase>
+  );
+}
+
+/** H: no strip; each shop card says what to try in that shop. */
+function CentredPerShop(props: WelcomeScreenProps) {
+  const { language } = useI18n();
+  return (
+    <CentredBase
+      props={props}
+      perShop={(shop) => (
+        <span className="mt-1 w-full border-t border-line pt-3 text-start">
+          <span className="mb-1.5 block text-xs font-semibold text-muted">{pick(language, 'এখানে করে দেখুন', 'Try here')}</span>
+          {TRY_HERE[shop.key].map((item) => (
+            <span key={item.en} className="flex items-center gap-2 py-0.5 text-sm">
+              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand" />
+              {pick(language, item.bn, item.en)}
+            </span>
+          ))}
+        </span>
+      )}
+    />
+  );
+}
+
+/** I: features as a single white bar split into six, icon beside the words. */
+function CentredBar(props: WelcomeScreenProps) {
+  const { language } = useI18n();
+  return (
+    <CentredBase props={props}>
+      <section aria-label={tryLabel(language)} className="mt-10 w-full">
+        <ul className="m-0 grid list-none grid-cols-6 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-panel p-0 shadow-sm rtl:divide-x-reverse">
+          {FEATURES.map((f) => (
+            <li key={f.en} className="flex items-center justify-center gap-2 px-3 py-4 text-sm">
+              <f.icon aria-hidden="true" className="size-5 shrink-0 text-brand-strong" />
+              <span className="text-start leading-tight">{pick(language, f.bn, f.en)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </CentredBase>
+  );
+}
+
 export function WelcomeScreen(props: WelcomeScreenProps): ReactNode {
+  if (props.variant === 'F') return <CentredChips {...props} />;
+  if (props.variant === 'G') return <CentredCards {...props} />;
+  if (props.variant === 'H') return <CentredPerShop {...props} />;
+  if (props.variant === 'I') return <CentredBar {...props} />;
   if (props.variant === 'B') return <Split {...props} />;
   if (props.variant === 'C') return <Columns {...props} />;
   if (props.variant === 'D') return <PickPreview {...props} />;
