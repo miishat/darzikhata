@@ -16,6 +16,7 @@ export const bn = {
   'auth.enterPin': '{name}, আপনার পিন দিন',
   'auth.wrongPin': 'পিন মেলেনি, আবার চেষ্টা করুন',
   'auth.back': 'অন্য কেউ',
+  'auth.backToApp': 'কাজে ফিরে যান',
   'auth.demoPins': 'ডেমো পিন: তালিকার ক্রম অনুযায়ী ১১১১, ২২২২, ৩৩৩৩…',
 
   'nav.dashboard': 'হোম',

@@ -17,6 +17,7 @@ export const en: Messages = {
   'auth.enterPin': '{name}, enter your PIN',
   'auth.wrongPin': 'Wrong PIN, please try again',
   'auth.back': 'Someone else',
+  'auth.backToApp': 'Back to the App',
   'auth.demoPins': 'Demo PINs, in list order: 1111, 2222, 3333…',
 
   'nav.dashboard': 'Home',
