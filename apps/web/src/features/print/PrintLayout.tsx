@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button, buttonClasses } from '../../ui/Button';
+import { ProtoPrintFrame, ProtoSwitcher, useProtoVariant } from './PrintStatusPrototype';
 
 /** The document's own language: starts as the app language and never changes it. */
 export function usePrintLanguage(): [Language, (language: Language) => void] {
@@ -29,7 +30,17 @@ const LANGUAGES: Array<{ language: Language; name: string }> = [
 ];
 
 /** A print page: a toolbar that is hidden when printing, then the document itself. */
-export function PrintLayout({ back, title, language, onLanguage, onShare, notice, children }: PrintLayoutProps) {
+export function PrintLayout(props: PrintLayoutProps) {
+  const variant = useProtoVariant();
+  return (
+    <>
+      {variant === 'A' ? <CurrentPrintLayout {...props} /> : <ProtoPrintFrame variant={variant} {...props} />}
+      <ProtoSwitcher />
+    </>
+  );
+}
+
+function CurrentPrintLayout({ back, title, language, onLanguage, onShare, notice, children }: PrintLayoutProps) {
   const { t } = useI18n();
   return (
     <div className="min-h-dvh bg-surface text-ink">

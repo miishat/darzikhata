@@ -6,6 +6,7 @@ import { formatDate, formatMoney, translate } from '../../i18n/format';
 import { shareOrCopy } from '../../lib/share';
 import { useI18n } from '../../i18n/I18nProvider';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
+import { ProtoReceipt, useProtoVariant } from './PrintStatusPrototype';
 import { receiptModel, receiptShareText, type ReceiptModel } from './receipt';
 
 /** The totals table: price, discount, adjustments, total, paid, then balance or credit due. */
@@ -56,6 +57,7 @@ export function ReceiptPage() {
   const { state, config } = useSnapshot();
   const [language, setLanguage] = usePrintLanguage();
   const [copied, setCopied] = useState(false);
+  const variant = useProtoVariant();
   const order = state.orders[orderId];
   if (!order || !config) {
     return (
@@ -84,6 +86,10 @@ export function ReceiptPage() {
       onShare={share}
       notice={copied ? app.t('print.copied') : null}
     >
+      {variant !== 'A' ? (
+        <ProtoReceipt variant={variant} model={model} language={language} />
+      ) : (
+      <>
       <header className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t('receipt.title')}</h1>
@@ -172,6 +178,8 @@ export function ReceiptPage() {
             ))}
           </tbody>
         </table>
+      )}
+      </>
       )}
     </PrintLayout>
   );

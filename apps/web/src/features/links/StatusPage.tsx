@@ -8,6 +8,7 @@ import { LanguageToggle } from '../../shell/ShellParts';
 import { initialsOf } from '../../ui/Avatar';
 import { BOTTOM_BAR_SPACE, BottomBar } from '../../ui/BottomBar';
 import { buttonClasses } from '../../ui/Button';
+import { ProtoStatus, ProtoSwitcher, useProtoVariant } from '../print/PrintStatusPrototype';
 
 function Notice({ message }: { message: string }) {
   return (
@@ -35,6 +36,7 @@ export function StatusPage() {
   const { token = '' } = useParams();
   const { t, label, date, dateTime, number, language } = useI18n();
   const { status, config, state } = useSnapshot();
+  const variant = useProtoVariant();
   if (status === 'loading') return <Loading />;
   const order = config ? findOrderByToken(Object.values(state.orders), token) : null;
   if (!config || !order) return <Notice message={t('status.notFound')} />;
@@ -49,6 +51,13 @@ export function StatusPage() {
     ? t('status.allDelivered')
     : t('status.headline', { total: number(counted.length), ready: number(ready) });
   const shopInitial = initialsOf(view.shop.name.split(/\s+/)[0] ?? '');
+  if (variant !== 'A')
+    return (
+      <>
+        <ProtoStatus variant={variant} view={view} headline={headline} languageToggle={<LanguageToggle />} />
+        <ProtoSwitcher />
+      </>
+    );
 
   return (
     <main className={`mx-auto flex min-h-dvh max-w-xl flex-col text-lg ${view.shop.phone ? BOTTOM_BAR_SPACE : ''}`}>
@@ -123,6 +132,7 @@ export function StatusPage() {
           </a>
         </BottomBar>
       )}
+      <ProtoSwitcher />
     </main>
   );
 }
