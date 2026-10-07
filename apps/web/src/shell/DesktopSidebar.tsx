@@ -11,7 +11,7 @@ import { Avatar } from '../ui/Avatar';
 import { BrandMark } from '../ui/BrandMark';
 import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
 import { AccountMenu } from './AccountMenu';
-import { PROTO_KEYS, PROTO_VARIANTS, PrototypeAccountSync, type ProtoKind } from './AccountSyncPrototype';
+import { PROTO_KEYS, PROTO_VARIANTS, PrototypeAccountSync, PrototypeDialogA, type ProtoKind } from './AccountSyncPrototype';
 import { visibleNav, type NavItem } from './nav';
 import { navCounts } from './navCounts';
 import { useShopHeader } from './ShellParts';
@@ -138,7 +138,7 @@ export function DesktopSidebar({ role }: { role: Role }) {
   const [rail, setRail] = useRail();
   const variant = useVariant(PROTO_KEYS);
   const [proto, setProto] = useState<{ kind: ProtoKind; anchor: HTMLElement } | null>(null);
-  const openProto = variant === 'A' ? undefined : (kind: ProtoKind) => (anchor: HTMLElement) => setProto((p) => (p?.kind === kind ? null : { kind, anchor }));
+  const openProto = (kind: ProtoKind) => (anchor: HTMLElement) => setProto((p) => (p?.kind === kind ? null : { kind, anchor }));
   const items = visibleNav(role);
   const main = items.filter((i) => !SHOP_KEYS.has(i.key));
   const shop = items.filter((i) => SHOP_KEYS.has(i.key));
@@ -246,10 +246,11 @@ export function DesktopSidebar({ role }: { role: Role }) {
         {shop.map(link)}
       </nav>
       <div className={`flex flex-col gap-2 border-t border-line pt-3 ${rail ? 'items-center' : ''}`}>
-        <SyncButton block={!rail} dot={rail} onOpen={openProto?.('sync')} />
-        <PersonButton rail={rail} onAccount={openProto?.('account')} />
+        <SyncButton block={!rail} dot={rail} onOpen={openProto('sync')} />
+        <PersonButton rail={rail} onAccount={openProto('account')} />
       </div>
       {proto && variant !== 'A' && <PrototypeAccountSync key={proto.kind} variant={variant} kind={proto.kind} anchor={proto.anchor} onClose={() => setProto(null)} />}
+      <PrototypeDialogA kind={variant === 'A' ? (proto?.kind ?? null) : null} onClose={() => setProto(null)} />
       <PrototypeSwitcher variants={PROTO_VARIANTS} />
     </aside>
   );

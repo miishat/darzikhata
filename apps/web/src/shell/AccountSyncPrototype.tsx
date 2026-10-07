@@ -21,7 +21,7 @@ import { DOT, STATUS_KEY } from './SyncStatus';
 import { useTheme, type ThemePreference } from './theme';
 
 export const PROTO_VARIANTS = {
-  A: 'Current dialogs',
+  A: 'Centred, B layout, with motion',
   B: 'Pop out beside the sidebar',
   C: 'Side panel with tabs',
   D: 'Control centre grid',
@@ -149,6 +149,20 @@ export function PrototypeAccountSync({ variant, kind, anchor, onClose }: { varia
   return null;
 }
 
+/* ---------------- A: the centred dialog with its motion, holding B's layout ---------------- */
+
+export function PrototypeDialogA({ kind, onClose }: { kind: ProtoKind | null; onClose(): void }) {
+  const { t } = useI18n();
+  // Keeps its content while it shrinks away.
+  const shown = useRef<ProtoKind>('account');
+  if (kind) shown.current = kind;
+  return (
+    <Dialog open={kind !== null} animated title={t(shown.current === 'account' ? 'shell.account' : 'sync.title')} onClose={onClose}>
+      {shown.current === 'account' ? <PopoverAccount onClose={onClose} /> : <PopoverSync onClose={onClose} />}
+    </Dialog>
+  );
+}
+
 /* ---------------- B: a popover next to the sidebar, everything visible at once ---------------- */
 
 function PopoverVariant({ kind, anchor, onClose }: { kind: ProtoKind; anchor: HTMLElement | null; onClose(): void }) {
@@ -205,7 +219,7 @@ function PopoverAccount({ onClose }: { onClose(): void }) {
   const a = useAccount();
   const { t } = a;
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-ink">
       {a.current && (
         <div className="flex items-center gap-3">
           <Avatar id={a.current.staff.id} name={a.current.staff.name} size="lg" />
@@ -269,7 +283,7 @@ function PopoverSync({ onClose }: { onClose(): void }) {
   const s = useSyncPanel();
   const { t, number } = s;
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 text-ink">
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${DOT[s.status]}`} />
         <span className="min-w-0 flex-1">
@@ -297,14 +311,13 @@ function PopoverSync({ onClose }: { onClose(): void }) {
       )}
       <hr className="border-line" />
       <div>
-        <SmallLabel>{t('more.demo')}</SmallLabel>
         <Button variant="secondary" className="w-full" disabled={!s.target} onClick={() => void s.pushOther()}>
           <Smartphone size={16} aria-hidden="true" />
           {t('sync.other')}
         </Button>
-        <p className="mt-1.5 text-xs text-muted">{t(s.target ? 'sync.otherHint' : 'sync.otherNone')}</p>
+        <p className="mt-1.5 text-center text-xs text-muted">{t(s.target ? 'sync.otherHint' : 'sync.otherNone')}</p>
       </div>
-      <p role="status" className="text-sm">
+      <p role="status" className="text-center text-sm text-ink">
         {s.outcome ? t(s.outcome) : null}
       </p>
     </div>
