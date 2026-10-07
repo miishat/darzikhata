@@ -1,12 +1,12 @@
 import type { Capability, Staff } from '@darzikhata/domain';
 import { Pencil, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import type { MessageKey } from '../../i18n/bn';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
-import { Drawer } from '../../ui/Drawer';
+import { Drawer, type DrawerHandle } from '../../ui/Drawer';
 import { Switch } from '../../ui/Switch';
 import { TextField } from '../../ui/TextField';
 import { SECTION_BODY, SectionHeader } from './SettingsCards';
@@ -153,8 +153,11 @@ function StaffDrawer({ staff, onClose, onSaved }: { staff: Staff | null; onClose
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  const drawer = useRef<DrawerHandle>(null);
   if (!config) return null;
   const patch = (change: Partial<StaffForm>) => setForm((f) => ({ ...f, ...change }));
+  const slideOut = (then: () => void) => (drawer.current ? drawer.current.close(then) : then());
+  const close = () => slideOut(onClose);
 
   async function save() {
     if (working) return;
@@ -163,18 +166,19 @@ function StaffDrawer({ staff, onClose, onSaved }: { staff: Staff | null; onClose
     setWorking(false);
     setErrors(result.errors);
     setProblem(result.problem);
-    if (result.ok) onSaved();
+    if (result.ok) slideOut(onSaved);
   }
 
   const choices = [{ id: 'all', name: t('branch.all') }, ...config.branches.map((b) => ({ id: b.id, name: b.name[language] }))];
 
   return (
     <Drawer
+      ref={drawer}
       title={staff ? staff.name : t('settings.staff.new')}
-      onClose={onClose}
+      onClose={close}
       footer={
         <>
-          <Button variant="secondary" size="lg" className="flex-1" onClick={onClose}>
+          <Button variant="secondary" size="lg" className="flex-1" onClick={close}>
             {t('common.cancel')}
           </Button>
           <Button size="lg" className="flex-[2]" onClick={() => void save()} disabled={working}>
