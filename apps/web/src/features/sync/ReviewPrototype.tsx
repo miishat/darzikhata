@@ -1,5 +1,5 @@
 // PROTOTYPE (throwaway): desktop layouts for the review queue, switched with ?variant=. Never merged.
-import { ArrowRight, ArrowUpRight, Check, CircleAlert, ShoppingBag, WifiOff } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, CircleAlert, Info, ShoppingBag, WifiOff } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot, useStore } from '../../data/StoreContext';
@@ -14,13 +14,12 @@ import { useVisibleReview } from './useSync';
 
 export const REVIEW_VARIANTS = {
   A: 'Current page',
-  B: 'Inbox with bigger, easier values; the record opens from a button beside its name',
-  F: 'Inbox with a before → after line per field; the record opens from a button beside its name',
-  G: 'B with the name itself as the link and a small "view" chip after it',
-  H: 'F with the record link at the start of the bottom bar',
-  I: 'B with a card about the record (who, phone, garments) holding the link',
-  J: 'F with a card about the record holding the link',
-  K: 'F with a link icon on each row of the list',
+  F: 'Inbox with a before → after line per field (the description pushes the list header taller)',
+  L: 'F, the description behind an info button beside the title',
+  M: 'F, the description as a note at the top of the chosen change',
+  N: 'F, the description as a strip above both panels',
+  O: 'F, the description at the foot of the list',
+  P: 'F, a one-line description under the title',
 };
 
 export function useReviewVariant() {
@@ -293,21 +292,55 @@ function Refused({ entry }: { entry: Entry }) {
   );
 }
 
-function PageHeader({ count, extra }: { count: number; extra?: ReactNode }) {
-  const { t, language, number } = useI18n();
+type Intro = 'header' | 'info' | 'note' | 'banner' | 'footer' | 'short';
+
+/** Both panel headers share this height when the description sits elsewhere, so their dividers line up. */
+const HEAD = 'h-24 shrink-0';
+
+function OfflineNote() {
+  const { t } = useI18n();
   const { sync } = useSnapshot();
+  if (sync.online) return null;
   return (
-    <div className="flex flex-col gap-3 border-b border-line p-5">
+    <p className="flex items-center gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm font-semibold text-warn-ink">
+      <WifiOff size={16} aria-hidden="true" />
+      {t('review.offline')}
+    </p>
+  );
+}
+
+function PageHeader({ count, intro = 'header' }: { count: number; intro?: Intro }) {
+  const { t, language, number } = useI18n();
+  const [open, setOpen] = useState(false);
+  const fixed = intro !== 'header';
+  return (
+    <div className={`relative flex flex-col border-b border-line px-5 ${fixed ? `${HEAD} justify-center gap-1` : 'gap-3 py-5'}`}>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="font-display text-xl font-bold">{t('review.title')}</h1>
         {count > 0 && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-sm font-semibold text-warn-ink">{pick(language, `${number(count)}টি বাকি`, `${number(count)} Left`)}</span>}
-        <div className="ms-auto">{extra}</div>
+        {intro === 'info' && (
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={pick(language, 'এটা কী?', 'What Is This?')}
+            onClick={() => setOpen((o) => !o)}
+            className="ms-auto flex size-8 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <Info size={18} aria-hidden="true" />
+          </button>
+        )}
       </div>
-      <p className="max-w-3xl text-sm text-muted">{t('review.intro')}</p>
-      {!sync.online && (
-        <p className="flex items-center gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm font-semibold text-warn-ink">
-          <WifiOff size={16} aria-hidden="true" />
-          {t('review.offline')}
+      {intro === 'header' && <p className="max-w-3xl text-sm text-muted">{t('review.intro')}</p>}
+      {intro === 'header' && <OfflineNote />}
+      {intro === 'info' && <p className="text-sm text-muted">{pick(language, 'অন্য কোথাও বদলে যাওয়া রেকর্ড', 'Records That Changed Elsewhere')}</p>}
+      {intro === 'short' && (
+        <p className="truncate text-sm text-muted" title={t('review.intro')}>
+          {pick(language, 'অন্য কোথাও বদলেছে, কোনটা থাকবে বেছে নিন', 'Changed elsewhere first. Choose what to keep.')}
+        </p>
+      )}
+      {intro === 'info' && open && (
+        <p role="note" className="absolute inset-x-3 top-full z-20 mt-2 rounded-xl border border-line bg-panel p-4 text-sm shadow-lg">
+          {t('review.intro')}
         </p>
       )}
     </div>
@@ -338,7 +371,7 @@ export function ReviewPrototype() {
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const choose = (id: string) => (field: ReviewField, side: Side) => setChoices((c) => ({ ...c, [id]: { ...c[id], [field]: side } }));
   const props = { entries, busy, offline: !sync.online, choices, choose, settle };
-  const shape = SHAPE[variant] ?? SHAPE.B!;
+  const shape = SHAPE[variant] ?? SHAPE.F!;
   return (
     <>
       <Inbox {...props} {...shape} />
@@ -348,14 +381,13 @@ export function ReviewPrototype() {
 }
 
 type LinkAt = 'button' | 'title' | 'bar' | 'card' | 'list';
-const SHAPE: Record<string, { look: 'tiles' | 'arrows'; linkAt: LinkAt }> = {
-  B: { look: 'tiles', linkAt: 'button' },
-  F: { look: 'arrows', linkAt: 'button' },
-  G: { look: 'tiles', linkAt: 'title' },
-  H: { look: 'arrows', linkAt: 'bar' },
-  I: { look: 'tiles', linkAt: 'card' },
-  J: { look: 'arrows', linkAt: 'card' },
-  K: { look: 'arrows', linkAt: 'list' },
+const SHAPE: Record<string, { look: 'tiles' | 'arrows'; linkAt: LinkAt; intro: Intro }> = {
+  F: { look: 'arrows', linkAt: 'button', intro: 'header' },
+  L: { look: 'arrows', linkAt: 'button', intro: 'info' },
+  M: { look: 'arrows', linkAt: 'button', intro: 'note' },
+  N: { look: 'arrows', linkAt: 'button', intro: 'banner' },
+  O: { look: 'arrows', linkAt: 'button', intro: 'footer' },
+  P: { look: 'arrows', linkAt: 'button', intro: 'short' },
 };
 
 type Props = {
@@ -427,18 +459,23 @@ function RecordCard({ entry }: { entry: Entry }) {
 }
 
 /** A list of changes on the left, the chosen one on the right. */
-function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt }: Props & { look: 'tiles' | 'arrows'; linkAt: LinkAt }) {
-  const { language } = useI18n();
+function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt, intro }: Props & { look: 'tiles' | 'arrows'; linkAt: LinkAt; intro: Intro }) {
+  const { t, language } = useI18n();
   const title = useTitle();
   const by = useBy();
   const view = useViewLabel();
   const [pickedId, setPickedId] = useState<string | null>(null);
   const picked = entries.find((e) => e.eventId === pickedId) ?? entries[0];
   const to = picked ? subjectLink(picked) : null;
-  return (
-    <div className={`flex gap-4 ${FULL}`}>
+  const panels = (
+    <div className={`flex gap-4 ${intro === 'banner' ? 'min-h-0 flex-1' : FULL}`}>
       <section className={`${CARD} w-[22rem] shrink-0`}>
-        <PageHeader count={entries.length} />
+        <PageHeader count={entries.length} intro={intro} />
+        {intro !== 'header' && intro !== 'banner' && (
+          <div className="px-3 pt-3 empty:hidden">
+            <OfflineNote />
+          </div>
+        )}
         <ul className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-2">
           {entries.map((entry) => {
             const on = entry === picked;
@@ -474,13 +511,19 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt }
             );
           })}
         </ul>
+        {intro === 'footer' && (
+          <p className="flex gap-2 border-t border-line bg-surface/50 px-5 py-4 text-sm text-muted">
+            <Info size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+            {t('review.intro')}
+          </p>
+        )}
       </section>
       <section className={`${CARD} min-w-0 flex-1`}>
         {!picked ? (
           <Empty />
         ) : (
           <>
-            <div className="flex items-center gap-4 border-b border-line p-5">
+            <div className={`flex items-center gap-4 border-b border-line px-5 ${intro === 'header' ? 'py-5' : HEAD}`}>
               <SubjectMark entry={picked} size="lg" />
               <div className="min-w-0 flex-1">
                 {linkAt === 'title' && to ? (
@@ -507,6 +550,12 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt }
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {linkAt === 'card' && <RecordCard entry={picked} />}
+              {intro === 'note' && (
+                <p className="mb-4 flex gap-2 rounded-xl bg-brand-soft/60 px-4 py-3 text-sm">
+                  <Info size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-brand-strong" />
+                  {t('review.intro')}
+                </p>
+              )}
               {picked.outcome === 'rejected' ? (
                 <Refused entry={picked} />
               ) : look === 'tiles' ? (
@@ -530,6 +579,17 @@ function Inbox({ entries, busy, offline, choices, choose, settle, look, linkAt }
           </>
         )}
       </section>
+    </div>
+  );
+  if (intro !== 'banner') return panels;
+  return (
+    <div className={`flex flex-col gap-3 ${FULL}`}>
+      <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-brand-soft/60 px-5 py-3 text-sm">
+        <Info size={18} aria-hidden="true" className="shrink-0 text-brand-strong" />
+        <span className="min-w-0 flex-1">{t('review.intro')}</span>
+        <OfflineNote />
+      </div>
+      {panels}
     </div>
   );
 }
