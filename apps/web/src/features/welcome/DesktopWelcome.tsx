@@ -1,8 +1,8 @@
-import { ArrowRight, Banknote, ClipboardList, Printer, Ruler, WifiOff, Wrench, type LucideIcon } from 'lucide-react';
+import type { Language } from '@darzikhata/domain';
+import { ArrowRight, Banknote, ClipboardList, Globe, Printer, Ruler, WifiOff, Wrench, type LucideIcon } from 'lucide-react';
 import type { MessageKey } from '../../i18n/bn';
 import { useI18n } from '../../i18n/I18nProvider';
 import { SEED_SHOPS, type SeedShopKey } from '../../seed/shops';
-import { LanguageToggle } from '../../shell/ShellParts';
 import { BrandMark } from '../../ui/BrandMark';
 
 export interface DesktopWelcomeProps {
@@ -21,7 +21,7 @@ const FEATURES: Array<{ icon: LucideIcon; key: MessageKey }> = [
 ];
 
 /**
- * The desktop welcome, centred on a light wash: the app icon, the title and one line on what it does, the three
+ * The desktop welcome, centred on a light wash: both languages in a pill at the top corner, the app icon, the title and one line on what it does, the three
  * sample shops side by side, then what the app can do as a row of chips.
  */
 export function DesktopWelcome({ icons, opening, onOpen }: DesktopWelcomeProps) {
@@ -29,7 +29,7 @@ export function DesktopWelcome({ icons, opening, onOpen }: DesktopWelcomeProps) 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-brand-soft to-surface px-12 py-6">
       <div className="ms-auto">
-        <LanguageToggle />
+        <LanguagePill />
       </div>
       <div className="mx-auto mt-[6vh] flex w-full max-w-5xl flex-col items-center text-center">
         <BrandMark size={64} />
@@ -72,5 +72,41 @@ export function DesktopWelcome({ icons, opening, onOpen }: DesktopWelcomeProps) 
         <p className="mt-10 text-sm text-muted">{t('welcome.note')}</p>
       </div>
     </main>
+  );
+}
+
+const LANGUAGES: Array<{ language: Language; key: 'more.language.bangla' | 'more.language.english' }> = [
+  { language: 'bn', key: 'more.language.bangla' },
+  { language: 'en', key: 'more.language.english' },
+];
+
+/** Both languages, each in its own script, in a pill with a globe; the current one bold and blue. */
+function LanguagePill() {
+  const { t, language, setLanguage } = useI18n();
+  return (
+    <div role="group" aria-label={t('more.language')} className="flex items-center gap-1 rounded-full border border-line bg-panel py-1 ps-3 pe-1 shadow-sm">
+      <Globe aria-hidden="true" className="me-1 size-4 text-muted" />
+      {LANGUAGES.map((option, i) => {
+        const on = language === option.language;
+        return (
+          <span key={option.language} className="flex items-center">
+            {i > 0 && (
+              <span aria-hidden="true" className="px-0.5 text-muted">
+                ·
+              </span>
+            )}
+            <button
+              type="button"
+              lang={option.language}
+              aria-pressed={on}
+              onClick={() => setLanguage(option.language)}
+              className={`rounded-full px-2.5 py-1 text-sm focus-visible:outline-2 focus-visible:outline-focus ${on ? 'font-bold text-brand-strong' : 'text-muted hover:text-ink'}`}
+            >
+              {t(option.key)}
+            </button>
+          </span>
+        );
+      })}
+    </div>
   );
 }
