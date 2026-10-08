@@ -16,6 +16,8 @@ import { StatusLinkSection } from '../links/StatusLinkSection';
 import { MoneyCard, useMoneyDialogs } from '../payments/OrderMoney';
 import { MobileItemCard } from './MobileItemCard';
 import { wearerGroups } from './wearers';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
+import { MEASURE_SHEET_VARIANTS } from '../customers/MeasureSheetPrototype';
 
 const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
@@ -47,6 +49,7 @@ export function MobileOrderDetail({ order }: { order: Order }) {
 
   return (
     <div className={`flex flex-col gap-3 ${hasBar ? PAYMENT_DOCK_SPACE : ''}`}>
+      <PrototypeSwitcher top variants={MEASURE_SHEET_VARIANTS} />
       <header className="-mx-2 flex items-center gap-1">
         <Link to={{ pathname: '/app/orders', search }} aria-label={t('orders.back')} className={`${ROUND} text-ink hover:bg-surface`}>
           <ArrowLeft aria-hidden="true" size={24} />

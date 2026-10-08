@@ -15,12 +15,16 @@ import { MoveOn } from '../orders/ItemCard';
 import { nextMove } from '../orders/stageMoves';
 import { useWorkList } from './useWorkList';
 import { WORK_PHASES, phaseCounts, workPhase, type WorkPhase } from './workList';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { MEASURE_SHEET_VARIANTS, MeasureSheetPrototype } from '../customers/MeasureSheetPrototype';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
 
 function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }) {
   const { t, language, label } = useI18n();
   const can = useCan();
   const hasAccess = useMeasurementAccess();
   const { state, config } = useSnapshot();
+  const variant = useVariant(Object.keys(MEASURE_SHEET_VARIANTS));
   const [measuring, setMeasuring] = useState(false);
   const { order, item } = refItem;
 
@@ -77,20 +81,24 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
         </div>
       </section>
       {measuring && template && item.measurements && (
+        variant !== 'A' ? (
+          <MeasureSheetPrototype variant={variant} title={t('item.measureTitle', { item: title })} template={template} snapshot={item.measurements} customerId={order.customerId} onClose={() => setMeasuring(false)} />
+        ) : (
         <Dialog
-          open
-          title={t('item.measureTitle', { item: title })}
-          onClose={() => setMeasuring(false)}
-          actions={
-            <Button variant="secondary" onClick={() => setMeasuring(false)}>
-              {t('common.close')}
-            </Button>
-          }
-        >
-          <div className="text-ink">
-            <MeasurementTable template={template} values={item.measurements.values} />
-          </div>
-        </Dialog>
+            open
+            title={t('item.measureTitle', { item: title })}
+            onClose={() => setMeasuring(false)}
+            actions={
+              <Button variant="secondary" onClick={() => setMeasuring(false)}>
+                {t('common.close')}
+              </Button>
+            }
+          >
+            <div className="text-ink">
+              <MeasurementTable template={template} values={item.measurements.values} />
+            </div>
+          </Dialog>
+        )
       )}
     </li>
   );
@@ -110,6 +118,7 @@ export function MobileWorkPage() {
 
   return (
     <div className="flex flex-col gap-3">
+      <PrototypeSwitcher top variants={MEASURE_SHEET_VARIANTS} />
       <header className="flex items-center gap-2.5">
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-[26px] font-bold">{viewer.seesAll ? t('nav.work') : t('work.mine')}</h1>

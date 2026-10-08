@@ -16,6 +16,8 @@ import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { nextMove } from './stageMoves';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { MEASURE_SHEET_VARIANTS, MeasureSheetPrototype } from '../customers/MeasureSheetPrototype';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
 
@@ -32,6 +34,7 @@ function measureSummary(item: OrderItem, template: { fields: Array<{ key: string
 /** Phone garment card: a status band (stage, step, due), the garment's facts, and one filled button for the usual move. */
 export function MobileItemCard({ order, item }: { order: Order; item: OrderItem }) {
   const { t, language, label, date, number } = useI18n();
+  const variant = useVariant(Object.keys(MEASURE_SHEET_VARIANTS));
   const can = useCan();
   const hasAccess = useMeasurementAccess();
   const { state, config } = useSnapshot();
@@ -292,20 +295,24 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
       {dialog === 'cancel' && <CancelItemDialog order={order} item={item} onClose={close} />}
       {dialog === 'assign' && <BatchAssignDialog refs={[{ order, item }]} onClose={close} />}
       {dialog === 'measure' && template && item.measurements && (
+        variant !== 'A' ? (
+          <MeasureSheetPrototype variant={variant} title={t('item.measureTitle', { item: title })} template={template} snapshot={item.measurements} customerId={order.customerId} onClose={close} />
+        ) : (
         <Dialog
-          open
-          title={t('item.measureTitle', { item: title })}
-          onClose={close}
-          actions={
-            <Button variant="secondary" onClick={close}>
-              {t('common.close')}
-            </Button>
-          }
-        >
-          <div className="text-ink">
-            <MeasurementTable template={template} values={item.measurements.values} />
-          </div>
-        </Dialog>
+            open
+            title={t('item.measureTitle', { item: title })}
+            onClose={close}
+            actions={
+              <Button variant="secondary" onClick={close}>
+                {t('common.close')}
+              </Button>
+            }
+          >
+            <div className="text-ink">
+              <MeasurementTable template={template} values={item.measurements.values} />
+            </div>
+          </Dialog>
+        )
       )}
     </>
   );
