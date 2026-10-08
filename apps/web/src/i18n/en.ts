@@ -223,7 +223,7 @@ export const en: Messages = {
   'customers.searchField': 'Name or Phone (Bangla/English)',
   'customer.stat.orderValue': 'Total Order Value',
   'customer.since': 'First Visit {date}',
-  'customer.allOrders': 'All {n}',
+  'customer.allOrders': 'See All Orders ({n})',
   'measure.compareCaption': 'Current: the newest measurements. Previous: the version before it. Order: the copy kept on the latest order for this garment. The small badge shows how much a value changed from the previous version.',
   'measure.colPrevious': 'Previous',
   'measure.colSnapshot': 'Order {number}',

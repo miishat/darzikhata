@@ -1,5 +1,5 @@
 import { balanceDue, orderProgress, orderTotal, type Order } from '@darzikhata/domain';
-import { Phone, X } from 'lucide-react';
+import { ArrowRight, Phone, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -186,9 +186,10 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
               </ul>
               <Link
                 to={`/app/orders?q=${encodeURIComponent(customer.phone ?? customer.name)}`}
-                className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus"
+                className={`${buttonClasses('secondary')} self-start`}
               >
                 {t('customer.allOrders', { n: number(orders.length) })}
+                <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </>
           )}
