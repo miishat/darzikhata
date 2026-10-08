@@ -382,7 +382,7 @@ function Band({ order, item }: { order: Order; item: OrderItem }) {
             <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
           ) : d.canMove ? (
             <div className="flex">
-              <NextButton order={order} item={item} d={d} setDialog={setDialog} filled />
+              <NextButton order={order} item={item} d={d} setDialog={setDialog} />
             </div>
           ) : (
             d.delivered && <Delivered item={item} />
