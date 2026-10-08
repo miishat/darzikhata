@@ -1,5 +1,5 @@
 import { balanceDue, orderProgress, orderTotal, type Order } from '@darzikhata/domain';
-import { Phone, X } from 'lucide-react';
+import { ArrowRight, ChevronRight, Phone, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -14,13 +14,19 @@ import { garmentSummary } from '../common/orderText';
 import { useShell } from '../../shell/ShellPreference';
 import { MeasurementSection } from './MeasurementSection';
 import { MobileCustomerProfile } from './MobileCustomerProfile';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 
-function Region({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+const VARIANTS = { A: 'Underlined link', B: 'Button under the list', C: 'Text button in the header', D: 'List footer row', E: 'Header count + arrow button' };
+
+function Region({ id, title, action, children }: { id: string; title: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-4">
-      <h2 id={id} className="font-semibold">
-        {title}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id={id} className="flex items-center gap-2 font-semibold">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -56,6 +62,8 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
   const { state } = useSnapshot();
   const scoped = useScopedState();
   const customer = state.customers[customerId];
+  const variant = useVariant(Object.keys(VARIANTS));
+  const pick = (bn: string, en: string) => (language === 'bn' ? bn : en);
 
   if (!customer) {
     return (
@@ -73,6 +81,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
   const orders: Order[] = Object.values(scoped.orders)
     .filter((o) => o.customerId === customer.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const allOrders = `/app/orders?q=${encodeURIComponent(customer.phone ?? customer.name)}`;
   const latest = orders[0];
   const showMoney = can('money.view');
   const owed = orders.reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0);
@@ -153,7 +162,38 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
 
         <MeasurementSection customerId={customer.id} />
 
-        <Region id="customer-orders" title={t('customer.orders')}>
+        <Region
+          id="customer-orders"
+          title={
+            variant === 'E' && orders.length > 0 ? (
+              <>
+                {t('customer.orders')}
+                <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">{number(orders.length)}</span>
+              </>
+            ) : (
+              t('customer.orders')
+            )
+          }
+          action={
+            orders.length === 0 ? undefined : variant === 'C' ? (
+              <Link
+                to={allOrders}
+                className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-brand-strong hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                {t('customer.allOrders', { n: number(orders.length) })}
+                <ChevronRight size={16} aria-hidden="true" />
+              </Link>
+            ) : variant === 'E' ? (
+              <Link
+                to={allOrders}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-panel px-3 text-sm font-semibold hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                {pick('সব দেখুন', 'View All')}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            ) : undefined
+          }
+        >
           {orders.length === 0 ? (
             <p className="text-muted">{t('customer.noOrders')}</p>
           ) : (
@@ -184,15 +224,35 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
                   );
                 })}
               </ul>
-              <Link
-                to={`/app/orders?q=${encodeURIComponent(customer.phone ?? customer.name)}`}
-                className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus"
-              >
-                {t('customer.allOrders', { n: number(orders.length) })}
-              </Link>
+              {variant === 'A' && (
+                <Link
+                  to={allOrders}
+                  className="self-start text-sm font-semibold text-brand-strong underline focus-visible:outline-2 focus-visible:outline-focus"
+                >
+                  {t('customer.allOrders', { n: number(orders.length) })}
+                </Link>
+              )}
+              {variant === 'B' && (
+                <Link to={allOrders} className={`${buttonClasses('secondary')} self-start`}>
+                  {pick(`সব ${number(orders.length)}টি অর্ডার দেখুন`, `See All ${orders.length} Orders`)}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              )}
+              {variant === 'D' && (
+                <Link
+                  to={allOrders}
+                  className="-mx-2 -mb-2 flex items-center justify-center gap-1 rounded-b-lg border-t border-line py-2.5 text-sm font-semibold text-brand-strong hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+                >
+                  {pick(`সব ${number(orders.length)}টি অর্ডার দেখুন`, `See All ${orders.length} Orders`)}
+                  <ChevronRight size={16} aria-hidden="true" />
+                </Link>
+              )}
+              <PrototypeSwitcher variants={VARIANTS} />
             </>
           )}
         </Region>
+        {/* PROTOTYPE: room so the switcher bar never covers the end of the list. */}
+        <div aria-hidden="true" className="h-16 shrink-0" />
       </div>
     </>
   );
