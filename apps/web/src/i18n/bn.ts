@@ -222,7 +222,7 @@ export const bn = {
   'customers.searchField': 'নাম বা ফোন (বাংলা/English)',
   'customer.stat.orderValue': 'অর্ডারের মোট মূল্য',
   'customer.since': 'প্রথম এসেছেন {date}',
-  'customer.allOrders': 'সব {n}টি',
+  'customer.allOrders': 'সব অর্ডার দেখুন ({n}টি)',
   'measure.compareCaption': 'এখনকার: সবচেয়ে নতুন মাপ। আগের: তার আগের মাপ। অর্ডার: এই পোশাকের সবচেয়ে নতুন অর্ডারে জমা রাখা মাপ। ছোট ব্যাজে দেখানো সংখ্যা আগের মাপ থেকে কতটা বদলেছে।',
   'measure.colPrevious': 'আগের',
   'measure.colSnapshot': 'অর্ডার {number}',

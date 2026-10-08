@@ -86,7 +86,7 @@ describe('Customers', () => {
     const orderLinks = within(history).getAllByRole('link', { name: /^[A-Z]-\d{4}/ });
     expect(orderLinks.map((l) => l.textContent!.slice(0, 6))).toEqual(orders.slice(0, 4).map((o) => o.number));
     expect(orderLinks[0]!.getAttribute('href')).toBe(`/app/orders/${orders[0]!.id}`);
-    expect(within(history).getByRole('link', { name: `সব ${formatNumber(orders.length, 'bn')}টি` })).toBeTruthy();
+    expect(within(history).getByRole('link', { name: `সব অর্ডার দেখুন (${formatNumber(orders.length, 'bn')}টি)` })).toBeTruthy();
 
     for (const order of orders.slice(0, 4).filter((o) => balanceDue(o) > 0)) {
       expect(within(history).getAllByText(`বাকি ${formatTaka(balanceDue(order), 'bn')}`).length).toBeGreaterThan(0);
