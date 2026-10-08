@@ -77,6 +77,31 @@ describe('Select on a desktop', () => {
     expect(box.getAttribute('aria-activedescendant')).toBe(screen.getByRole('option', { name: 'শার্ট' }).id);
   });
 
+  it('lines up with the button’s right edge when the list would run off the window', async () => {
+    // jsdom has no layout: a 50px button near the right of a 1024px window, and a list 180px wide.
+    const box = (left: number) => ({ left, right: left + 50, top: 100, bottom: 136, width: 50, height: 36, x: left, y: 100, toJSON: () => ({}) }) as DOMRect;
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(box(950));
+    const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(180);
+    try {
+      render(
+        <ShellProvider>
+          <Picker />
+        </ShellProvider>,
+      );
+      const combo = screen.getByRole('combobox', { name: 'পোশাক' });
+      await userEvent.click(combo);
+      expect(screen.getByRole('listbox').style.left).toBe('820px');
+      await userEvent.click(combo);
+
+      rect.mockReturnValue(box(100));
+      await userEvent.click(combo);
+      expect(screen.getByRole('listbox').style.left).toBe('100px');
+    } finally {
+      rect.mockRestore();
+      width.mockRestore();
+    }
+  });
+
   it('closes only its list on Escape inside a dialog, and picking keeps the dialog open', async () => {
     const onClose = vi.fn();
     render(
