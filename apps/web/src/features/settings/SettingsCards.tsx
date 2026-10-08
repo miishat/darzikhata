@@ -25,7 +25,7 @@ export function useSectionSummary(): (path: SettingsSection['path']) => string {
 
 /**
  * The top of a section's card: its icon, name and summary, and its main button. On a desktop the chosen tile above
- * the card already shows the name and summary, so only the button stays (the name is kept for screen readers).
+ * the card already shows the name and summary, so it is kept only for screen readers; desktop sections put their buttons in the body.
  */
 export function SectionHeader({ path, action }: { path: SettingsSection['path']; action?: ReactNode }) {
   const { t } = useI18n();
@@ -37,7 +37,6 @@ export function SectionHeader({ path, action }: { path: SettingsSection['path'];
     return (
       <>
         <h2 className="sr-only">{t(section.label)}</h2>
-        {action && <div className="flex justify-end px-5 pt-4">{action}</div>}
       </>
     );
   return (
