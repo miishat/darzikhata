@@ -117,12 +117,12 @@ export function DesktopStaff() {
             ))}
           </tbody>
         </table>
-        <div>
-          <Button onClick={() => edit(null)}>
-            <Plus aria-hidden="true" size={18} />
-            {t('settings.staff.new')}
-          </Button>
-        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface/60 px-4 py-3 sm:px-5">
+        <Button onClick={() => edit(null)} className="ms-auto">
+          <Plus aria-hidden="true" size={18} />
+          {t('settings.staff.new')}
+        </Button>
       </div>
       {editing && (
         <StaffDrawer

@@ -104,12 +104,12 @@ export function DesktopTemplates() {
             ))}
           </tbody>
         </table>
-        <div>
-          <Link to={`${TEMPLATES_PATH}/new`} className={buttonClasses('primary')}>
-            <Plus aria-hidden="true" size={18} />
-            {t('settings.templates.new')}
-          </Link>
-        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface/60 px-4 py-3 sm:px-5">
+        <Link to={`${TEMPLATES_PATH}/new`} className={`${buttonClasses('primary')} ms-auto`}>
+          <Plus aria-hidden="true" size={18} />
+          {t('settings.templates.new')}
+        </Link>
       </div>
       {(open || isNew) && (
         <TemplateDrawer
