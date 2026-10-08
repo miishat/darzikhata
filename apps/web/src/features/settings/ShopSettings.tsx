@@ -9,6 +9,10 @@ import { TextField } from '../../ui/TextField';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { configProblemText } from './configProblems';
 import { SECTION_BODY, SectionHeader, SettingCard } from './SettingsCards';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { ShopPrototype } from './ShopPrototype';
+
+const VARIANTS = { A: 'Current cards', B: 'Settings rows', C: 'Form + live receipt', D: 'Two cards, quick picks', E: 'Summary, change in place' };
 
 interface ShopInput {
   nameBn: string;
@@ -31,6 +35,7 @@ function parseLinkDays(text: string): number | null {
 export function ShopSettings() {
   const { t, language } = useI18n();
   const store = useStore();
+  const variant = useVariant(Object.keys(VARIANTS));
   const { config } = useSnapshot();
 
   const [initial, setInitial] = useState<ShopInput>(() => ({
@@ -102,6 +107,16 @@ export function ShopSettings() {
     <form onSubmit={save} noValidate className="flex min-h-0 flex-1 flex-col">
       <SectionHeader path="shop" />
       <div className={`${SECTION_BODY} p-4 sm:p-5`}>
+        {variant !== 'A' ? (
+          <ShopPrototype
+            variant={variant}
+            input={input}
+            set={set}
+            nameError={nameMissing ? t('settings.shop.error.name') : undefined}
+            daysError={daysInvalid ? t('settings.shop.error.days') : undefined}
+            shownName={shownName}
+          />
+        ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           <SettingCard icon={Store} title={t('settings.shop.nameCard')} sub={t('settings.shop.nameCardHint')}>
             <TextField
@@ -156,6 +171,7 @@ export function ShopSettings() {
             </div>
           </SettingCard>
         </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface/60 px-4 py-3 sm:px-5">
         {problem && (
@@ -179,6 +195,7 @@ export function ShopSettings() {
         </div>
       </div>
       {dialog}
+      <PrototypeSwitcher variants={VARIANTS} />
     </form>
   );
 }
