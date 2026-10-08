@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- On a phone, a garment's measurements (from its card on the order, or from the work list) now open as tiles with large numbers, two to a row and grouped as on the form, with when and how they were taken under the title. The sheet closes with a ✕ beside the title or by tapping outside, in place of the full-width Close button.
 - On a desktop, the hand-over confirmation shows the garment in a small card with the customer and order number, and any balance still owed as a highlighted line with the amount. The repeated "Confirm Hand-Over" heading is gone (the garment makes it plain), and the button now says Hand Over. Phones keep their dialog.
 - On a desktop customer's page, the link to all their orders under the order history is now a button, "See All Orders (3)", with an arrow, in place of the small underlined "All 3".
 - The desktop settings sections for the shop, garments and stages, and staff no longer repeat their name and summary at the top of the card, since the chosen tile above already shows them. The New Garment and New Staff Member buttons now sit in a bar along the bottom of the card, like the Shop page's Save button.
