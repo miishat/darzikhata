@@ -1,5 +1,5 @@
 import { isOrderClosed, itemSummaryGroup, moneySummary, orderProgress, type Order, type OrderItem } from '@darzikhata/domain';
-import { Ellipsis, EllipsisVertical, ExternalLink, FileText, MessageSquare, Pencil, Phone, Printer, Repeat, Scissors, Share2, Tag, Ban, TriangleAlert, X, ArrowRightLeft, type LucideIcon } from 'lucide-react';
+import { Ellipsis, EllipsisVertical, ExternalLink, FileText, MessageSquare, Pencil, Phone, Printer, Repeat, Scissors, Share2, Tag, Ban, TriangleAlert, X, ArrowRightLeft, CalendarDays, UserRound, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -25,7 +25,7 @@ import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { ItemCardPrototype } from './ItemCardPrototype';
 import { MobileItemCard } from './MobileItemCard';
 
-const VARIANTS = { A: 'Current card', B: 'Phone card as is', C: 'Compact facts row', D: 'Slim status band', E: 'Named stage stepper', F: 'D, worker right, notes centred', G: 'D, worker right, notes beside the button' };
+const VARIANTS = { A: 'Current card', B: 'Phone card as is', C: 'A, facts tidied', D: 'Slim status band', E: 'Named stage stepper', F: 'D, worker right, notes centred', G: 'D, worker right, notes beside the button' };
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
 export function fullPageTo(orderId: string, search: string): { pathname: string; search: string } {
@@ -215,6 +215,8 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
         {order.items.map((item) =>
           variant === 'A' ? (
             <PanelItem key={item.id} order={order} item={item} />
+          ) : variant === 'C' ? (
+            <PanelItem key={item.id} order={order} item={item} tidy />
           ) : variant === 'B' ? (
             <MobileItemCard key={item.id} order={order} item={item} />
           ) : (
@@ -264,7 +266,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign';
 
 /** One garment in the panel: stage, a strip of progress, the usual next move, and the rest behind a menu. */
-export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
+export function PanelItem({ order, item, tidy }: { order: Order; item: OrderItem; tidy?: boolean }) {
   const { t, language, label, date, number } = useI18n();
   const can = useCan();
   const hasAccess = useMeasurementAccess();
@@ -344,7 +346,48 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
 
         {!item.cancelled && stageIndex >= 0 && <StageStrip total={item.stages.length} current={stageIndex + 1} stage={stage ? label(stage.label) : item.stageKey} />}
 
-        {!item.cancelled && (
+        {!item.cancelled && tidy && (
+          <div className="flex flex-col gap-1.5 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                <CalendarDays aria-hidden="true" size={15} className="text-muted" />
+                <span className="text-muted">{t('item.deliveryLabel')}</span>
+                <span className="font-semibold">{item.deliveryDate ? date(item.deliveryDate) : '—'}</span>
+                {open && item.deliveryDate && <DueLabel date={item.deliveryDate} />}
+              </span>
+              {worker ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5">
+                  <UserRound aria-hidden="true" size={15} className="text-muted" />
+                  <span className="text-muted">{t('item.workerLabel')}</span>
+                  <span className="font-semibold">{worker.name}</span>
+                </span>
+              ) : delivered ? null : can('work.assign') ? (
+                <button
+                  type="button"
+                  onClick={() => setDialog('assign')}
+                  className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-lg ring-1 ring-inset ring-warn-line bg-warn-soft px-2 font-semibold text-warn-ink focus-visible:outline-2 focus-visible:outline-focus"
+                >
+                  <TriangleAlert aria-hidden="true" size={14} />
+                  {t('work.assign')}
+                </button>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-warn">
+                  <TriangleAlert aria-hidden="true" size={14} />
+                  {t('item.noWorker')}
+                </span>
+              )}
+            </div>
+            {item.trialDate && (
+              <span className="inline-flex items-center gap-1.5">
+                <Scissors aria-hidden="true" size={15} className="text-muted" />
+                <span className="text-muted">{t('item.trialLabel')}</span>
+                <span className="font-semibold">{date(item.trialDate)}</span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {!item.cancelled && !tidy && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {item.deliveryDate && (
               <span className="inline-flex flex-wrap items-center gap-x-2 text-muted">
