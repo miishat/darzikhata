@@ -234,7 +234,7 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
               )}
               {variant === 'B' && (
                 <Link to={allOrders} className={`${buttonClasses('secondary')} self-start`}>
-                  {pick(`সব ${number(orders.length)}টি অর্ডার দেখুন`, `See All ${orders.length} Orders`)}
+                  {pick(`সব অর্ডার দেখুন (${number(orders.length)})`, `See All Orders (${orders.length})`)}
                   <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               )}
