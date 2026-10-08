@@ -1,6 +1,7 @@
 import { moneySummary, type EventBody, type ItemChanges, type Order, type OrderItem } from '@darzikhata/domain';
+import { PackageCheck, Shirt, Wallet } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
-import { useStore } from '../../data/StoreContext';
+import { useSnapshot, useStore } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
@@ -12,6 +13,7 @@ import { useCan } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
 import { problemText } from '../common/problemText';
 import { stageMoves } from './stageMoves';
+import { useShellKind } from '../../shell/ShellPreference';
 
 export interface ItemDialogProps {
   order: Order;
@@ -93,6 +95,60 @@ export function HandOverDialog({ order, item, onClose }: ItemDialogProps) {
   const { problem, working, save } = useSave(onClose);
   const target = stageMoves(item).find((m) => m.stage.group === 'delivered')?.stage.key;
   const balance = moneySummary(order).balance;
+  const kind = useShellKind();
+  const { state } = useSnapshot();
+  const confirm = () => {
+    if (target) void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: target, reason: '' });
+  };
+
+  // On a desktop the garment speaks for itself: no visible title, the garment and customer, and any balance called out.
+  if (kind === 'desktop') {
+    const customer = state.customers[order.customerId];
+    return (
+      <Dialog
+        open
+        hideTitle
+        title={t('item.handOverTitle')}
+        onClose={onClose}
+        actions={
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button disabled={working} onClick={confirm}>
+              <PackageCheck size={18} aria-hidden="true" />
+              {t('item.handOver')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4 text-ink">
+          <div className="flex items-center gap-3 rounded-xl border border-line p-3">
+            <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-full bg-ok-soft text-ok">
+              <Shirt size={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-lg font-semibold">{itemTitle(order, item, language)}</p>
+              <p className="truncate text-sm text-muted">{[customer?.name, order.number].filter(Boolean).join(' · ')}</p>
+            </div>
+          </div>
+          {can('money.view') && balance > 0 && (
+            <div className="flex items-center gap-3 rounded-xl bg-warn-soft px-4 py-3 text-warn-ink ring-1 ring-warn-line ring-inset">
+              <Wallet size={20} aria-hidden="true" />
+              <span className="flex-1 text-sm font-semibold">{t('item.stillOwed')}</span>
+              <span className="font-display text-xl font-bold">{money(balance)}</span>
+            </div>
+          )}
+          {problem && (
+            <p role="alert" className="text-danger">
+              {problem}
+            </p>
+          )}
+        </div>
+      </Dialog>
+    );
+  }
+
   return (
     <Shell
       title={t('item.handOverTitle')}
@@ -100,9 +156,7 @@ export function HandOverDialog({ order, item, onClose }: ItemDialogProps) {
       working={working}
       problem={problem}
       saveLabel={t('common.confirm')}
-      onSave={() => {
-        if (target) void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: target, reason: '' });
-      }}
+      onSave={confirm}
     >
       <p>{t('item.handOverBody', { item: itemTitle(order, item, language) })}</p>
       {can('money.view') && balance > 0 && <p className="font-semibold">{t('item.balanceDue', { amount: money(balance) })}</p>}

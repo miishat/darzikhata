@@ -50,7 +50,8 @@ describe('Order detail', () => {
 
     await userEvent.click(within(card).getByRole('button', { name: 'হস্তান্তর করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'নিশ্চিত করুন' }));
+    expect(within(dialog).getByText(title(order, item))).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'হস্তান্তর করুন' }));
 
     expect(await within(card).findByText('ডেলিভারি হয়েছে')).toBeTruthy();
     const after = latest(store, order.id);
@@ -72,7 +73,7 @@ describe('Order detail', () => {
     const confirm = await screen.findByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
     expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe(item.stageKey);
 
-    await userEvent.click(within(confirm).getByRole('button', { name: 'নিশ্চিত করুন' }));
+    await userEvent.click(within(confirm).getByRole('button', { name: 'হস্তান্তর করুন' }));
     expect(await within(card).findByText('ডেলিভারি হয়েছে')).toBeTruthy();
     expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe('delivered');
   });

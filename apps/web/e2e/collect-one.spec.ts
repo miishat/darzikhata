@@ -22,7 +22,8 @@ test('handing over one garment leaves the order open', async ({ page }) => {
 
   await detail.getByRole('button', { name: 'হস্তান্তর করুন' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'হস্তান্তর নিশ্চিত করুন' });
-  await dialog.getByRole('button', { name: 'নিশ্চিত করুন' }).click();
+  // The laptop's dialog says what it does on the button; the phone's asks to confirm.
+  await dialog.getByRole('button', { name: isPhone(page) ? 'নিশ্চিত করুন' : 'হস্তান্তর করুন' }).click();
   await expect(dialog).toBeHidden();
 
   // Both layouts show a stage pill; the delivered pill and the fewer hand-over buttons below are the proof.

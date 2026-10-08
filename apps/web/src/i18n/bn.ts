@@ -531,6 +531,7 @@ export const bn = {
   'item.handOver': 'হস্তান্তর করুন',
   'item.handOverTitle': 'হস্তান্তর নিশ্চিত করুন',
   'item.handOverBody': '{item} কাস্টমারকে দেওয়া হচ্ছে।',
+  'item.stillOwed': 'এই অর্ডারে এখনো বাকি',
   'item.balanceDue': 'এই অর্ডারে এখনো বাকি {amount}',
   'item.thisGarment': 'এই পোশাক',
   'item.otherStage': 'অন্য ধাপ…',
