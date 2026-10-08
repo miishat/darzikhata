@@ -8,6 +8,10 @@ import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { MeasurementComparisonTable } from './MeasurementTable';
 import { comparisonColumns } from './measurementView';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { MeasurementPrototype } from './MeasurementPrototype';
+
+const VARIANTS = { A: 'Current table', B: 'Tiles', C: 'Lists + compare switch', D: 'Version history', E: 'Side garments, folded compare' };
 
 /** The customer's measurements, one tab per garment. */
 export function MeasurementSection({ customerId }: { customerId: string }) {
@@ -17,6 +21,7 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
   const { state, config } = useSnapshot();
   const [params, setParams] = useSearchParams();
   const customer = state.customers[customerId];
+  const variant = useVariant(Object.keys(VARIANTS));
 
   const body = (() => {
     if (!customer) return null;
@@ -54,6 +59,7 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
       document.getElementById(`measure-tab-${next.id}`)?.focus();
     };
 
+    if (variant !== 'A') return <MeasurementPrototype variant={variant} customerId={customerId} templates={templates} selected={selected} select={select} />;
     return (
       <>
         <div role="tablist" aria-label={t('measure.tabs')} className="flex flex-wrap gap-2">
@@ -98,12 +104,20 @@ export function MeasurementSection({ customerId }: { customerId: string }) {
     );
   })();
 
+  if (variant !== 'A' && body && typeof body === 'object' && 'props' in body && (body.props as { variant?: string }).variant)
+    return (
+      <>
+        {body}
+        <PrototypeSwitcher variants={VARIANTS} />
+      </>
+    );
   return (
     <section aria-labelledby="customer-measurements" className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-4">
       <h2 id="customer-measurements" className="font-semibold">
         {t('measure.section')}
       </h2>
       {body}
+      <PrototypeSwitcher variants={VARIANTS} />
     </section>
   );
 }
