@@ -68,11 +68,14 @@ function NativeSelect({ value, options, onChange, id, label, labelledBy, describ
 }
 
 const MAX_HEIGHT = 288;
+const EDGE = 8;
+/** Before it is placed: fixed and hidden, so it takes its own width and can be measured. */
+const MEASURING: CSSProperties = { position: 'fixed', left: 0, top: 0, visibility: 'hidden' };
 
 function MenuSelect({ value, options, onChange, id, label, labelledBy, describedBy, invalid, size = 'sm', className = '' }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [style, setStyle] = useState<CSSProperties>({ visibility: 'hidden' });
+  const [style, setStyle] = useState<CSSProperties>(MEASURING);
   const button = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const typed = useRef({ text: '', at: 0 });
@@ -80,17 +83,21 @@ function MenuSelect({ value, options, onChange, id, label, labelledBy, described
   const chosen = options.findIndex((o) => o.value === value);
   const current = options[chosen];
 
-  // Below the button, or above it when there is more room there; fixed, so no scroll area can clip it.
+  // Below the button, or above it when there is more room there; fixed, so no scroll area can clip it. It lines up
+  // with the button's left edge, or with its right edge when it would run off the window (a button near the right).
   const place = useCallback(() => {
     const r = button.current?.getBoundingClientRect();
     if (!r) return;
-    const below = window.innerHeight - r.bottom - 8;
-    const above = r.top - 8;
+    const viewWidth = document.documentElement.clientWidth || window.innerWidth;
+    const below = window.innerHeight - r.bottom - EDGE;
+    const above = r.top - EDGE;
     const height = Math.min(MAX_HEIGHT, list.current?.scrollHeight ?? MAX_HEIGHT);
+    const width = Math.max(r.width, list.current?.offsetWidth ?? 0);
     const up = below < height && above > below;
+    const left = r.left + width > viewWidth - EDGE ? Math.max(EDGE, r.right - width) : r.left;
     setStyle({
       position: 'fixed',
-      left: r.left,
+      left,
       minWidth: r.width,
       ...(up ? { bottom: window.innerHeight - r.top + 4, maxHeight: Math.min(MAX_HEIGHT, above) } : { top: r.bottom + 4, maxHeight: Math.min(MAX_HEIGHT, below) }),
     });
@@ -127,7 +134,7 @@ function MenuSelect({ value, options, onChange, id, label, labelledBy, described
     // Some browsers (Safari) do not focus a clicked button; the keys below need it.
     button.current?.focus();
     setActive(Math.max(0, Math.min(options.length - 1, at)));
-    setStyle({ visibility: 'hidden' });
+    setStyle(MEASURING);
     setOpen(true);
   };
   const choose = (at: number) => {
