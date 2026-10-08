@@ -21,6 +21,11 @@ import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { nextMove } from './stageMoves';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { ItemCardPrototype } from './ItemCardPrototype';
+import { MobileItemCard } from './MobileItemCard';
+
+const VARIANTS = { A: 'Current card', B: 'Phone card as is', C: 'Compact facts row', D: 'Slim status band', E: 'Named stage stepper' };
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
 export function fullPageTo(orderId: string, search: string): { pathname: string; search: string } {
@@ -102,6 +107,7 @@ export function useOrderHandOver(order: Order) {
  */
 export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }) {
   const { t, language } = useI18n();
+  const variant = useVariant(Object.keys(VARIANTS));
   const can = useCan();
   const { state } = useSnapshot();
   const { search } = useLocation();
@@ -206,9 +212,16 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
 
         {can('money.view') && <MoneyCard order={order} open={money.open} />}
 
-        {order.items.map((item) => (
-          <PanelItem key={item.id} order={order} item={item} />
-        ))}
+        {order.items.map((item) =>
+          variant === 'A' ? (
+            <PanelItem key={item.id} order={order} item={item} />
+          ) : variant === 'B' ? (
+            <MobileItemCard key={item.id} order={order} item={item} />
+          ) : (
+            <ItemCardPrototype key={item.id} variant={variant} order={order} item={item} />
+          ),
+        )}
+        <PrototypeSwitcher variants={VARIANTS} />
       </div>
 
       {hasFooter && (
