@@ -5,17 +5,15 @@ import { useState } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
-import { Button } from '../../ui/Button';
-import { Dialog } from '../../ui/Dialog';
 import { DueLabel } from '../../ui/DueLabel';
 import { stageTone, TONE_BAND } from '../../ui/stageTone';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
-import { MeasurementTable } from '../customers/MeasurementTable';
 import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { nextMove } from './stageMoves';
+import { MeasurementSheet } from '../customers/MeasurementSheet';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
 
@@ -292,20 +290,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
       {dialog === 'cancel' && <CancelItemDialog order={order} item={item} onClose={close} />}
       {dialog === 'assign' && <BatchAssignDialog refs={[{ order, item }]} onClose={close} />}
       {dialog === 'measure' && template && item.measurements && (
-        <Dialog
-          open
-          title={t('item.measureTitle', { item: title })}
-          onClose={close}
-          actions={
-            <Button variant="secondary" onClick={close}>
-              {t('common.close')}
-            </Button>
-          }
-        >
-          <div className="text-ink">
-            <MeasurementTable template={template} values={item.measurements.values} />
-          </div>
-        </Dialog>
+        <MeasurementSheet title={t('item.measureTitle', { item: title })} template={template} snapshot={item.measurements} onClose={close} />
       )}
     </>
   );

@@ -5,16 +5,15 @@ import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
-import { Dialog } from '../../ui/Dialog';
 import { rovingTabsKeyDown } from '../../ui/rovingTabs';
 import { DueLabel } from '../../ui/DueLabel';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
-import { MeasurementTable } from '../customers/MeasurementTable';
 import { MoveOn } from '../orders/ItemCard';
 import { nextMove } from '../orders/stageMoves';
 import { useWorkList } from './useWorkList';
 import { WORK_PHASES, phaseCounts, workPhase, type WorkPhase } from './workList';
+import { MeasurementSheet } from '../customers/MeasurementSheet';
 
 function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }) {
   const { t, language, label } = useI18n();
@@ -77,20 +76,7 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
         </div>
       </section>
       {measuring && template && item.measurements && (
-        <Dialog
-          open
-          title={t('item.measureTitle', { item: title })}
-          onClose={() => setMeasuring(false)}
-          actions={
-            <Button variant="secondary" onClick={() => setMeasuring(false)}>
-              {t('common.close')}
-            </Button>
-          }
-        >
-          <div className="text-ink">
-            <MeasurementTable template={template} values={item.measurements.values} />
-          </div>
-        </Dialog>
+        <MeasurementSheet title={t('item.measureTitle', { item: title })} template={template} snapshot={item.measurements} onClose={() => setMeasuring(false)} />
       )}
     </li>
   );

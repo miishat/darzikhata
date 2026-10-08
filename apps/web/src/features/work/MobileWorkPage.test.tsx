@@ -31,6 +31,21 @@ describe('Phone work list', () => {
     expect(screen.getAllByRole('region')).toHaveLength(counts.start);
   });
 
+  it('shows a garment’s measurements as tiles with when they were taken, and closes with the ✕', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/work' });
+    const [first] = await screen.findAllByRole('button', { name: /^মাপ/ });
+    await userEvent.click(first!);
+
+    const sheet = await screen.findByRole('dialog', { name: /এর মাপ$/ });
+    expect(within(sheet).getByText(/শরীর থেকে|নমুনা পোশাক থেকে/)).toBeTruthy();
+    expect(within(sheet).getAllByRole('listitem').length).toBeGreaterThan(0);
+    expect(within(sheet).queryByRole('button', { name: 'বন্ধ করুন' })).not.toBeNull();
+    expect(within(sheet).getAllByRole('button')).toHaveLength(1);
+
+    await userEvent.click(within(sheet).getByRole('button', { name: 'বন্ধ করুন' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
   it('lets a tailor finish a garment with one tap', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'nakshi', path: '/app/work', as: { staffId: 'nakshi-tailor', pin: '4444' } });
     const orders = Object.values(store.getSnapshot().state.orders);
