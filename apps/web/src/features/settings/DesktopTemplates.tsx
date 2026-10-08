@@ -63,15 +63,7 @@ export function DesktopTemplates() {
 
   return (
     <>
-      <SectionHeader
-        path="templates"
-        action={
-          <Link to={`${TEMPLATES_PATH}/new`} className={buttonClasses('primary')}>
-            <Plus aria-hidden="true" size={18} />
-            {t('settings.templates.new')}
-          </Link>
-        }
-      />
+      <SectionHeader path="templates" />
       <div className={`${SECTION_BODY} flex flex-col gap-3 p-5`}>
         {saved && (
           <p role="status" className="text-brand-strong">
@@ -112,6 +104,12 @@ export function DesktopTemplates() {
             ))}
           </tbody>
         </table>
+        <div>
+          <Link to={`${TEMPLATES_PATH}/new`} className={buttonClasses('primary')}>
+            <Plus aria-hidden="true" size={18} />
+            {t('settings.templates.new')}
+          </Link>
+        </div>
       </div>
       {(open || isNew) && (
         <TemplateDrawer

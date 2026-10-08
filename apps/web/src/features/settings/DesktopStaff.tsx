@@ -59,15 +59,7 @@ export function DesktopStaff() {
 
   return (
     <>
-      <SectionHeader
-        path="staff"
-        action={
-          <Button onClick={() => edit(null)}>
-            <Plus aria-hidden="true" size={18} />
-            {t('settings.staff.new')}
-          </Button>
-        }
-      />
+      <SectionHeader path="staff" />
       <div className={`${SECTION_BODY} flex flex-col gap-3 p-5`}>
         {note.saved && (
           <p role="status" className="text-brand-strong">
@@ -125,6 +117,12 @@ export function DesktopStaff() {
             ))}
           </tbody>
         </table>
+        <div>
+          <Button onClick={() => edit(null)}>
+            <Plus aria-hidden="true" size={18} />
+            {t('settings.staff.new')}
+          </Button>
+        </div>
       </div>
       {editing && (
         <StaffDrawer
