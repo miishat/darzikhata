@@ -21,6 +21,8 @@ import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { nextMove } from './stageMoves';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
+import { HAND_OVER_VARIANTS } from './itemDialogs';
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
 export function fullPageTo(orderId: string, search: string): { pathname: string; search: string } {
@@ -209,6 +211,7 @@ export function OrderPanel({ order, onClose }: { order: Order; onClose(): void }
         {order.items.map((item) => (
           <PanelItem key={item.id} order={order} item={item} />
         ))}
+        <PrototypeSwitcher variants={HAND_OVER_VARIANTS} />
       </div>
 
       {hasFooter && (

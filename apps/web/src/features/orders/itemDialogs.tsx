@@ -12,6 +12,11 @@ import { useCan } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
 import { problemText } from '../common/problemText';
 import { stageMoves } from './stageMoves';
+import { useShellKind } from '../../shell/ShellPreference';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { HandOverPrototype } from './HandOverPrototype';
+
+export const HAND_OVER_VARIANTS = { A: 'Current', B: 'Garment card + balance callout', C: 'Receipt-like summary', D: 'Money first', E: 'Question title + customer' };
 
 export interface ItemDialogProps {
   order: Order;
@@ -93,6 +98,13 @@ export function HandOverDialog({ order, item, onClose }: ItemDialogProps) {
   const { problem, working, save } = useSave(onClose);
   const target = stageMoves(item).find((m) => m.stage.group === 'delivered')?.stage.key;
   const balance = moneySummary(order).balance;
+  const kind = useShellKind();
+  const variant = useVariant(Object.keys(HAND_OVER_VARIANTS));
+  const confirm = () => {
+    if (target) void save({ type: 'item.stageChanged', orderId: order.id, itemId: item.id, to: target, reason: '' });
+  };
+  if (kind === 'desktop' && variant !== 'A')
+    return <HandOverPrototype variant={variant} order={order} item={item} onClose={onClose} working={working} problem={problem} confirm={confirm} />;
   return (
     <Shell
       title={t('item.handOverTitle')}
