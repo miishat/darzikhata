@@ -25,7 +25,7 @@ import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import { ItemCardPrototype } from './ItemCardPrototype';
 import { MobileItemCard } from './MobileItemCard';
 
-const VARIANTS = { A: 'Current card', B: 'Phone card as is', C: 'Compact facts row', D: 'Slim status band', E: 'Named stage stepper' };
+const VARIANTS = { A: 'Current card', B: 'Phone card as is', C: 'Compact facts row', D: 'Slim status band', E: 'Named stage stepper', F: 'D, worker right, notes centred', G: 'D, worker right, notes beside the button' };
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
 export function fullPageTo(orderId: string, search: string): { pathname: string; search: string } {

@@ -131,16 +131,24 @@ function Delivered({ item }: { item: OrderItem }) {
   );
 }
 
-function Notes({ item, d }: { item: OrderItem; d: ItemData }) {
-  const { t, number } = useI18n();
+function Notes({ item, d, center }: { item: OrderItem; d: ItemData; center?: boolean }) {
+  const { t } = useI18n();
   if (!d.hasNotes) return null;
   return (
     <details className="group text-sm">
-      <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1 font-semibold text-muted">
+      <summary className={`flex min-h-9 cursor-pointer list-none items-center gap-1 font-semibold text-muted ${center ? 'justify-center' : ''}`}>
         {t('item.details')}
         <ChevronDown aria-hidden="true" size={16} className="group-open:rotate-180" />
       </summary>
-      <div className="flex flex-col gap-2 pt-1">
+      <NotesBody item={item} d={d} />
+    </details>
+  );
+}
+
+function NotesBody({ item, d }: { item: OrderItem; d: ItemData }) {
+  const { t, number } = useI18n();
+  return (
+      <div className="flex flex-col gap-2 pt-1 text-sm">
         {item.designNotes && <p>{item.designNotes}</p>}
         {item.fabricNote && <p>{item.fabricNote}</p>}
         {item.photoIds.length > 0 && (
@@ -176,7 +184,6 @@ function Notes({ item, d }: { item: OrderItem; d: ItemData }) {
           </div>
         )}
       </div>
-    </details>
   );
 }
 
@@ -274,7 +281,7 @@ function Compact({ order, item }: { order: Order; item: OrderItem }) {
   );
   return (
     <>
-      <section aria-label={d.title} className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-3">
+      <section aria-label={d.title} className="shrink-0 flex flex-col gap-3 rounded-xl border border-line bg-panel p-3">
         <div className="flex items-center gap-3">
           <span aria-hidden="true" className={`grid size-10 shrink-0 place-items-center rounded-lg ${TONE_BAND[d.tone]}`}>
             <Shirt size={20} />
@@ -324,13 +331,15 @@ function Compact({ order, item }: { order: Order; item: OrderItem }) {
 }
 
 /** D: the phone's coloured status band, slimmer, with the facts as one line and a filled move button. */
-function Band({ order, item }: { order: Order; item: OrderItem }) {
+function Band({ order, item, layout = 'D' }: { order: Order; item: OrderItem; layout?: 'D' | 'F' | 'G' }) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const right = layout !== 'D';
   const { t, date, number } = useI18n();
   const d = useItem(order, item);
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   return (
     <>
-      <section aria-label={d.title} className="overflow-hidden rounded-xl border border-line bg-panel">
+      <section aria-label={d.title} className="shrink-0 overflow-hidden rounded-xl border border-line bg-panel">
         <div className={`flex flex-col gap-2 px-3 py-2.5 ${TONE_BAND[d.tone]}`}>
           <div className="flex items-center gap-2">
             <p className="min-w-0 flex-1 truncate">
@@ -367,19 +376,36 @@ function Band({ order, item }: { order: Order; item: OrderItem }) {
                   <span className="text-muted">{t('item.trialLabel')}</span> {date(item.trialDate)}
                 </span>
               )}
-              <AssignOrWorker d={d} setDialog={setDialog}>
-                {(name) => (
-                  <span className="inline-flex items-center gap-1.5">
-                    <UserRound aria-hidden="true" size={15} className="text-muted" />
-                    <span className="text-muted">{t('item.workerLabel')}</span> {name}
-                  </span>
-                )}
-              </AssignOrWorker>
+              <span className={right ? 'ms-auto' : ''}>
+                <AssignOrWorker d={d} setDialog={setDialog}>
+                  {(name) => (
+                    <span className="inline-flex items-center gap-1.5">
+                      <UserRound aria-hidden="true" size={15} className="text-muted" />
+                      <span className="text-muted">{t('item.workerLabel')}</span> {name}
+                    </span>
+                  )}
+                </AssignOrWorker>
+              </span>
             </div>
           )}
           <Measures item={item} d={d} setDialog={setDialog} />
           {item.cancelled ? (
             <p className="font-semibold text-danger">{t('item.cancelled', { reason: item.cancelled.reason })}</p>
+          ) : layout === 'G' && (d.canMove || d.delivered || d.hasNotes) ? (
+            <div className="flex items-center gap-3">
+              {d.canMove ? <NextButton order={order} item={item} d={d} setDialog={setDialog} /> : d.delivered ? <Delivered item={item} /> : <span className="flex-1" />}
+              {d.hasNotes && (
+                <button
+                  type="button"
+                  aria-expanded={notesOpen}
+                  onClick={() => setNotesOpen(!notesOpen)}
+                  className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-muted hover:bg-surface"
+                >
+                  {t('item.details')}
+                  <ChevronDown aria-hidden="true" size={16} className={notesOpen ? 'rotate-180' : ''} />
+                </button>
+              )}
+            </div>
           ) : d.canMove ? (
             <div className="flex">
               <NextButton order={order} item={item} d={d} setDialog={setDialog} />
@@ -387,7 +413,7 @@ function Band({ order, item }: { order: Order; item: OrderItem }) {
           ) : (
             d.delivered && <Delivered item={item} />
           )}
-          <Notes item={item} d={d} />
+          {layout === 'G' ? notesOpen && <NotesBody item={item} d={d} /> : <Notes item={item} d={d} center={layout === 'F'} />}
         </div>
       </section>
       <Dialogs order={order} item={item} d={d} dialog={dialog} close={() => setDialog(null)} />
@@ -411,7 +437,7 @@ function Stepper({ order, item }: { order: Order; item: OrderItem }) {
   );
   return (
     <>
-      <section aria-label={d.title} className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-4">
+      <section aria-label={d.title} className="shrink-0 flex flex-col gap-3 rounded-xl border border-line bg-panel p-4">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-display text-lg font-semibold">{d.title}</h3>
@@ -468,5 +494,7 @@ function Stepper({ order, item }: { order: Order; item: OrderItem }) {
 export function ItemCardPrototype({ variant, order, item }: { variant: string; order: Order; item: OrderItem }) {
   if (variant === 'C') return <Compact order={order} item={item} />;
   if (variant === 'D') return <Band order={order} item={item} />;
+  if (variant === 'F') return <Band order={order} item={item} layout="F" />;
+  if (variant === 'G') return <Band order={order} item={item} layout="G" />;
   return <Stepper order={order} item={item} />;
 }
