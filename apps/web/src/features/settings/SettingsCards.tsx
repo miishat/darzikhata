@@ -3,6 +3,7 @@ import { ChevronRight, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useShellKind } from '../../shell/ShellPreference';
 import { SETTINGS_SECTIONS, type SettingsSection } from './sections';
 
 /** A section's scrolling body inside the settings card. `relative` keeps screen-reader text inside it. */
@@ -22,12 +23,23 @@ export function useSectionSummary(): (path: SettingsSection['path']) => string {
   };
 }
 
-/** The top of a section's card: its icon, name and summary, and its main button. */
+/**
+ * The top of a section's card: its icon, name and summary, and its main button. On a desktop the chosen tile above
+ * the card already shows the name and summary, so only the button stays (the name is kept for screen readers).
+ */
 export function SectionHeader({ path, action }: { path: SettingsSection['path']; action?: ReactNode }) {
   const { t } = useI18n();
+  const kind = useShellKind();
   const summary = useSectionSummary();
   const section = SETTINGS_SECTIONS.find((s) => s.path === path)!;
   const Icon = section.icon;
+  if (kind === 'desktop')
+    return (
+      <>
+        <h2 className="sr-only">{t(section.label)}</h2>
+        {action && <div className="flex justify-end px-5 pt-4">{action}</div>}
+      </>
+    );
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong">
