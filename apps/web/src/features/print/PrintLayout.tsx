@@ -140,6 +140,56 @@ function DesktopPrintLayout({ back, title, language, onLanguage, onShare, notice
   );
 }
 
+/**
+ * The phone's print page as a paper: a bar with back, the title and Print, the paper's language under it, then the
+ * document as a card. Printing drops the card and prints the document on A4.
+ */
+export function PhonePaperLayout({ back, title, language, onLanguage, children }: Pick<PrintLayoutProps, 'back' | 'title' | 'language' | 'onLanguage' | 'children'>) {
+  const { t } = useI18n();
+  return (
+    <div className="min-h-dvh bg-surface pb-6 text-ink print:pb-0">
+      <div className="no-print sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-panel/95 px-3 py-2 backdrop-blur">
+        <Link
+          to={back.to}
+          aria-label={back.label}
+          className="grid size-11 shrink-0 place-items-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+        >
+          <ArrowLeft size={22} aria-hidden="true" />
+        </Link>
+        <span className="min-w-0 flex-1 truncate font-display text-lg font-bold">{title}</span>
+        <Button onClick={() => window.print()}>
+          <Printer size={18} aria-hidden="true" />
+          {t('print.print')}
+        </Button>
+      </div>
+      <div role="group" aria-label={t('print.paperLanguage')} className="no-print mx-3 mt-3 flex rounded-xl bg-line/60 p-1">
+        {LANGUAGES.map((option) => {
+          const on = language === option.language;
+          return (
+            <button
+              key={option.language}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onLanguage(option.language)}
+              className={`min-h-9 flex-1 rounded-lg px-3 text-sm focus-visible:outline-2 focus-visible:outline-focus ${
+                on ? 'bg-panel font-semibold text-brand-strong shadow-sm' : 'text-muted'
+              }`}
+            >
+              {option.name}
+            </button>
+          );
+        })}
+      </div>
+      <main
+        lang={language}
+        className="m-3 rounded-2xl bg-panel p-4 shadow-sm ring-1 ring-line print:m-0 print:rounded-none print:p-0 print:shadow-none print:ring-0"
+      >
+        {children}
+      </main>
+    </div>
+  );
+}
+
 /** The phone's print page: a toolbar of buttons, then the document. */
 function PhonePrintLayout({ back, title, language, onLanguage, onShare, notice, children }: PrintLayoutProps) {
   const { t } = useI18n();

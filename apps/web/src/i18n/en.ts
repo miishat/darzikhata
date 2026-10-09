@@ -351,6 +351,7 @@ export const en: Messages = {
   'print.dueWeek': 'This Week',
   'print.dueLater': 'Later',
   'print.stages': 'Stages',
+  'print.paperLanguage': 'Paper Language',
   'print.stageDone': 'done',
   'print.stageNow': 'now',
   'print.papers': 'Papers for This Order',
