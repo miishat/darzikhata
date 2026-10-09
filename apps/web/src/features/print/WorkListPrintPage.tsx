@@ -12,6 +12,8 @@ import { useWorkList } from '../work/useWorkList';
 import { useShell } from '../../shell/ShellPreference';
 import { DesktopWorkPaper } from './DesktopWorkPaper';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { WORK_PRINT_VARIANTS, WorkPrintPrototype } from './WorkPrintPrototype';
 
 /** A paper work list with the same filters and grouping as the screen, one table per group. The desktop has its own A4 layout. */
 export function WorkListPrintPage() {
@@ -24,6 +26,7 @@ export function WorkListPrintPage() {
   const today = useToday();
   const [language, setLanguage] = usePrintLanguage();
   const onlyToday = params.get('today') === '1';
+  const variant = useVariant(Object.keys(WORK_PRINT_VARIANTS));
   /*
    * "Today" is the Home page's own meaning (todoRows over dashboardModel): garments with a trial
    * today, a delivery today, or already late, each once. It narrows the work list, so the
@@ -46,8 +49,32 @@ export function WorkListPrintPage() {
   const filterStage = query.stage === 'all' ? null : groups.flatMap((g) => g.refs).find((r) => r.item.stageKey === query.stage);
   const heading = onlyToday ? t('print.workToday') : t('nav.work');
   const head = 'px-2 py-1 text-start text-sm font-semibold';
+  const customerName = (r: ItemRef) => shop.customers[r.order.customerId]?.name ?? '';
+  const back = `/app/work${search ? `?${search}` : ''}`.replace(/[?&]variant=[A-Z]/, '');
+
+  if (kind !== 'desktop' && variant !== 'A')
+    return (
+      <>
+        <PrototypeSwitcher top={variant === 'D'} variants={WORK_PRINT_VARIANTS} />
+        <WorkPrintPrototype
+          variant={variant}
+          back={back}
+          language={language}
+          onLanguage={setLanguage}
+          config={config}
+          query={query}
+          groups={groups}
+          heading={heading}
+          today={today}
+          onlyToday={onlyToday}
+          customerName={customerName}
+        />
+      </>
+    );
 
   return (
+    <>
+    {kind !== 'desktop' && <PrototypeSwitcher variants={WORK_PRINT_VARIANTS} />}
     <PrintLayout
       back={{ to: `/app/work${search ? `?${search}` : ''}`, label: app.t('print.backToWork') }}
       title={heading}
@@ -117,5 +144,6 @@ export function WorkListPrintPage() {
         </>
       )}
     </PrintLayout>
+    </>
   );
 }
