@@ -105,12 +105,26 @@ describe('Desktop print pages', () => {
     expect(within(papers).getByRole('link', { name: 'কাজের স্লিপ' }).getAttribute('aria-current')).toBe('page');
   });
 
-  it('keeps the phone receipt as it was, without tabs or a slip', async () => {
-    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/receipt/rahman-o40' });
+  it('prints the phone receipt as a cash memo without tabs or a slip, with share and print in the bar', async () => {
+    const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/receipt/rahman-o40' });
+    const order = store.getSnapshot().state.orders['rahman-o40']!;
+    const money = moneySummary(order);
     expect(await screen.findByRole('heading', { name: 'রসিদ' })).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'এই অর্ডারের কাগজ' })).toBeNull();
     expect(screen.queryByRole('region', { name: 'গ্রাহকের অংশ' })).toBeNull();
-    expect(screen.getByRole('table', { name: 'হিসাব' })).toBeTruthy();
+
+    expect(within(screen.getByRole('table', { name: 'পোশাক' })).getAllByRole('row')).toHaveLength(order.items.length + 1);
+    const totals = screen.getByRole('table', { name: 'হিসাব' });
+    expect(within(row(totals, /^মোট/)).getByText(formatTaka(money.total, 'bn'))).toBeTruthy();
+    expect(within(row(totals, /^বাকি/)).getByText(formatTaka(money.balance, 'bn'))).toBeTruthy();
+    expect(order.payments.length).toBeGreaterThan(0);
+    expect(within(screen.getByRole('table', { name: 'পেমেন্ট' })).getAllByRole('row')).toHaveLength(order.payments.length + 1);
+
+    expect(screen.getByRole('button', { name: 'শেয়ার করুন' }).closest('.no-print')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'প্রিন্ট করুন' }).closest('.no-print')).not.toBeNull();
+    expect(screen.getByRole('link', { name: 'অর্ডারে ফিরে যান' }).getAttribute('href')).toBe('/app/orders/rahman-o40');
+    await userEvent.click(within(screen.getByRole('group', { name: 'কাগজের ভাষা' })).getByRole('button', { name: 'English' }));
+    expect(await screen.findByRole('heading', { name: 'Receipt' })).toBeTruthy();
   });
 });
 

@@ -141,10 +141,18 @@ function DesktopPrintLayout({ back, title, language, onLanguage, onShare, notice
 }
 
 /**
- * The phone's print page as a paper: a bar with back, the title and Print, the paper's language under it, then the
+ * The phone's print page as a paper: a bar with back, the title, Share when given, and Print, the paper's language under it, then the
  * document as a card. Printing drops the card and prints the document on A4.
  */
-export function PhonePaperLayout({ back, title, language, onLanguage, children }: Pick<PrintLayoutProps, 'back' | 'title' | 'language' | 'onLanguage' | 'children'>) {
+export function PhonePaperLayout({
+  back,
+  title,
+  language,
+  onLanguage,
+  onShare,
+  notice,
+  children,
+}: Pick<PrintLayoutProps, 'back' | 'title' | 'language' | 'onLanguage' | 'onShare' | 'notice' | 'children'>) {
   const { t } = useI18n();
   return (
     <div className="min-h-dvh bg-surface pb-6 text-ink print:pb-0">
@@ -157,6 +165,16 @@ export function PhonePaperLayout({ back, title, language, onLanguage, children }
           <ArrowLeft size={22} aria-hidden="true" />
         </Link>
         <span className="min-w-0 flex-1 truncate font-display text-lg font-bold">{title}</span>
+        {onShare && (
+          <button
+            type="button"
+            onClick={onShare}
+            aria-label={t('print.share')}
+            className="grid size-11 shrink-0 place-items-center rounded-full text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <Share2 size={20} aria-hidden="true" />
+          </button>
+        )}
         <Button onClick={() => window.print()}>
           <Printer size={18} aria-hidden="true" />
           {t('print.print')}
@@ -180,6 +198,11 @@ export function PhonePaperLayout({ back, title, language, onLanguage, children }
           );
         })}
       </div>
+      {notice && (
+        <p role="status" className="no-print mx-3 mt-2 rounded-lg bg-ok-soft px-3 py-2 text-sm font-semibold text-ok">
+          {notice}
+        </p>
+      )}
       <main
         lang={language}
         className="m-3 rounded-2xl bg-panel p-4 shadow-sm ring-1 ring-line print:m-0 print:rounded-none print:p-0 print:shadow-none print:ring-0"

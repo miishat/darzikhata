@@ -2,11 +2,12 @@ import type { Language } from '@darzikhata/domain';
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
-import { formatDate, formatMoney, translate } from '../../i18n/format';
+import { formatMoney, translate } from '../../i18n/format';
 import { shareOrCopy } from '../../lib/share';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
-import { PrintLayout, usePrintLanguage } from './PrintLayout';
+import { PhonePaperLayout, PrintLayout, usePrintLanguage } from './PrintLayout';
+import { PhoneReceiptMemo } from './PhoneReceiptMemo';
 import { receiptModel, receiptShareText, type ReceiptModel } from './receipt';
 import { ReceiptMemo } from './ReceiptMemo';
 
@@ -51,7 +52,7 @@ export function MoneyTable({ model, language }: { model: ReceiptModel; language:
   );
 }
 
-/** A printable receipt, in its own language, with share and print. A desktop prints it as a cash memo with a tear-off slip. */
+/** A printable receipt, in its own language, with share and print. A desktop prints it as a cash memo with a tear-off slip, a phone without the slip. */
 export function ReceiptPage() {
   const { orderId = '' } = useParams();
   const app = useI18n();
@@ -75,118 +76,28 @@ export function ReceiptPage() {
     if ((await shareOrCopy(t('receipt.title'), text)) === 'copied') setCopied(true);
   };
 
-  return (
+  const back = { to: `/app/orders/${order.id}`, label: app.t('print.back') };
+  const onLanguage = (next: Language) => {
+    setCopied(false);
+    setLanguage(next);
+  };
+  const notice = copied ? app.t('print.copied') : null;
+
+  return kind === 'desktop' ? (
     <PrintLayout
-      back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }}
+      back={back}
       title={t('receipt.title')}
       language={language}
-      onLanguage={(next) => {
-        setCopied(false);
-        setLanguage(next);
-      }}
+      onLanguage={onLanguage}
       onShare={share}
-      notice={copied ? app.t('print.copied') : null}
+      notice={notice}
       orderId={order.id}
     >
-      {kind === 'desktop' ? <ReceiptMemo model={model} language={language} /> : <ReceiptSheet model={model} language={language} />}
+      <ReceiptMemo model={model} language={language} />
     </PrintLayout>
-  );
-}
-
-/** The phone's receipt: shop and order, the garments, the totals and the payments as tables. */
-function ReceiptSheet({ model, language }: { model: ReceiptModel; language: Language }) {
-  const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) => translate(language, key, vars);
-  return (
-    <>
-      <header className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('receipt.title')}</h1>
-          <p className="font-semibold">{model.shop.name}</p>
-          {model.shop.phone && <p>{model.shop.phone}</p>}
-          {model.shop.address && <p>{model.shop.address}</p>}
-        </div>
-        <div className="text-right">
-          <p className="font-semibold">{t('receipt.orderNumber', { number: model.orderNumber })}</p>
-          <p>
-            {t('receipt.date')}: {formatDate(model.createdAt, language)}
-          </p>
-          {model.customer.name && <p>{model.customer.name}</p>}
-          {model.customer.phone && <p>{model.customer.phone}</p>}
-        </div>
-      </header>
-
-      <table aria-label={t('receipt.garments')} className="mb-6 w-full border-collapse text-left">
-        <thead>
-          <tr className="text-sm text-muted">
-            <th scope="col" className="py-1 pr-3">
-              {t('receipt.garment')}
-            </th>
-            <th scope="col" className="py-1 pr-3">
-              {t('receipt.wearer')}
-            </th>
-            <th scope="col" className="py-1 pr-3">
-              {t('receipt.delivery')}
-            </th>
-            <th scope="col" className="py-1 text-right">
-              {t('receipt.price')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {model.lines.map((line) => (
-            <tr key={line.itemId} className="border-t border-line">
-              <td className="py-2 pr-3">
-                <span className={line.cancelled ? 'line-through' : ''}>{line.garment}</span>
-                {line.cancelled && <span className="ml-2 text-sm font-semibold">{t('receipt.cancelled')}</span>}
-              </td>
-              <td className="py-2 pr-3">{line.wearer ?? ''}</td>
-              <td className="py-2 pr-3">{line.deliveryDate ? formatDate(line.deliveryDate, language) : ''}</td>
-              <td className={`py-2 text-right ${line.cancelled ? 'line-through' : ''}`}>
-                {formatMoney(line.price, language)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="print-block mb-6">
-        <MoneyTable model={model} language={language} />
-      </div>
-
-      {model.payments.length > 0 && (
-        <table aria-label={t('receipt.payments')} className="w-full border-collapse text-left">
-          <thead>
-            <tr className="text-sm text-muted">
-              <th scope="col" className="py-1 pr-3">
-                {t('receipt.date')}
-              </th>
-              <th scope="col" className="py-1 pr-3">
-                {t('receipt.kind')}
-              </th>
-              <th scope="col" className="py-1 pr-3">
-                {t('receipt.method')}
-              </th>
-              <th scope="col" className="py-1 pr-3">
-                {t('receipt.reference')}
-              </th>
-              <th scope="col" className="py-1 text-right">
-                {t('receipt.amount')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {model.payments.map((payment) => (
-              <tr key={payment.id} className="border-t border-line">
-                <td className="py-2 pr-3">{formatDate(payment.at, language)}</td>
-                <td className="py-2 pr-3">{t(`receipt.kind.${payment.kind}`)}</td>
-                <td className="py-2 pr-3">{t(`method.${payment.method}`)}</td>
-                <td className="py-2 pr-3">{payment.reference}</td>
-                <td className="py-2 text-right">{formatMoney(payment.effect, language)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </>
+  ) : (
+    <PhonePaperLayout back={back} title={t('receipt.title')} language={language} onLanguage={onLanguage} onShare={share} notice={notice}>
+      <PhoneReceiptMemo model={model} language={language} />
+    </PhonePaperLayout>
   );
 }

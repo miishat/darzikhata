@@ -5,7 +5,7 @@ import { formatDate, formatMoney, formatNumber, translate } from '../../i18n/for
 import type { ReceiptModel } from './receipt';
 
 /** A dotted line from a label out to its amount. Hidden from screen readers. */
-function Leader({ top = false }: { top?: boolean }) {
+export function Leader({ top = false }: { top?: boolean }) {
   return (
     <td aria-hidden="true" className={`w-full px-2 ${top ? 'align-top' : 'align-bottom'}`}>
       <span className={`block border-b border-dotted border-muted ${top ? 'mt-[1.1em]' : 'mb-[0.4em]'}`} />
@@ -45,7 +45,6 @@ export function ReceiptMemo({ model, language }: { model: ReceiptModel; language
   const owed = model.creditDue > 0 ? { label: t('money.creditDue'), amount: model.creditDue } : { label: t('money.balance'), amount: model.balance };
   const orderLabel = t('receipt.orderNumber', { number: '' }).trim();
   const live = model.lines.filter((line) => !line.cancelled).length;
-  const boxed = 'border-y-2 border-ink py-2';
 
   return (
     <div className="mx-auto flex min-h-[269mm] max-w-[150mm] flex-col print:min-h-0">
@@ -90,30 +89,7 @@ export function ReceiptMemo({ model, language }: { model: ReceiptModel; language
         </tbody>
       </table>
 
-      <table aria-label={t('receipt.money')} className="print-block mt-4 w-full border-collapse border-t-2 border-ink">
-        <tbody>
-          <tr aria-hidden="true">
-            <td colSpan={3} className="h-2" />
-          </tr>
-          <MoneyRow label={t('money.subtotal')} amount={money(model.subtotal)} />
-          {model.discount && <MoneyRow label={t('money.discount')} note={model.discount.reason} amount={money(-model.discount.amount)} />}
-          {model.adjustments.length > 0 && (
-            <MoneyRow label={t('money.adjustments')} note={model.adjustments.map((a) => a.reason).join(', ')} amount={money(model.adjustmentsTotal)} />
-          )}
-          <MoneyRow label={t('money.total')} amount={money(model.total)} strong />
-          <MoneyRow label={t('money.paid')} amount={money(model.paid)} />
-          <tr aria-hidden="true">
-            <td colSpan={3} className="h-3" />
-          </tr>
-          <tr data-tour="receipt-balance" className="text-lg font-bold">
-            <th scope="row" className={`${boxed} whitespace-nowrap border-l-2 px-3 text-start`}>
-              {owed.label}
-            </th>
-            <td className={boxed} />
-            <td className={`${boxed} whitespace-nowrap border-r-2 px-3 text-right tabular-nums`}>{money(owed.amount)}</td>
-          </tr>
-        </tbody>
-      </table>
+      <MemoMoney model={model} language={language} />
 
       {model.payments.length > 0 && (
         <table aria-label={t('receipt.payments')} className="mt-6 w-full border-collapse text-left text-sm">
@@ -167,5 +143,39 @@ export function ReceiptMemo({ model, language }: { model: ReceiptModel; language
         <p className="mt-2 text-center text-xs text-muted">{t('receipt.slipHint')}</p>
       </section>
     </div>
+  );
+}
+
+/** The memo's totals with dotted leaders, ending with the amount owed (or the credit due) boxed. */
+export function MemoMoney({ model, language }: { model: ReceiptModel; language: Language }) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const money = (amount: number) => formatMoney(amount, language);
+  const owed = model.creditDue > 0 ? { label: t('money.creditDue'), amount: model.creditDue } : { label: t('money.balance'), amount: model.balance };
+  const boxed = 'border-y-2 border-ink py-2';
+  return (
+  <table aria-label={t('receipt.money')} className="print-block mt-4 w-full border-collapse border-t-2 border-ink">
+    <tbody>
+      <tr aria-hidden="true">
+        <td colSpan={3} className="h-2" />
+      </tr>
+      <MoneyRow label={t('money.subtotal')} amount={money(model.subtotal)} />
+      {model.discount && <MoneyRow label={t('money.discount')} note={model.discount.reason} amount={money(-model.discount.amount)} />}
+      {model.adjustments.length > 0 && (
+        <MoneyRow label={t('money.adjustments')} note={model.adjustments.map((a) => a.reason).join(', ')} amount={money(model.adjustmentsTotal)} />
+      )}
+      <MoneyRow label={t('money.total')} amount={money(model.total)} strong />
+      <MoneyRow label={t('money.paid')} amount={money(model.paid)} />
+      <tr aria-hidden="true">
+        <td colSpan={3} className="h-3" />
+      </tr>
+      <tr data-tour="receipt-balance" className="text-lg font-bold">
+        <th scope="row" className={`${boxed} whitespace-nowrap border-l-2 px-3 text-start`}>
+          {owed.label}
+        </th>
+        <td className={boxed} />
+        <td className={`${boxed} whitespace-nowrap border-r-2 px-3 text-right tabular-nums`}>{money(owed.amount)}</td>
+      </tr>
+    </tbody>
+  </table>
   );
 }

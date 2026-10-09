@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The receipt's print preview on a phone is a cash memo in a paper card instead of wide tables: the shop centred, each garment with a dotted line out to its price, the totals with the amount owed boxed, and the payments as two-line rows. The bar on top has back, the title, Share and Print, with the paper's language under it.
 - The work list's print preview on a phone is a paper card instead of a wide table: each garment shows its delivery date as a calendar block (filled in when late), the order and garment, who wears it, and its stages as circles, grouped as late, this week and later. The bar on top has back, the title and Print, with the paper's language under it.
 - On a phone, a garment's measurements (from its card on the order, or from the work list) now open as tiles with large numbers, two to a row and grouped as on the form, with when and how they were taken under the title. The sheet closes with a ✕ beside the title or by tapping outside, in place of the full-width Close button.
 - On a desktop, the hand-over confirmation shows the garment in a small card with the customer and order number, and any balance still owed as a highlighted line with the amount. The repeated "Confirm Hand-Over" heading is gone (the garment makes it plain), and the button now says Hand Over. Phones keep their dialog.
