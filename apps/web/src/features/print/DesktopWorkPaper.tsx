@@ -16,13 +16,47 @@ export interface DesktopWorkPaperProps {
 }
 
 // Filled shapes must print as they look, not be dropped with the background colours.
-const INK = 'bg-ink [print-color-adjust:exact]';
+export const INK = 'bg-ink [print-color-adjust:exact]';
 
 const addDays = (day: string, n: number) => {
   const d = new Date(`${day}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
+
+const deliveryDay = (r: ItemRef) => r.item.deliveryDate?.slice(0, 10) ?? null;
+
+/** A work paper's three bands by delivery: late, this week and later. Garments with no delivery date go under later. */
+export function deliveryBands(language: Language, today: string) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const isLate = (r: ItemRef) => (deliveryDay(r) ?? today) < today;
+  const week = addDays(today, 7);
+  return {
+    due: deliveryDay,
+    isLate,
+    bands: [
+      { key: 'late', label: t('work.late'), has: isLate },
+      { key: 'week', label: t('print.dueWeek'), has: (r: ItemRef) => !isLate(r) && deliveryDay(r) !== null && deliveryDay(r)! <= week },
+      { key: 'later', label: t('print.dueLater'), has: (r: ItemRef) => !isLate(r) && (deliveryDay(r) === null || deliveryDay(r)! > week) },
+    ],
+  };
+}
+
+/** The delivery date as a small calendar block, filled in when the garment is late. */
+export function DateBlock({ due, late, language, className = '' }: { due: string | null | undefined; late: boolean; language: Language; className?: string }) {
+  return (
+    <div className={`rounded-md border-2 border-ink text-center leading-tight ${late ? `${INK} text-panel` : ''} ${className}`}>
+      {due ? (
+        <>
+          <span className="block font-display text-lg font-bold">{formatNumber(Number(due.slice(8, 10)), language)}</span>
+          <span className="block text-[10px] font-semibold">{formatDate(due, language, { year: false }).split(' ').slice(1).join(' ')}</span>
+        </>
+      ) : (
+        <span className="block py-2 text-xs">-</span>
+      )}
+    </div>
+  );
+}
 
 /**
  * The desktop work list on A4: the shop and the title like the receipt, then a table per group with its garments
@@ -38,14 +72,7 @@ export function DesktopWorkPaper({ language, config, query, groups, heading, tod
     const stage = r.item.stages.find((s) => s.key === r.item.stageKey);
     return stage ? labelIn(stage.label, language) : r.item.stageKey;
   };
-  const due = (r: ItemRef) => r.item.deliveryDate?.slice(0, 10) ?? null;
-  const isLate = (r: ItemRef) => (due(r) ?? today) < today;
-  const week = addDays(today, 7);
-  const bands = [
-    { key: 'late', label: t('work.late'), has: isLate },
-    { key: 'week', label: t('print.dueWeek'), has: (r: ItemRef) => !isLate(r) && due(r) !== null && due(r)! <= week },
-    { key: 'later', label: t('print.dueLater'), has: (r: ItemRef) => !isLate(r) && (due(r) === null || due(r)! > week) },
-  ];
+  const { due, isLate, bands } = deliveryBands(language, today);
 
   const refs = groups.flatMap((g) => g.refs);
   const lateCount = refs.filter(isLate).length;
@@ -136,16 +163,7 @@ function GarmentRow({ r, late, language, other, customer }: { r: ItemRef; late: 
   return (
     <tr className="print-block">
       <td className={`${cell} w-14 pe-3`}>
-        <div className={`rounded-md border-2 border-ink text-center leading-tight ${late ? `${INK} text-panel` : ''}`}>
-          {due ? (
-            <>
-              <span className="block font-display text-lg font-bold">{formatNumber(Number(due.slice(8, 10)), language)}</span>
-              <span className="block text-[10px] font-semibold">{formatDate(due, language, { year: false }).split(' ').slice(1).join(' ')}</span>
-            </>
-          ) : (
-            <span className="block py-2 text-xs">-</span>
-          )}
-        </div>
+        <DateBlock due={due} late={late} language={language} />
       </td>
       <td className={`${cell} pe-3`}>
         <p>

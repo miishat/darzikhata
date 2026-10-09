@@ -350,6 +350,7 @@ export const bn = {
   'print.dueWeek': 'এই সপ্তাহে',
   'print.dueLater': 'পরে',
   'print.stages': 'ধাপগুলো',
+  'print.paperLanguage': 'কাগজের ভাষা',
   'print.stageDone': 'শেষ',
   'print.stageNow': 'এখন',
   'print.papers': 'এই অর্ডারের কাগজ',

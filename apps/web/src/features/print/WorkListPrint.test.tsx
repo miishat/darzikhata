@@ -1,35 +1,35 @@
 import { itemsForWorker, todayInDhaka } from '@darzikhata/domain';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { ShopStore } from '../../data/store';
 import { renderApp } from '../../test/renderApp';
 import { dashboardModel, todoRows } from '../dashboard/dashboard';
 import { workItems } from '../work/workList';
 
-const printedRows = () =>
-  screen.getAllByRole('table').reduce((sum, table) => sum + within(table).getAllByRole('row').length - 1, 0);
+// Every printed garment is a card ending with its stages as a list of circles.
+const printedRows = () => screen.queryAllByRole('list', { name: 'ধাপগুলো' }).length;
 const ownerWork = (store: ShopStore) =>
   workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'rahman-owner', seesAll: true });
 
 describe('Work-list print on a phone', () => {
-  it('prints outside the app, one table per group with repeating headers', async () => {
+  it('prints outside the app, each group’s garments as cards in bands by delivery', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?by=stage' });
     expect(await screen.findByRole('heading', { name: 'কাজের তালিকা' })).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'প্রধান মেনু' })).toBeNull();
     expect(printedRows()).toBe(ownerWork(store).length);
 
-    const stitching = screen.getByRole('table', { name: 'সেলাই' });
-    expect(within(stitching).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
-      'অর্ডার',
-      'পোশাক',
-      'কে পরবেন',
-      'কারিগর',
-      'ট্রায়াল',
-      'ডেলিভারি',
-      'নোট',
-    ]);
-    expect(stitching.querySelector('thead')).not.toBeNull();
+    const stitching = screen.getByRole('region', { name: 'সেলাই' });
+    const bands = within(stitching).getAllByRole('heading', { level: 3 }).map((h) => h.textContent?.split(' · ')[0]);
+    expect(bands.length).toBeGreaterThan(0);
+    for (const band of bands) expect(['দেরি', 'এই সপ্তাহে', 'পরে']).toContain(band);
+    const stages = within(within(stitching).getAllByRole('list', { name: 'ধাপগুলো' })[0]!).getAllByRole('listitem');
+    expect(stages.find((s) => s.textContent?.includes('(এখন)'))!.textContent).toContain('সেলাই');
+
     expect(screen.getByRole('link', { name: 'কাজের তালিকায় ফিরে যান' }).getAttribute('href')).toBe('/app/work?by=stage');
+    expect(screen.getByRole('button', { name: 'প্রিন্ট করুন' })).toBeTruthy();
+    const language = screen.getByRole('group', { name: 'কাগজের ভাষা' });
+    fireEvent.click(within(language).getByRole('button', { name: 'English' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Work Lists' })).toBeTruthy();
   });
 
   it('prints only the filtered garments and says which filter', async () => {
@@ -62,7 +62,7 @@ describe('Work-list print on a phone', () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/print/work?today=1&stage=no-such-stage' });
     await screen.findByRole('heading', { name: 'আজকের কাজের তালিকা' });
     expect(screen.getByText('আজকের জন্য কোনো কাজ নেই।')).toBeTruthy();
-    expect(screen.queryAllByRole('table')).toHaveLength(0);
+    expect(printedRows()).toBe(0);
   });
 
   it('is linked from the work page with the same filters', async () => {
