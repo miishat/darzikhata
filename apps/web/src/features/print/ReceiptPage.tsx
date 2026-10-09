@@ -9,6 +9,8 @@ import { useShell } from '../../shell/ShellPreference';
 import { PrintLayout, usePrintLanguage } from './PrintLayout';
 import { receiptModel, receiptShareText, type ReceiptModel } from './receipt';
 import { ReceiptMemo } from './ReceiptMemo';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { RECEIPT_PRINT_VARIANTS, ReceiptPrintPrototype } from './ReceiptPrintPrototype';
 
 /** The totals table: price, discount, adjustments, total, paid, then balance or credit due. */
 export function MoneyTable({ model, language }: { model: ReceiptModel; language: Language }) {
@@ -59,6 +61,7 @@ export function ReceiptPage() {
   const { state, config } = useSnapshot();
   const [language, setLanguage] = usePrintLanguage();
   const [copied, setCopied] = useState(false);
+  const variant = useVariant(Object.keys(RECEIPT_PRINT_VARIANTS));
   const order = state.orders[orderId];
   if (!order || !config) {
     return (
@@ -75,7 +78,28 @@ export function ReceiptPage() {
     if ((await shareOrCopy(t('receipt.title'), text)) === 'copied') setCopied(true);
   };
 
+  if (kind !== 'desktop' && variant !== 'A')
+    return (
+      <>
+        <PrototypeSwitcher top={variant === 'D'} variants={RECEIPT_PRINT_VARIANTS} />
+        <ReceiptPrintPrototype
+          variant={variant}
+          back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }}
+          model={model}
+          language={language}
+          onLanguage={(next) => {
+            setCopied(false);
+            setLanguage(next);
+          }}
+          onShare={share}
+          notice={copied ? app.t('print.copied') : null}
+        />
+      </>
+    );
+
   return (
+    <>
+    {kind !== 'desktop' && <PrototypeSwitcher variants={RECEIPT_PRINT_VARIANTS} />}
     <PrintLayout
       back={{ to: `/app/orders/${order.id}`, label: app.t('print.back') }}
       title={t('receipt.title')}
@@ -90,6 +114,7 @@ export function ReceiptPage() {
     >
       {kind === 'desktop' ? <ReceiptMemo model={model} language={language} /> : <ReceiptSheet model={model} language={language} />}
     </PrintLayout>
+    </>
   );
 }
 
