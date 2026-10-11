@@ -203,7 +203,7 @@ describe('Measuring a shirt with the keypad on a phone', () => {
 });
 
 describe('A kept draft on a phone', () => {
-  it('comes back on the slip and can be thrown away', async () => {
+  it('comes back on the slip with a badge by the title and can be thrown away from the menu', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     await newCustomer('জসিম উদ্দিন');
     await waitFor(() => expect(window.localStorage.getItem('dk.draft.rahman.main.rahman-owner')).not.toBeNull(), { timeout: 2000 });
@@ -212,8 +212,10 @@ describe('A kept draft on a phone', () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     expect(await screen.findByText('জসিম উদ্দিন')).toBeTruthy();
     expect(screen.getByRole('status').textContent).toContain('আগের খসড়া ফিরিয়ে আনা হয়েছে।');
+    expect(screen.getByRole('heading', { name: /নতুন অর্ডার/ }).contains(screen.getByRole('status'))).toBe(true);
 
-    await userEvent.click(screen.getByRole('button', { name: 'নতুন করে শুরু' }));
+    await userEvent.click(screen.getByRole('button', { name: 'আরও' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'নতুন করে শুরু' }));
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByText('জসিম উদ্দিন')).toBeNull();
     expect(store.getSnapshot().session).toBeTruthy();

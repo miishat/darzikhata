@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, CircleAlert, MoreHorizontal, Plus, RotateCcw, Shirt, UserRound, Wallet } from 'lucide-react';
+import { ArrowLeft, ChevronRight, History, CircleAlert, MoreHorizontal, Plus, RotateCcw, Shirt, UserRound, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -99,7 +99,16 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
         >
           <ArrowLeft aria-hidden="true" size={20} />
         </button>
-        <h1 className="flex-1 font-display text-xl font-bold">{t('nav.newOrder')}</h1>
+        <h1 className="min-w-0 flex-1 font-display text-xl font-bold">
+          {t('nav.newOrder')}
+          {/* Start over is in the menu beside it, so the badge only says why the slip is not empty. */}
+          {entry.restored && restoredShown && (
+            <span role="status" className="ms-2 inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 align-middle text-xs font-semibold text-brand-strong">
+              <History aria-hidden="true" size={12} />
+              {t('entry.draftRestored')}
+            </span>
+          )}
+        </h1>
         <ActionSheet label={t('nav.more')} icon={MoreHorizontal} title={t('nav.newOrder')}>
           {(done) => (
             <ActionSheetItem
@@ -115,15 +124,6 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
           )}
         </ActionSheet>
       </div>
-
-      {entry.restored && restoredShown && (
-        <p role="status" className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
-          {t('entry.draftRestored')}
-          <Button variant="ghost" className="min-h-11" onClick={entry.discard}>
-            {t('entry.startFresh')}
-          </Button>
-        </p>
-      )}
 
       <div className="overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
         <button type="button" data-tour="new-customer" className={`${ROW} border-b border-line`} onClick={() => open({ kind: 'customer' })}>
