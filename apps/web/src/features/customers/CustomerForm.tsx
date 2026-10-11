@@ -7,6 +7,8 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { useShell } from '../../shell/ShellPreference';
 import { Button, buttonClasses } from '../../ui/Button';
 import { ChoiceGroup } from '../../ui/ChoiceGroup';
+import { FormGroup, FormRow, RowSelect } from '../../ui/FormRows';
+import { SegmentedControl } from '../../ui/SegmentedControl';
 import { SelectField } from '../../ui/SelectField';
 import { TextAreaField } from '../../ui/TextAreaField';
 import { TextField } from '../../ui/TextField';
@@ -221,20 +223,50 @@ function Form({ customer }: { customer: Customer | null }) {
   }
 
   return (
-    <form onSubmit={save} noValidate className="flex max-w-xl flex-col gap-4">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      {nameField}
-      {nameAltField}
-      {phoneField}
-      {genderField}
-      {householdField}
-      {newHouseholdField}
-      {notesField}
-      {problemLine}
-      <div className="flex gap-2">
-        {saveButton}
-        {cancelLink}
+    <form onSubmit={save} noValidate className="-mx-4 -mt-4 flex flex-col gap-5 pb-8">
+      <div className="flex items-center justify-between border-b border-line bg-panel px-4 py-3">
+        <Link to={backTo} className="min-h-10 content-center text-base text-muted">
+          {t('common.cancel')}
+        </Link>
+        <h1 className="font-display text-base font-bold">{title}</h1>
+        <button type="submit" disabled={saving} className="min-h-10 text-base font-bold text-brand-strong disabled:opacity-50">
+          {t('common.save')}
+        </button>
       </div>
+      <FormGroup>
+        <FormRow label={t('customerForm.name')} error={errorText('name', 'name')}>
+          {(field) => <input {...field} value={input.name} onChange={(e) => set('name', e.target.value)} autoComplete="off" />}
+        </FormRow>
+        <FormRow label={t('customerForm.nameAlt')}>
+          {(field) => <input {...field} value={input.nameAlt} onChange={(e) => set('nameAlt', e.target.value)} autoComplete="off" />}
+        </FormRow>
+        <FormRow label={t('customerForm.phone')} error={errorText('phone', 'phone')}>
+          {(field) => (
+            <input {...field} type="tel" inputMode="tel" value={input.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="off" />
+          )}
+        </FormRow>
+      </FormGroup>
+      <FormGroup>
+        <div className="px-4 py-3">
+          <SegmentedControl<Gender> legend={t('customerForm.gender')} value={input.gender as Gender} options={genderOptions} onChange={(gender) => set('gender', gender)} />
+        </div>
+        <FormRow label={t('customerForm.household')}>
+          {({ id, className }) => (
+            <RowSelect
+              id={id}
+              className={className}
+              value={input.householdId ?? NO_HOUSEHOLD}
+              options={householdOptions}
+              onChange={(value) => set('householdId', value === NO_HOUSEHOLD ? null : value)}
+            />
+          )}
+        </FormRow>
+        {newHouseholdField && <div className="px-4 py-3">{newHouseholdField}</div>}
+        <FormRow label={t('customerForm.notes')}>
+          {(field) => <textarea {...field} rows={3} value={input.notes} onChange={(e) => set('notes', e.target.value)} className={`${field.className} min-h-20 resize-none`} />}
+        </FormRow>
+      </FormGroup>
+      {problemLine && <div className="px-4">{problemLine}</div>}
       {dialog}
     </form>
   );
