@@ -230,7 +230,10 @@ describe('Orders list', () => {
   it('sorts from a sheet opened by the header button on a phone', async () => {
     const { router } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
     await userEvent.click(await screen.findByRole('button', { name: 'সাজান: নতুন আগে' }));
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'ডেলিভারির তারিখ' }));
+    const sheet = within(screen.getByRole('dialog'));
+    expect(sheet.getByRole('button', { name: 'নতুন আগে' }).getAttribute('aria-pressed')).toBe('true');
+    expect(sheet.queryByRole('button', { name: 'বন্ধ করুন' })).toBeNull();
+    await userEvent.click(sheet.getByRole('button', { name: 'ডেলিভারির তারিখ' }));
     expect(router.state.location.search).toBe('?sort=delivery');
     expect(screen.queryByRole('dialog')).toBeNull();
   });

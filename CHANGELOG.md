@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The sort sheet on the phone's order list matches the dropdown sheets: no title, plain rows and a tick on the current choice. Picking a row closes it, so the Close button is gone.
 - The customer form on a phone is a settings-style list: label on the left and value on the right in grouped rows, gender as a segmented switch, the household as a row that opens a bottom sheet with the chosen one ticked, and Cancel and Save as text buttons in the header.
 - New orders on a phone are one live order slip instead of five steps: the customer, a line per garment, the amounts and the payment on one screen, each opening in a sheet to edit (a garment has Measurements, Design and Price tabs). A save bar attached to the tab bar shows the total and what is left to pay and folds into a small total tab. The screen has a back arrow and a menu with Start over, and a kept draft is flagged by a small badge by the title, and a failed save opens the sheet with the problem. The measuring keypad shows above the sheet.
 - The "leave without saving?" prompt on a phone has a small icon, a large Stay button and the leave choice as quiet red text under it, so the safe tap is the easy one. Desktop keeps the two-button card.

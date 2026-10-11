@@ -1,4 +1,4 @@
-import { ArrowDownUp, Search } from 'lucide-react';
+import { ArrowDownUp, Check, Search } from 'lucide-react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useId, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -31,7 +31,7 @@ export function useSortOptions(): OrderSort[] {
   return money ? ['newest', 'oldest', 'delivery', 'balance'] : ['newest', 'oldest', 'delivery'];
 }
 
-/** The phone's sort control: a small button for the page header that opens a sheet of choices. */
+/** The phone's sort control: a small button for the page header that opens a sheet of choices, ticked as the dropdown sheets are. */
 export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort: OrderSort): void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -48,17 +48,8 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
         <ArrowDownUp aria-hidden="true" size={18} />
         {current}
       </button>
-      <Dialog
-        open={open}
-        title={t('orders.sort')}
-        onClose={() => setOpen(false)}
-        actions={
-          <Button variant="secondary" onClick={() => setOpen(false)}>
-            {t('common.close')}
-          </Button>
-        }
-      >
-        <ul className="flex flex-col gap-1">
+      <Dialog open={open} title={t('orders.sort')} hideTitle onClose={() => setOpen(false)}>
+        <ul className="m-0 flex list-none flex-col p-0">
           {sorts.map((value) => (
             <li key={value}>
               <button
@@ -68,11 +59,10 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
                   onChange(value);
                   setOpen(false);
                 }}
-                className={`flex min-h-11 w-full items-center rounded-xl px-3 text-start font-semibold focus-visible:outline-2 focus-visible:outline-focus ${
-                  value === sort ? 'bg-brand-soft text-brand-strong' : 'text-ink'
-                }`}
+                className="flex min-h-14 w-full items-center gap-3 rounded-lg px-1 text-start text-base text-ink focus-visible:outline-2 focus-visible:outline-focus"
               >
-                {t(`orders.sort.${value}`)}
+                <span className="min-w-0 flex-1">{t(`orders.sort.${value}`)}</span>
+                {value === sort && <Check aria-hidden="true" size={20} className="text-brand-strong" />}
               </button>
             </li>
           ))}
