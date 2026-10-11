@@ -254,6 +254,7 @@ function Form({ customer }: { customer: Customer | null }) {
           {({ id, className }) => (
             <RowSelect
               id={id}
+              label={t('customerForm.household')}
               className={className}
               value={input.householdId ?? NO_HOUSEHOLD}
               options={householdOptions}

@@ -51,4 +51,14 @@ describe('Customer form on a phone', () => {
     expect(await screen.findByRole('heading', { name: store.getSnapshot().state.customers['rahman-c1']!.name })).toBeTruthy();
     expect(store.getSnapshot().state.customers['rahman-c1']!.version).toBe(1);
   });
+
+  it('picks the household from a sheet with the chosen one ticked and a screen-reader-only title', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/customers/new' });
+    await userEvent.click(await screen.findByLabelText('পরিবার'));
+    expect(screen.getByRole('option', { name: 'কোনো পরিবার নয়' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'পরিবার' }).className).toContain('sr-only');
+    await userEvent.click(screen.getByRole('option', { name: 'নতুন পরিবার' }));
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.getByLabelText('পরিবারের নাম')).toBeTruthy();
+  });
 });

@@ -1,5 +1,6 @@
-import { ChevronDown } from 'lucide-react';
-import { useId, type ReactNode } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
+import { Dialog } from './Dialog';
 
 /** A settings-style group for a phone form: full-bleed rows with hairlines between them. */
 export function FormGroup({ children }: { children: ReactNode }) {
@@ -40,30 +41,51 @@ export function FormRow({
   );
 }
 
-/** The browser's own picker, drawn as a row's value with a chevron. */
+/** A row's value with a chevron; tapping opens a bottom sheet listing the options, with a tick on the chosen one. */
 export function RowSelect({
   id,
+  label,
   value,
   options,
   onChange,
   className,
 }: {
   id: string;
+  label: string;
   value: string;
   options: Array<{ value: string; label: string }>;
   onChange(value: string): void;
   className: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value)?.label ?? '';
   return (
-    <span className="relative flex min-w-0 flex-1">
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={`${className} w-full appearance-none pe-6 text-end`}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown aria-hidden="true" className="pointer-events-none absolute end-0 top-1/2 size-4 -translate-y-1/2 text-muted" />
-    </span>
+    <>
+      <button type="button" id={id} aria-haspopup="listbox" onClick={() => setOpen(true)} className={`${className} flex items-center justify-end gap-1.5 text-end`}>
+        <span className="truncate">{current}</span>
+        <ChevronDown aria-hidden="true" size={16} className="shrink-0 text-muted" />
+      </button>
+      <Dialog open={open} title={label} hideTitle onClose={() => setOpen(false)}>
+        <ul role="listbox" aria-label={label} className="m-0 flex list-none flex-col p-0">
+          {options.map((o) => (
+            <li key={o.value} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={o.value === value}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className="flex min-h-14 w-full items-center gap-3 rounded-lg px-1 text-start text-base hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+              >
+                <span className="min-w-0 flex-1">{o.label}</span>
+                {o.value === value && <Check aria-hidden="true" size={20} className="text-brand-strong" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Dialog>
+    </>
   );
 }
