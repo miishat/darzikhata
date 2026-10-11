@@ -70,6 +70,15 @@ describe('useUnsavedGuard', () => {
     expect(router.state.location.pathname).toBe('/elsewhere');
   });
 
+  it('keeps the title readable to screen readers and Stay focused on a phone', async () => {
+    setup();
+    await userEvent.type(screen.getByLabelText('নাম'), 'ক');
+    await userEvent.click(screen.getByRole('link', { name: 'অন্য পাতা' }));
+    const dialog = await screen.findByRole('dialog', { name: 'না সেভ করে চলে যাবেন?' });
+    expect(dialog.querySelector('h2')?.className).toContain('sr-only');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'এখানেই থাকুন' }));
+  });
+
   it('does not ask when leaving right after a save', async () => {
     const router = setup();
     await userEvent.type(screen.getByLabelText('নাম'), 'ক');
