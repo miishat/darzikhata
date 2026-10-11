@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { useShell } from '../../shell/ShellPreference';
 import { useUnsavedGuard } from '../../ui/useUnsavedGuard';
 import { DesktopOrderForm } from './DesktopOrderForm';
-import { MobileOrderSteps } from './MobileOrderSteps';
+import { MobileOrderSlip } from './MobileOrderSlip';
 import { useOrderEntry } from './useOrderEntry';
 
 /** Enter a new order. Saving opens its receipt. The draft is kept in the browser until it is saved or discarded. */
@@ -29,7 +29,7 @@ export function NewOrderPage() {
           }}
         />
       ) : (
-        <MobileOrderSteps key={entry.generation} entry={entry} onSaved={onSaved} />
+        <MobileOrderSlip key={entry.generation} entry={entry} onSaved={onSaved} />
       )}
       {dialog}
     </>

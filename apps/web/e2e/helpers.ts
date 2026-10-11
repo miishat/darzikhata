@@ -22,30 +22,32 @@ export const SHIRT = { 'ঝুল': '29', 'বুক': '38', 'পেট': '34', 
  */
 export async function takeFirstOrder(page: Page) {
   if (isPhone(page)) {
-    const next = () => page.getByRole('button', { name: 'পরের ধাপ' }).click();
+    const done = () => page.getByRole('dialog').getByRole('button', { name: 'হয়েছে' }).click();
+    const addGarment = async (name: string) => {
+      await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
+      await page.getByRole('dialog').getByRole('button', { name, exact: true }).click();
+    };
+    await page.getByRole('button', { name: /^কাস্টমার/ }).click();
     await page.getByRole('button', { name: 'নতুন কাস্টমার' }).click();
     await page.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
     await page.getByLabel('ফোন', { exact: true }).fill('01799887766');
-    await next();
+    await done();
 
-    await page.getByLabel('পোশাক', { exact: true }).selectOption({ label: 'শার্ট' });
-    await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
-    await page.getByLabel('পোশাক', { exact: true }).selectOption({ label: 'পাঞ্জাবি' });
-    await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
-    await page.getByRole('button', { name: 'শার্ট ১', exact: true }).click();
-    const shirt = page.getByRole('region', { name: 'শার্ট ১' });
-    await shirt.getByLabel('সংখ্যা').fill('২');
-    await fill(shirt, SHIRT);
-    await page.getByRole('button', { name: 'পাঞ্জাবি ২', exact: true }).click();
-    await fill(page.getByRole('region', { name: 'পাঞ্জাবি ২' }), { ...SHIRT, 'ঝুল': '42' });
-    await next();
-    await next();
+    await addGarment('শার্ট');
+    const sheet = page.getByRole('dialog');
+    await sheet.getByLabel('সংখ্যা').fill('২');
+    await fill(sheet, SHIRT);
+    await done();
+    await addGarment('পাঞ্জাবি');
+    await fill(page.getByRole('dialog'), { ...SHIRT, 'ঝুল': '42' });
+    await done();
 
-    await page.getByLabel('অগ্রিম').fill('১০০০');
+    await page.getByRole('button', { name: /অগ্রিম, ছাড় ও নোট/ }).click();
+    await page.getByLabel('অগ্রিম', { exact: true }).fill('১০০০');
+    await done();
     const summary = page.getByRole('table', { name: 'অর্ডারের হিসাব' });
     await expect(summary.getByRole('row', { name: /^মোট/ })).toContainText('৳২,৪০০');
     await expect(summary.getByRole('row', { name: /^বাকি/ })).toContainText('৳১,৪০০');
-    await next();
     await page.getByRole('button', { name: 'অর্ডার সেভ করুন' }).click();
   } else {
     const bar = page.getByRole('region', { name: 'কাস্টমার', exact: true });
