@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- The "leave without saving?" prompt on a phone has a small icon, a large Stay button and the leave choice as quiet red text under it, so the safe tap is the easy one. Desktop keeps the two-button card.
 - The receipt's print preview on a phone is a cash memo in a paper card instead of wide tables: the shop centred, each garment with a dotted line out to its price, the totals with the amount owed boxed, and the payments as two-line rows. The bar on top has back, the title, Share and Print, with the paper's language under it.
 - The work list's print preview on a phone is a paper card instead of a wide table: each garment shows its delivery date as a calendar block (filled in when late), the order and garment, who wears it, and its stages as circles, grouped as late, this week and later. The bar on top has back, the title and Print, with the paper's language under it.
 - On a phone, a garment's measurements (from its card on the order, or from the work list) now open as tiles with large numbers, two to a row and grouped as on the form, with when and how they were taken under the title. The sheet closes with a ✕ beside the title or by tapping outside, in place of the full-width Close button.

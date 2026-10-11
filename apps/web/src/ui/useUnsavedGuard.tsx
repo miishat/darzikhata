@@ -1,7 +1,9 @@
+import { SaveOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router';
 import type { MessageKey } from '../i18n/bn';
 import { useI18n } from '../i18n/I18nProvider';
+import { useShellKind } from '../shell/ShellPreference';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 
@@ -47,6 +49,32 @@ function UnsavedDialog({
   wording: { body: MessageKey; leave: MessageKey } | undefined;
 }) {
   const { t } = useI18n();
+  const phone = useShellKind() === 'mobile';
+  const leaveLabel = t(wording?.leave ?? 'unsaved.leave');
+  const bodyText = t(wording?.body ?? 'unsaved.body');
+  // On a phone: an icon, a big Stay button and Leave as quiet red text under it, so Stay is the easy tap.
+  if (phone) {
+    const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
+    return (
+      <Dialog open={open} title={t('unsaved.title')} onClose={onStay} hideTitle>
+        <div className="pt-3 text-center">
+          <span className="mx-auto grid size-14 place-items-center rounded-full bg-brand-soft text-brand-strong">
+            <SaveOff aria-hidden="true" size={26} />
+          </span>
+          <p aria-hidden="true" className="mt-3 font-display text-xl font-bold text-ink">
+            {t('unsaved.title')}
+          </p>
+          <p className="mt-1">{bodyText}</p>
+          <button type="button" data-autofocus onClick={onStay} className={`mt-5 flex h-12 w-full items-center justify-center rounded-2xl bg-brand text-base font-bold text-on-brand ${focus}`}>
+            {t('unsaved.stay')}
+          </button>
+          <button type="button" onClick={onLeave} className={`mt-2 flex h-12 w-full items-center justify-center rounded-2xl text-base font-semibold text-danger ${focus}`}>
+            {leaveLabel}
+          </button>
+        </div>
+      </Dialog>
+    );
+  }
   return (
     <Dialog
       open={open}
@@ -58,12 +86,12 @@ function UnsavedDialog({
             {t('unsaved.stay')}
           </Button>
           <Button variant="danger" onClick={onLeave}>
-            {t(wording?.leave ?? 'unsaved.leave')}
+            {leaveLabel}
           </Button>
         </>
       }
     >
-      {t(wording?.body ?? 'unsaved.body')}
+      {bodyText}
     </Dialog>
   );
 }
