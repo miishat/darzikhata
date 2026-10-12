@@ -34,7 +34,7 @@ export function ItemDetails({ entry, item, desktop = false }: { entry: OrderEntr
   );
 }
 
-/** The wearer sits in the item's header on desktop. The photo button lives inside the design note, with the photos under it. */
+/** The wearer shares a row with the fabric note on desktop. The photo button lives inside the design note, with the photos under it. */
 function DesktopDetails({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
   const { t } = useI18n();
   const onPhotos = (photoIds: string[]) => entry.updateItem(item.key, { photoIds });
@@ -63,12 +63,20 @@ function DesktopDetails({ entry, item }: { entry: OrderEntry; item: DraftItem })
           {t('photo.failed')}
         </p>
       )}
-      <TextField
-        label={t('entry.fabricNote')}
-        value={item.fabricNote}
-        onChange={(e) => entry.updateItem(item.key, { fabricNote: e.target.value })}
-        autoComplete="off"
-      />
+      <div className="grid gap-3 md:grid-cols-2">
+        <TextField
+          label={t('entry.fabricNote')}
+          value={item.fabricNote}
+          onChange={(e) => entry.updateItem(item.key, { fabricNote: e.target.value })}
+          autoComplete="off"
+        />
+        <TextField
+          label={t('entry.wearer')}
+          value={item.wearer}
+          onChange={(e) => entry.updateItem(item.key, { wearer: e.target.value })}
+          autoComplete="off"
+        />
+      </div>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { Dialog } from '../../ui/Dialog';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
-import { TextField } from '../../ui/TextField';
 import type { DraftItem } from './draft';
 import { CustomerBar } from './entry/CustomerBar';
 import { DraftSummary } from './entry/DraftSummary';
@@ -160,13 +159,6 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                     )}
                     <h3 className="font-display text-xl font-bold">{title(chosen)}</h3>
                   </div>
-                  <TextField
-                    label={t('entry.wearer')}
-                    className="w-56"
-                    value={chosen.wearer}
-                    onChange={(e) => entry.updateItem(chosen.key, { wearer: e.target.value })}
-                    autoComplete="off"
-                  />
                   {chosen.measurements.kind === 'new' && (
                     <SourceSwitch
                       value={chosen.measurements.source}
