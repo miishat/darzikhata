@@ -151,7 +151,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           )}
           <div className="min-h-0 flex-1 overflow-auto p-5">
             {chosen ? (
-              <div className="flex flex-col gap-5">
+              <div className="flex min-h-full flex-col gap-5">
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="me-auto flex flex-col items-start gap-1">
                     {chosenStatus && (
@@ -176,7 +176,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 <button
                   type="button"
                   onClick={() => entry.removeItem(chosen.key)}
-                  className="inline-flex min-h-11 items-center gap-2 self-center rounded-lg px-3 text-sm font-semibold text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  className="inline-flex min-h-11 items-center gap-2 mt-auto self-center rounded-lg px-3 text-sm font-semibold text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   <Trash2 aria-hidden="true" size={18} />
                   {t('entry.removeItem', { item: title(chosen) })}
