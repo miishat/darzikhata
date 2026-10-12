@@ -1,5 +1,5 @@
 import { profileKey, templateById } from '@darzikhata/domain';
-import { AlertCircle, ArrowLeft, Shirt } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Shirt, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Dialog } from '../../ui/Dialog';
@@ -28,6 +28,9 @@ interface Props {
   onDiscarded?(): void;
 }
 
+// TODO(revisit): the garment panel is one long scrolling form. An accordion of measurements, design and photos, and
+// dates and price was liked in the mockups (branch prototype/garment-panel, variant E2). We chose to keep this layout
+// for now and come back to it.
 const CARD = 'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm';
 const TONE = { warn: 'bg-warn-soft text-warn-ink', ok: 'bg-ok-soft text-ok' } as const;
 
@@ -173,11 +176,19 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                       }}
                     />
                   )}
-                  <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} />
+                  <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} showRemove={false} />
                 </div>
                 <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />
                 <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} desktop />
                 <ItemSchedule key={`${chosen.key}:schedule`} entry={entry} item={chosen} errors={errors} />
+                <button
+                  type="button"
+                  onClick={() => entry.removeItem(chosen.key)}
+                  className="inline-flex min-h-11 items-center gap-2 self-center rounded-lg px-3 text-sm font-semibold text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                >
+                  <Trash2 aria-hidden="true" size={18} />
+                  {t('entry.removeItem', { item: title(chosen) })}
+                </button>
               </div>
             ) : (
               <div className="grid h-full place-items-center">

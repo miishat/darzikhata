@@ -1,9 +1,15 @@
 import { currentVersion, formatMeasurement, profileKey } from '@darzikhata/domain';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 import { chooseOption, optionLabels } from '../../test/chooseOption';
+
+// jsdom cannot shrink an image, so a chosen photo is stood in for by a tiny one.
+vi.mock('../../lib/photos', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/photos')>()),
+  compressPhoto: async () => 'data:image/jpeg;base64,AAAA',
+}));
 
 const region = (name: string) => screen.getByRole('region', { name });
 const save = () => userEvent.click(within(region('অর্ডারের হিসাব')).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }));
@@ -147,6 +153,35 @@ describe('Order entry on desktop', () => {
     expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
     expect(screen.getByRole('region', { name: 'অর্ডারের হিসাব' })).toBeTruthy();
   });
+
+  it('removes the chosen garment from the link at the foot of its details', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    await screen.findByRole('region', { name: 'কাস্টমার' });
+    await addGarment('শার্ট');
+    await addGarment('শার্ট');
+    expect(within(tiles()).getAllByRole('button', { name: /^শার্ট/ })).toHaveLength(2);
+    // The header holds no cross any more.
+    expect(within(garments()).queryByText('×')).toBeNull();
+
+    await userEvent.click(within(garments()).getByRole('button', { name: 'শার্ট ২ বাদ দিন' }));
+    expect(within(tiles()).queryByRole('button', { name: 'শার্ট ২' })).toBeNull();
+    expect(within(tiles()).getByRole('button', { name: 'শার্ট ১' })).toBeTruthy();
+  }, 30_000);
+
+  it('adds photos with the button inside the design note and removes them from the thumbnails', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    await screen.findByRole('region', { name: 'কাস্টমার' });
+    await addGarment('শার্ট');
+    const note = within(garments()).getByLabelText('ডিজাইনের নোট');
+    const input = within(garments()).getByLabelText('ছবি যোগ করুন') as HTMLInputElement;
+    // The photo button shares a box with the note, instead of sitting in a column of its own.
+    expect(note.parentElement!.parentElement!.contains(input)).toBe(true);
+
+    await userEvent.upload(input, new File(['x'], 'a.jpg', { type: 'image/jpeg' }));
+    await screen.findByRole('img', { name: 'ছবি ১' });
+    await userEvent.click(screen.getByRole('button', { name: 'ছবি ১ সরান' }));
+    expect(screen.queryByRole('img', { name: 'ছবি ১' })).toBeNull();
+  }, 30_000);
 
   it('marks a value that differs from the last version, in words as well as outline', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
