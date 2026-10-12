@@ -53,7 +53,8 @@ describe('Order detail', () => {
     expect(within(dialog).getByText(title(order, item))).toBeTruthy();
     await userEvent.click(within(dialog).getByRole('button', { name: 'হস্তান্তর করুন' }));
 
-    expect(await within(card).findByText('ডেলিভারি হয়েছে')).toBeTruthy();
+    // The stage shows on the garment's pill and again in its history, so more than one match is expected.
+    expect((await within(card).findAllByText('ডেলিভারি হয়েছে')).length).toBeGreaterThan(0);
     const after = latest(store, order.id);
     expect(after.items.find((i) => i.id === item.id)!.stageKey).toBe('delivered');
     expect(isOrderClosed(after)).toBe(false);
@@ -74,7 +75,8 @@ describe('Order detail', () => {
     expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe(item.stageKey);
 
     await userEvent.click(within(confirm).getByRole('button', { name: 'হস্তান্তর করুন' }));
-    expect(await within(card).findByText('ডেলিভারি হয়েছে')).toBeTruthy();
+    // The stage shows on the garment's pill and again in its history, so more than one match is expected.
+    expect((await within(card).findAllByText('ডেলিভারি হয়েছে')).length).toBeGreaterThan(0);
     expect(latest(store, order.id).items.find((i) => i.id === item.id)!.stageKey).toBe('delivered');
   });
 
@@ -84,7 +86,7 @@ describe('Order detail', () => {
     const card = screen.getByRole('region', { name: title(order, item) });
 
     await userEvent.click(within(card).getByRole('button', { name: 'সেলাই এ নিন' }));
-    expect(await within(card).findByText('সেলাই')).toBeTruthy();
+    expect((await within(card).findAllByText('সেলাই')).length).toBeGreaterThan(0);
 
     await pick(order, item, 'অন্য ধাপ…');
     const dialog = await screen.findByRole('dialog', { name: 'ধাপ বদলান' });
@@ -151,6 +153,27 @@ describe('Order detail', () => {
     const card = screen.getByRole('region', { name: title(cutting.order, item) });
     const value = Object.values(item.measurements!.values)[0]!;
     expect(within(card).getAllByText(`${formatMeasurement(value.value, 'bn')} ইঞ্চি`).length).toBeGreaterThan(0);
+  });
+
+  it('lays out a garment’s details as labelled blocks: measurement rows, named notes, then the stages it went through', async () => {
+    const keep = (o: Order) => o.items.some((i) => !i.cancelled && i.measurements && i.designNotes && i.stageHistory.length > 0);
+    const { order } = await openOrder('uniform', keep);
+    const item = order.items.find((i) => !i.cancelled && i.measurements && i.designNotes && i.stageHistory.length > 0)!;
+    const card = screen.getByRole('region', { name: title(order, item) });
+
+    // Measurements are label and value pairs, with no table.
+    expect(within(card).queryByRole('table')).toBeNull();
+    const value = Object.values(item.measurements!.values)[0]!;
+    expect(within(card).getAllByText(`${formatMeasurement(value.value, 'bn')} ইঞ্চি`).length).toBeGreaterThan(0);
+    // The note says what it is, and so does the fabric note.
+    expect(within(card).getByText('ডিজাইনের নোট')).toBeTruthy();
+    expect(within(card).getByText(item.designNotes)).toBeTruthy();
+    if (item.fabricNote) expect(within(card).getByText('কাপড়ের নোট')).toBeTruthy();
+    // The stages read as one ordered list ending at the current stage.
+    const history = within(card).getByRole('heading', { name: 'ধাপের ইতিহাস' }).parentElement!;
+    const stages = within(history).getAllByRole('listitem');
+    expect(stages).toHaveLength(item.stageHistory.length + 1);
+    expect(stages.at(-1)!.textContent).toBe(item.stages.find((s) => s.key === item.stageHistory.at(-1)!.to)!.label.bn);
   });
 
   it('offers only the actions a production supervisor may take', async () => {
