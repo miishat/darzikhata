@@ -14,12 +14,12 @@ import { StageStrip } from '../../ui/StageStrip';
 import { stageTone } from '../../ui/stageTone';
 import { useCan, useMeasurementAccess } from '../common/hooks';
 import { itemTitle, progressText } from '../common/orderText';
-import { MeasurementTable } from '../customers/MeasurementTable';
 import { StatusLinkSection } from '../links/StatusLinkSection';
 import { MoneyCard, useMoneyDialogs } from '../payments/OrderMoney';
 import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
+import { PanelItemDetails } from './PanelItemDetails';
 import { nextMove } from './stageMoves';
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
@@ -370,45 +370,23 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
         {hasDetails && (
           <details className="text-sm">
             <summary className="flex min-h-9 cursor-pointer items-center font-semibold text-muted">{t('item.details')}</summary>
-            <div className="flex flex-col gap-2">
-              {item.measurements && canSee && template && <MeasurementTable template={template} values={item.measurements.values} />}
-              {item.designNotes && <p>{item.designNotes}</p>}
-              {item.fabricNote && <p>{item.fabricNote}</p>}
-              {item.photoIds.length > 0 && (
-                <ul className="flex flex-wrap gap-2">
-                  {item.photoIds.map((id, index) => (
-                    <li key={id}>
-                      <Thumb id={id} alt={t('photos.photo', { n: number(index + 1) })} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {item.adjustments.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-muted">{t('item.adjustments')}</h4>
-                  <ul className="list-disc pl-5">
-                    {item.adjustments.map((a) => (
-                      <li key={a.id}>{a.note}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {item.stageHistory.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-muted">{t('item.history')}</h4>
-                  <ul className="flex flex-col gap-1">
-                    {item.stageHistory.map((change, index) => (
-                      <li key={`${change.at}-${index}`}>
-                        <span>
-                          {stageName(change.from)} → {stageName(change.to)}
-                        </span>
-                        {change.kind === 'rework' && <span className="block text-danger">{t('item.rework', { reason: change.reason })}</span>}
+            <PanelItemDetails
+              item={item}
+              template={template}
+              canSee={canSee}
+              stageName={stageName}
+              photos={
+                item.photoIds.length > 0 && (
+                  <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                    {item.photoIds.map((id, index) => (
+                      <li key={id}>
+                        <Thumb id={id} alt={t('photos.photo', { n: number(index + 1) })} />
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
-            </div>
+                )
+              }
+            />
           </details>
         )}
 
