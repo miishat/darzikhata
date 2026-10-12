@@ -237,10 +237,10 @@ export function CustomerBar({ entry, errors, heading }: { entry: OrderEntry; err
         <NewCustomerFields entry={entry} errors={errors} />
       ) : (
         <div className="flex min-w-0 flex-1 items-start gap-2">
-          <div className="relative w-full max-w-xl">
+          <div className="relative min-w-0 flex-1">
             <CustomerSearch entry={entry} error={errorText('customer')} floating />
           </div>
-          <Button variant="secondary" className="min-h-11" data-tour="new-customer" onClick={() => newCustomer(entry)}>
+          <Button variant="secondary" className="min-h-11 shrink-0" data-tour="new-customer" onClick={() => newCustomer(entry)}>
             <UserRoundPlus aria-hidden="true" size={16} />
             {t('customers.new')}
           </Button>

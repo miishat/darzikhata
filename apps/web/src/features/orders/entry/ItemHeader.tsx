@@ -10,8 +10,8 @@ import { useErrorText, useItemTitle } from './shared';
 /** The most a quantity field accepts; the draft's own limit is lower. */
 const MAX_QUANTITY_INPUT = 999;
 
-/** A line's quantity (Bangla or English digits, never a fraction or a negative) and its remove button. */
-export function ItemHeader({ entry, item, errors }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors }) {
+/** A line's quantity (Bangla or English digits, never a fraction or a negative) and, on a phone, its remove button. */
+export function ItemHeader({ entry, item, errors, showRemove = true }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors; /** Desktop puts its own remove link at the foot of the item. */ showRemove?: boolean }) {
   const { t, language } = useI18n();
   const title = useItemTitle(entry);
   const errorText = useErrorText(errors);
@@ -40,9 +40,11 @@ export function ItemHeader({ entry, item, errors }: { entry: OrderEntry; item: D
         }}
         error={errorText(`items.${item.key}.quantity`) ?? errorText(`items.${item.key}.template`)}
       />
-      <Button variant="ghost" aria-label={t('entry.removeItem', { item: title(item) })} onClick={() => entry.removeItem(item.key)}>
-        <span aria-hidden="true">×</span>
-      </Button>
+      {showRemove && (
+        <Button variant="ghost" aria-label={t('entry.removeItem', { item: title(item) })} onClick={() => entry.removeItem(item.key)}>
+          <span aria-hidden="true">×</span>
+        </Button>
+      )}
     </div>
   );
 }

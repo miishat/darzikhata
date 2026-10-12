@@ -11,9 +11,8 @@ interface Props {
   compress?: (file: File) => Promise<string>;
 }
 
-/** Take photos with the phone camera (a file picker on desktop), shrink them and keep them on the device. */
-export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Props) {
-  const { t, number } = useI18n();
+/** The picking half of PhotoPicker: saves chosen files and reports the new list. Photos that saved are kept even when one fails. */
+export function usePhotoAdder(photoIds: string[], onChange: (ids: string[]) => void, compress: (file: File) => Promise<string> = compressPhoto) {
   const store = useStore();
   const inputId = useId();
   const [busy, setBusy] = useState(false);
@@ -38,35 +37,58 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
       setBusy(false);
     }
   };
+  const input = (
+    <input
+      id={inputId}
+      type="file"
+      accept="image/*"
+      capture="environment"
+      multiple
+      disabled={busy}
+      className="peer sr-only"
+      onChange={(e) => void add(e)}
+    />
+  );
+  return { inputId, input, busy, failed };
+}
+
+/** The chosen photos, each with a remove button. `compact` makes them smaller with a small round button, for sitting under a note. */
+export function PhotoThumbs({ photoIds, onChange, busy = false, compact = false }: { photoIds: string[]; onChange(ids: string[]): void; busy?: boolean; compact?: boolean }) {
+  const { t, number } = useI18n();
+  if (photoIds.length === 0) return null;
+  return (
+    <ul className={`flex flex-wrap ${compact ? 'm-0 list-none gap-3 p-0' : 'gap-2'}`}>
+      {photoIds.map((id, index) => (
+        <li key={id} className="relative">
+          <Thumb id={id} alt={t('photos.photo', { n: number(index + 1) })} compact={compact} />
+          <button
+            type="button"
+            disabled={busy}
+            className={
+              compact
+                ? 'absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-ink text-on-brand shadow focus-visible:outline-2 focus-visible:outline-focus'
+                : 'absolute right-0 top-0 min-h-11 min-w-11 rounded bg-surface text-text'
+            }
+            aria-label={t('photos.remove', { n: number(index + 1) })}
+            onClick={() => onChange(photoIds.filter((p) => p !== id))}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Take photos with the phone camera (a file picker on desktop), shrink them and keep them on the device. */
+export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Props) {
+  const { t } = useI18n();
+  const { inputId, input, busy, failed } = usePhotoAdder(photoIds, onChange, compress);
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="flex flex-wrap gap-2">
-        {photoIds.map((id, index) => (
-          <li key={id} className="relative">
-            <Thumb id={id} alt={t('photos.photo', { n: number(index + 1) })} />
-            <button
-              type="button"
-              disabled={busy}
-              className="absolute right-0 top-0 min-h-11 min-w-11 rounded bg-surface text-text"
-              aria-label={t('photos.remove', { n: number(index + 1) })}
-              onClick={() => onChange(photoIds.filter((p) => p !== id))}
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <input
-        id={inputId}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        multiple
-        disabled={busy}
-        className="peer sr-only"
-        onChange={(e) => void add(e)}
-      />
+      <PhotoThumbs photoIds={photoIds} onChange={onChange} busy={busy} />
+      {input}
       <label
         htmlFor={inputId}
         className="min-h-11 cursor-pointer rounded text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-focus"
@@ -82,8 +104,9 @@ export function PhotoPicker({ photoIds, onChange, compress = compressPhoto }: Pr
   );
 }
 
-function Thumb({ id, alt }: { id: string; alt: string }) {
+function Thumb({ id, alt, compact }: { id: string; alt: string; compact: boolean }) {
   const url = usePhoto(id);
-  if (!url) return <div className="h-24 w-24 rounded bg-surface" aria-hidden="true" />;
-  return <img src={url} alt={alt} className="h-24 w-24 rounded object-cover" />;
+  const size = compact ? 'size-16 rounded-lg' : 'h-24 w-24 rounded';
+  if (!url) return <div className={`${size} bg-surface`} aria-hidden="true" />;
+  return <img src={url} alt={alt} className={`${size} object-cover`} />;
 }
