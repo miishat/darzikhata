@@ -30,8 +30,8 @@ const RECENT_ORDERS = 4;
 
 function Stat({ label, value, tone = '' }: { label: string; value: string; tone?: string }) {
   return (
-    <div className={`flex flex-col-reverse rounded-lg px-3 py-1.5 ${tone || 'bg-surface'}`}>
-      <dt className="text-xs">{label}</dt>
+    <div className={`flex min-w-28 flex-1 flex-col-reverse px-4 py-2 ${tone}`}>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className="m-0 font-display text-lg font-bold leading-tight">{value}</dd>
     </div>
   );
@@ -123,10 +123,10 @@ function DesktopCustomerProfile({ customerId }: { customerId: string }) {
             <X size={18} aria-hidden="true" />
           </Link>
         </div>
-        <dl className="m-0 flex flex-wrap gap-2">
+        <dl className="m-0 flex flex-wrap divide-x divide-line overflow-hidden rounded-xl border border-line rtl:divide-x-reverse">
           <Stat label={t('customer.stat.orders')} value={number(orders.length)} />
           {showMoney && <Stat label={t('customer.stat.orderValue')} value={money(orderValue)} />}
-          {showMoney && <Stat label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink' : ''} />}
+          {showMoney && <Stat label={t('customer.stat.owed')} value={money(owed)} tone={owed > 0 ? 'bg-warn-soft text-warn-ink' : ''} />}
           <Stat label={t('customer.stat.last')} value={latest ? date(latest.createdAt, { year: Number(latest.createdAt.slice(0, 4)) !== new Date().getFullYear() }) : t('customer.stat.none')} />
         </dl>
         {customer.notes && <p className="whitespace-pre-line text-sm text-muted">{customer.notes}</p>}
