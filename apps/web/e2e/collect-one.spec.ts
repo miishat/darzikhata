@@ -27,8 +27,8 @@ test('handing over one garment leaves the order open', async ({ page }) => {
   await expect(dialog).toBeHidden();
 
   // Both layouts show a stage pill; the delivered pill and the fewer hand-over buttons below are the proof.
-  if (!isPhone(page)) await expect(detail.getByText('ডেলিভারি হয়েছে', { exact: true })).toHaveCount(1);
-  else await expect(detail.getByText('ডেলিভারি হয়েছে', { exact: true }).first()).toBeVisible();
+  // The pill is the first match: a laptop panel also lists the stages in the garment's history.
+  await expect(detail.getByText('ডেলিভারি হয়েছে', { exact: true }).first()).toBeVisible();
   await expect(detail.getByRole('button', { name: 'হস্তান্তর করুন' })).toHaveCount(2);
   await expect(detail.getByText('চলমান', { exact: true })).toBeVisible();
 });
