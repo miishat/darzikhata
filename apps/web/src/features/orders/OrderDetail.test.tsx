@@ -231,4 +231,12 @@ describe('Order detail', () => {
     );
     expect(latest(store, order.id).items.find((i) => i.id === item.id)!.fabricNote).toBe('অন্য ডিভাইস');
   });
+
+  it('shows how long an open garment has left as a chip beside its stage, once', async () => {
+    const open = (item: OrderItem) => ['unfinished', 'ready'].includes(itemSummaryGroup(item)) && !item.cancelled && item.deliveryDate !== null;
+    const { order } = await openOrder('rahman', (o) => o.items.some(open));
+    const item = order.items.find(open)!;
+    const card = screen.getByRole('region', { name: title(order, item) });
+    expect(within(card).getAllByText(/বাকি|দেরি|আজ|আগামীকাল/)).toHaveLength(1);
+  });
 });

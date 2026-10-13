@@ -8,7 +8,7 @@ import { ActionGroup, ActionSheet, ActionSheetItem } from '../../ui/ActionSheet'
 import { Avatar } from '../../ui/Avatar';
 import { Button, buttonClasses } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
-import { DueLabel } from '../../ui/DueLabel';
+import { DueChip } from '../../ui/DueChip';
 import { StagePill } from '../../ui/StagePill';
 import { StageStrip } from '../../ui/StageStrip';
 import { stageTone } from '../../ui/stageTone';
@@ -301,6 +301,7 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
             <h3 className="font-display text-base font-semibold">{title}</h3>
             {item.wearer && <p className="truncate text-sm text-muted">{item.wearer}</p>}
           </div>
+          {open && !item.cancelled && item.deliveryDate && <DueChip date={item.deliveryDate} />}
           <StagePill label={stage ? label(stage.label) : item.stageKey} tone={stageTone(stage, group, Math.max(stageIndex, 0))} />
           {menu && !item.cancelled && (
             <ActionSheet
@@ -336,7 +337,6 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
             {item.deliveryDate && (
               <span className="inline-flex flex-wrap items-center gap-x-2 text-muted">
                 {t('item.deliveryOn', { date: date(item.deliveryDate) })}
-                {open && <DueLabel date={item.deliveryDate} />}
               </span>
             )}
             {item.trialDate && (
