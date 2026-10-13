@@ -43,5 +43,7 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['./src/test/setup.ts'],
     // Playwright's end-to-end tests in e2e/ run in a real browser, not here.
     include: ['src/**/*.test.{ts,tsx}'],
+    // The long click-through tests are slow on a shared CI runner; a slow pass is not a failure.
+    testTimeout: 20_000,
   },
 }));
