@@ -26,7 +26,7 @@ const urlField = () => within(section()).getByLabelText('লিংক') as HTMLI
 
 describe('Status link section', () => {
   it('creates a link and shows where it goes', async () => {
-    const { store, order } = await openOrder('rahman', (o) => !isOrderClosed(o));
+    const { store, order } = await openOrder('rahman', (o) => !isOrderClosed(o) && o.links.length === 0);
     expect(within(section()).getByText('ডেমোতে লিংকটি শুধু এই ব্রাউজারেই খোলে।')).toBeTruthy();
     await userEvent.click(within(section()).getByRole('button', { name: 'লিংক তৈরি করুন' }));
 
@@ -42,7 +42,7 @@ describe('Status link section', () => {
   it('shares the link, or copies it when sharing is not available', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { value: share, configurable: true });
-    const { order } = await openOrder('rahman', (o) => !isOrderClosed(o));
+    const { order } = await openOrder('rahman', (o) => !isOrderClosed(o) && o.links.length === 0);
     await userEvent.click(within(section()).getByRole('button', { name: 'লিংক তৈরি করুন' }));
     await userEvent.click(await within(section()).findByRole('button', { name: 'শেয়ার করুন' }));
     const text = `রহমান টেইলার্স: অর্ডার ${order.number} এর অবস্থা দেখুন: ${urlField().value}`;
@@ -57,7 +57,7 @@ describe('Status link section', () => {
   });
 
   it('turns the link off after confirming', async () => {
-    const { store, order } = await openOrder('rahman', (o) => !isOrderClosed(o));
+    const { store, order } = await openOrder('rahman', (o) => !isOrderClosed(o) && o.links.length === 0);
     await userEvent.click(within(section()).getByRole('button', { name: 'লিংক তৈরি করুন' }));
     await userEvent.click(await within(section()).findByRole('button', { name: 'লিংক বন্ধ করুন' }));
     const dialog = await screen.findByRole('dialog', { name: 'লিংক বন্ধ করবেন?' });

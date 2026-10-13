@@ -67,6 +67,20 @@ describe.each(SEED_SHOPS.map((s) => s.key))('generateShop(%s)', (key) => {
     expect(Object.keys(state.households).length).toBe(2);
   });
 
+  it('uses what the app now shows: photos, wearers, notes, links, rework and price changes', () => {
+    const items = orders.flatMap((o) => o.items);
+    const photoIds = new Set(generateShop(key, TODAY).photos.map((p) => p.id));
+    expect(items.some((i) => i.photoIds.length > 0)).toBe(true);
+    expect(items.flatMap((i) => i.photoIds).every((id) => photoIds.has(id))).toBe(true);
+    expect(items.some((i) => i.wearer)).toBe(true);
+    expect(orders.some((o) => o.notes)).toBe(true);
+    expect(Object.values(state.customers).some((c) => c.notes)).toBe(true);
+    expect(orders.some((o) => o.links.length > 0)).toBe(true);
+    expect(orders.some((o) => o.links.some((l) => l.revokedAt))).toBe(true);
+    expect(items.some((i) => i.stageHistory.some((h) => h.kind === 'rework' && h.reason))).toBe(true);
+    expect(orders.some((o) => o.priceAdjustments.length > 0)).toBe(true);
+  });
+
   it('never leaves an order overpaid', () => {
     expect(orders.filter((o) => moneySummary(o).creditDue > 0).map((o) => o.number)).toEqual([]);
   });

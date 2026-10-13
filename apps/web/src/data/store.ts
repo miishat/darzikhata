@@ -188,7 +188,7 @@ export class ShopStore {
 
   private async doStartDemo(shopKey: SeedShopKey): Promise<void> {
     const today = todayInDhaka(this.now());
-    const { config, events } = generateShop(shopKey, today);
+    const { config, events, photos } = generateShop(shopKey, today);
     const owner = config.staff.find((s) => s.roleId === 'owner')!;
     const session: Session = { shopKey, staffId: owner.id };
     // The server already has the other device's edit and holds this device's clashing edit for review.
@@ -201,6 +201,7 @@ export class ShopStore {
       await this.db.photos.clear();
       await this.server.reset(server);
       await this.db.events.bulkAdd(server.log.map((event) => ({ id: event.id, event })));
+      await this.db.photos.bulkAdd(photos.map((photo) => ({ ...photo, createdAt: events[0]!.at })));
       await this.db.meta.bulkPut([
         { key: 'config', value: config },
         { key: 'session', value: session },
