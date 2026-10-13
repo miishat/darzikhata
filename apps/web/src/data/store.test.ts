@@ -54,6 +54,15 @@ describe('ShopStore', () => {
     expect(Object.keys(snap.state.orders).length).toBeGreaterThanOrEqual(40);
   });
 
+  it('saves the sample photos the demo garments point to', async () => {
+    const { db, store } = freshStore();
+    await store.startDemo('rahman');
+    const used = new Set(Object.values(store.getSnapshot().state.orders).flatMap((o) => o.items.flatMap((i) => i.photoIds)));
+    const saved = new Set((await db.photos.toArray()).map((p) => p.id));
+    expect(used.size).toBeGreaterThan(0);
+    expect([...used].every((id) => saved.has(id))).toBe(true);
+  });
+
   it('saves applied changes so a reload sees them', async () => {
     const { store, name } = freshStore();
     await store.startDemo('rahman');

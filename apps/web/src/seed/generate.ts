@@ -1,6 +1,7 @@
 import {
   formatOrderNumber,
   snapshotOf,
+  tokenFromBytes,
   type DomainEvent,
   type EventBody,
   type GarmentTemplate,
@@ -14,15 +15,39 @@ import {
   type Stage,
 } from '@darzikhata/domain';
 import { addDays } from '../lib/dates';
-import { CHILDREN, DESIGN_NOTES, FABRIC_NOTES, FITTING_NOTES, MEN, WOMEN, type SeedPerson } from './people';
+import {
+  CHILDREN,
+  CUSTOMER_NOTES,
+  DESIGN_NOTES,
+  FABRIC_NOTES,
+  FITTING_NOTES,
+  MEN,
+  MORE_MEN,
+  MORE_WOMEN,
+  ORDER_NOTES,
+  PHOTO_STYLES,
+  REWORK_REASONS,
+  WEARERS,
+  WOMEN,
+  WOMENS_GARMENTS,
+  swatchDataUrl,
+  type SeedPerson,
+} from './people';
 import { createRng, type Rng } from './random';
 import { shopConfig, type SeedShopKey } from './shops';
 
 export { addDays };
 
+export interface SeedPhoto {
+  id: string;
+  dataUrl: string;
+}
+
 export interface SeedData {
   config: ShopConfig;
   events: DomainEvent[];
+  /** Reference photos that items point to; saved on the device beside the events. */
+  photos: SeedPhoto[];
 }
 
 interface Recipe {
@@ -126,6 +151,15 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
   const config = shopConfig(key);
   const recipe = RECIPES[key];
   const rng = createRng(recipe.seed);
+  /** Drives the later additions (photos, links, notes, rework), so they never shift the core data. */
+  const extra = createRng(recipe.seed + 7000);
+  const photos = new Map<string, string>();
+  const usePhoto = (): string => {
+    const at = extra.int(0, PHOTO_STYLES.length - 1);
+    const id = `${key}-ph${at + 1}`;
+    if (!photos.has(id)) photos.set(id, swatchDataUrl(PHOTO_STYLES[at]!));
+    return id;
+  };
   const owner = config.staff[0]!.id;
   const yesterday = addDays(today, -1);
   const templateById = (id: string) => config.templates.find((t) => t.id === id)!;
@@ -136,13 +170,17 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
   // Customers, with two households that share one phone number.
   const men = [...MEN];
   const women = [...WOMEN];
+  const moreMen = [...MORE_MEN];
+  const moreWomen = [...MORE_WOMEN];
   const customers: Array<{ id: string; person: SeedPerson }> = [];
   const regularCustomers = key === 'uniform' ? CUSTOMER_COUNT - 1 : CUSTOMER_COUNT;
   let sharedPhone = '';
   let householdDay = '';
   for (let i = 0; i < regularCustomers; i++) {
-    const pool = rng.chance(recipe.femaleShare) ? women : men;
-    const person = pool.length > 0 ? pool.splice(rng.int(0, pool.length - 1), 1)[0]! : rng.pick([...MEN, ...WOMEN]);
+    const female = rng.chance(recipe.femaleShare);
+    const first = female ? women : men;
+    const pool = first.length > 0 ? first : female ? moreWomen : moreMen;
+    const person = pool.splice(rng.int(0, pool.length - 1), 1)[0]!;
     const id = `${key}-c${i + 1}`;
     const inHousehold = i === 1 || i === 2 || i === 5 || i === 6;
     if (i === 1 || i === 5) householdDay = addDays(today, -rng.int(90, 120));
@@ -158,7 +196,15 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
     const phone = inHousehold ? sharedPhone : rng.chance(0.9) ? `01${rng.int(3, 9)}${String(rng.int(10000000, 99999999))}` : null;
     emit(dhakaTime(createdOn, 10), owner, {
       type: 'customer.created',
-      customer: { id, name: person.bn, nameAlt: person.en, phone, householdId, gender: person.gender, notes: '' },
+      customer: {
+        id,
+        name: person.bn,
+        nameAlt: person.en,
+        phone,
+        householdId,
+        gender: person.gender,
+        notes: i % 4 === 3 ? CUSTOMER_NOTES[Math.floor(i / 4) % CUSTOMER_NOTES.length]! : '',
+      },
     });
     customers.push({ id, person });
   }
@@ -226,28 +272,38 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
     const items: NewOrderItem[] = templates.map((template, j) => {
       const hasTrial = template.stages.some((s) => s.key === 'trial');
       const trialDate = trialToday && j === 0 ? today : hasTrial && rng.chance(0.35) ? addDays(created, Math.max(2, lead - 4)) : null;
+      // The draws on `rng` stay in this order, so the core data keeps its shape; the rest come from `extra`.
+      const price = template.defaultPrice + (rng.chance(0.2) ? 10000 : 0);
+      const measurements = measure(customer.id, template, dhakaTime(created, 10, 50));
+      const designNotes = rng.pick(DESIGN_NOTES[template.id] ?? ['']);
+      const fabricNote = rng.pick(FABRIC_NOTES);
+      const assignedTo = recipe.workers.length > 0 ? rng.pick(recipe.workers) : null;
+      const wearer =
+        template.id !== 'alteration' && extra.chance(0.14) ? extra.pick(WEARERS[WOMENS_GARMENTS.includes(template.id) ? 'female' : 'male']) : null;
+      const photoIds = template.id !== 'alteration' && designNotes && extra.chance(0.3) ? [usePhoto()] : [];
       return {
         id: `${orderId}-i${j + 1}`,
         templateId: template.id,
         garmentName: template.name,
-        price: template.defaultPrice + (rng.chance(0.2) ? 10000 : 0),
-        wearer: null,
-        measurements: measure(customer.id, template, dhakaTime(created, 10, 50)),
-        designNotes: rng.pick(DESIGN_NOTES),
-        fabricNote: rng.pick(FABRIC_NOTES),
-        photoIds: [],
+        price,
+        wearer,
+        measurements,
+        designNotes,
+        fabricNote,
+        photoIds,
         stages: template.stages,
-        assignedTo: recipe.workers.length > 0 ? rng.pick(recipe.workers) : null,
+        assignedTo,
         trialDate,
         deliveryDate,
       };
     });
 
+    const orderNote = extra.chance(0.25) ? extra.pick(ORDER_NOTES) : '';
     const subtotal = items.reduce((sum, i) => sum + i.price, 0);
     const discount = subtotal >= 50000 && rng.chance(0.15) ? { amount: rng.pick([10000, 20000]), reason: 'নিয়মিত কাস্টমার' } : null;
     emit(createdAt, taker, {
       type: 'order.created',
-      order: { id: orderId, number, customerId: customer.id, branchId: recipe.branchId, notes: '', discount, items },
+      order: { id: orderId, number, customerId: customer.id, branchId: recipe.branchId, notes: orderNote, discount, items },
     });
 
     // Decide how far along the order is.
@@ -328,6 +384,52 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
       }
     }
 
+    /** The day after the order, but never today: the sample history stops at yesterday. */
+    const later = created < yesterday ? addDays(created, 1) : yesterday;
+
+    // A rush charge on some orders, a small allowance on others (only while the balance can take it).
+    if (index % 13 === 7) {
+      emit(dhakaTime(later, 18), taker, {
+        type: 'order.priceAdjusted',
+        orderId,
+        adjustment: { id: `${orderId}-adj1`, amount: 50000, reason: 'জরুরি ডেলিভারি চার্জ' },
+      });
+      total += 50000;
+    } else if (index % 17 === 3 && total - paid >= 10000) {
+      emit(dhakaTime(later, 18), taker, {
+        type: 'order.priceAdjusted',
+        orderId,
+        adjustment: { id: `${orderId}-adj1`, amount: -10000, reason: 'কাপড় কম লেগেছে' },
+      });
+      total -= 10000;
+    }
+
+    // A status link for some customers; one of them was revoked and sent again.
+    if (extra.chance(0.2)) {
+      const makeToken = () => tokenFromBytes(Uint8Array.from({ length: 16 }, () => extra.int(0, 255)));
+      const first = makeToken();
+      emit(dhakaTime(created, 12, 20), taker, { type: 'link.created', orderId, token: first });
+      if (index % 3 === 0) {
+        emit(dhakaTime(later, 19), taker, { type: 'link.revoked', orderId, token: first });
+        emit(dhakaTime(later, 19, 5), taker, { type: 'link.created', orderId, token: makeToken() });
+      }
+    }
+
+    // Some jobs move to another tailor, and some delivery dates slip a couple of days.
+    const firstActive = activeItems[0];
+    if (index % 8 === 3 && firstActive?.assignedTo && recipe.workers.length > 1) {
+      const other = recipe.workers.find((w) => w !== firstActive.assignedTo)!;
+      emit(dhakaTime(later, 19, 30), owner, { type: 'item.assigned', orderId, itemId: firstActive.id, baseVersion: 1, assigneeId: other });
+    } else if (index % 10 === 6 && firstActive && phase.kind === 'working' && overdueBy < -3) {
+      emit(dhakaTime(later, 19, 40), taker, {
+        type: 'item.updated',
+        orderId,
+        itemId: firstActive.id,
+        baseVersion: 1,
+        changes: { deliveryDate: addDays(deliveryDate, 2) },
+      });
+    }
+
     // Stage history, with the last garment of some delivered orders still waiting for pickup.
     const lastDay = phase.kind === 'delivered' ? (deliveryDate < yesterday ? deliveryDate : yesterday) : yesterday;
     const holdBackLast = phase.kind === 'delivered' && activeItems.length > 1 && index % 3 === 0;
@@ -338,10 +440,17 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
       const target = targetIndex(path, itemPhase);
       if (target === 0) return;
       const dates = spreadDates(created, lastDay < created ? created : lastDay, target);
+      // Now and then a fitting goes wrong and the garment goes a stage back before moving on again.
+      const reworked = target >= 3 && itemPhase.kind !== 'delivered' && extra.chance(0.18);
       for (let s = 1; s <= target; s++) {
         const to = path[s]!;
         const at = dhakaTime(dates[s - 1]!, 14, s);
         emit(at, item.assignedTo ?? owner, { type: 'item.stageChanged', orderId, itemId: item.id, to: to.key, reason: '' });
+        if (reworked && s === target) {
+          const day = dates[s - 1]!;
+          emit(dhakaTime(day, 16), item.assignedTo ?? owner, { type: 'item.stageChanged', orderId, itemId: item.id, to: path[s - 1]!.key, reason: extra.pick(REWORK_REASONS) });
+          emit(dhakaTime(day, 17), item.assignedTo ?? owner, { type: 'item.stageChanged', orderId, itemId: item.id, to: to.key, reason: '' });
+        }
         if (to.key === 'trial') {
           emit(dhakaTime(dates[s - 1]!, 15), taker, {
             type: 'item.adjustmentAdded',
@@ -431,5 +540,5 @@ export function generateShop(key: SeedShopKey, today: string): SeedData {
   const events = ordered.map(
     (entry, i) => ({ id: `${key}-e${i + 1}`, at: entry.at, deviceId, staffId: entry.staffId, ...entry.body }) as DomainEvent,
   );
-  return { config, events };
+  return { config, events, photos: [...photos].map(([id, dataUrl]) => ({ id, dataUrl })) };
 }

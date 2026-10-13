@@ -52,7 +52,7 @@ describe('Desktop garment editor', () => {
 
     await act(() => router.navigate(`/app/orders/${order.id}?full=1`));
     const card = await screen.findByRole('region', { name: `${item.garmentName.bn} ${bn(order.items.indexOf(item) + 1)}` });
-    expect(within(card).getByText('ট্রায়াল')).toBeTruthy();
+    expect(within(card).getAllByText('ট্রায়াল').length).toBeGreaterThan(0);
   });
 
   it('keeps stages in their kind’s box and adds a stage to the box it is added from', async () => {
