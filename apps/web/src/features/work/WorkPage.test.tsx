@@ -11,6 +11,17 @@ const supervisor = { staffId: 'uniform-supervisor', pin: '3333' };
 const region = (name: string) => screen.getByRole('region', { name });
 
 describe('Work lists', () => {
+  it('keeps group, stage, the list and board switch and print on the title row, with the worker tiles below', async () => {
+    await renderApp({ layout: 'desktop', shop: 'nakshi', path: '/app/work?view=list' });
+    const row = within((await screen.findByRole('heading', { name: 'কাজের তালিকা', level: 1 })).parentElement!);
+    expect(row.getByLabelText('ভাগ করুন')).toBeTruthy();
+    expect(row.getByLabelText('ধাপ')).toBeTruthy();
+    expect(row.getByRole('tablist', { name: 'দেখার ধরন' })).toBeTruthy();
+    expect(row.getByRole('link', { name: 'তালিকা প্রিন্ট করুন' })).toBeTruthy();
+    expect(row.queryByRole('group', { name: 'কারিগর অনুযায়ী দেখুন' })).toBeNull();
+    expect(screen.getByRole('group', { name: 'কারিগর অনুযায়ী দেখুন' })).toBeTruthy();
+  });
+
   it('opens by stage while nobody has work, and keeps a by-worker choice', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work?view=list' });
     const refs = workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'rahman-owner', seesAll: true });
