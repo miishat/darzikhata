@@ -12,6 +12,7 @@ import {
   type Poisha,
   type ShopState,
 } from '@darzikhata/domain';
+import { addDays } from '../../lib/dates';
 
 export type OrderStatusFilter = 'all' | 'open' | 'trial' | 'ready' | 'overdue' | 'closed';
 export type OrderSort = 'newest' | 'oldest' | 'delivery' | 'balance';
@@ -48,6 +49,8 @@ export interface OrderRow {
   balance: Poisha;
   /** Staff ids of the garments' makers, once each, cancelled garments left out. */
   workers: string[];
+  /** The earliest delivery date of a garment still to be made that nobody is on, or null if there is none with a date. */
+  unassignedDue: string | null;
 }
 
 export interface OrderPage {
@@ -62,11 +65,13 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
   let overdue = false;
   let trial = false;
   const workers: string[] = [];
+  let unassignedDue: string | null = null;
   for (const item of order.items) {
     if (item.cancelled) continue;
     if (item.assignedTo && !workers.includes(item.assignedTo)) workers.push(item.assignedTo);
     const group = itemSummaryGroup(item);
     if (group === 'delivered') continue;
+    if (!item.assignedTo && item.deliveryDate && (unassignedDue === null || item.deliveryDate < unassignedDue)) unassignedDue = item.deliveryDate;
     if (group === 'unfinished' && (item.stageKey === 'trial' || item.trialDate === today)) trial = true;
     if (item.deliveryDate) {
       if (nextDelivery === null || item.deliveryDate < nextDelivery) nextDelivery = item.deliveryDate;
@@ -83,7 +88,16 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
     total: orderTotal(order),
     balance: balanceDue(order),
     workers,
+    unassignedDue,
   };
+}
+
+/** How many days ahead a delivery counts as soon enough to warn that nobody is making it. */
+export const WORKER_WARNING_DAYS = 3;
+
+/** Whether a garment nobody is on is late or due within WORKER_WARNING_DAYS, so the list should say so. */
+export function needsWorkerSoon(row: OrderRow, today: string): boolean {
+  return row.unassignedDue !== null && row.unassignedDue <= addDays(today, WORKER_WARNING_DAYS);
 }
 
 export function matchesStatus(row: OrderRow, status: OrderStatusFilter): boolean {

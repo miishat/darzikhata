@@ -118,20 +118,25 @@ export function stageOptions(refs: ItemRef[], config: ShopConfig): Stage[] {
 
 const GROUPINGS: readonly WorkGrouping[] = ['worker', 'stage'];
 
-/** Reads the work-list filters from the URL; anything unknown falls back to the default. */
-export function readWorkQuery(params: URLSearchParams): WorkQuery {
+/** Grouping by worker says nothing while nobody has work, so the list starts by stage until somebody does. */
+export function defaultGrouping(refs: ItemRef[]): WorkGrouping {
+  return refs.some((r) => r.item.assignedTo) ? 'worker' : 'stage';
+}
+
+/** Reads the work-list filters from the URL; anything unknown falls back to the default, `by` to `defaultBy`. */
+export function readWorkQuery(params: URLSearchParams, defaultBy: WorkGrouping = DEFAULT_WORK_QUERY.by): WorkQuery {
   const by = params.get('by') as WorkGrouping | null;
   return {
-    by: by && GROUPINGS.includes(by) ? by : DEFAULT_WORK_QUERY.by,
+    by: by && GROUPINGS.includes(by) ? by : defaultBy,
     worker: params.get('worker') || DEFAULT_WORK_QUERY.worker,
     stage: params.get('stage') || DEFAULT_WORK_QUERY.stage,
   };
 }
 
-/** The URL form of the filters, leaving defaults out. */
-export function writeWorkQuery(query: WorkQuery): URLSearchParams {
+/** The URL form of the filters, leaving defaults out; `by` is left out only when it matches `defaultBy`. */
+export function writeWorkQuery(query: WorkQuery, defaultBy: WorkGrouping = DEFAULT_WORK_QUERY.by): URLSearchParams {
   const params = new URLSearchParams();
-  if (query.by !== DEFAULT_WORK_QUERY.by) params.set('by', query.by);
+  if (query.by !== defaultBy) params.set('by', query.by);
   if (query.worker !== DEFAULT_WORK_QUERY.worker) params.set('worker', query.worker);
   if (query.stage !== DEFAULT_WORK_QUERY.stage) params.set('stage', query.stage);
   return params;

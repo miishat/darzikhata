@@ -11,16 +11,27 @@ const supervisor = { staffId: 'uniform-supervisor', pin: '3333' };
 const region = (name: string) => screen.getByRole('region', { name });
 
 describe('Work lists', () => {
-  it('lists every unfinished garment for the owner, by worker or by stage', async () => {
+  it('opens by stage while nobody has work, and keeps a by-worker choice', async () => {
     const { store, router } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/work?view=list' });
     const refs = workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'rahman-owner', seesAll: true });
+    expect(refs.every((r) => !r.item.assignedTo)).toBe(true);
     expect(await screen.findByText(`${bn(refs.length)}টি পোশাক`)).toBeTruthy();
-    expect(within(region('কারিগর ঠিক হয়নি')).getAllByRole('row')).toHaveLength(refs.length + 1);
-
-    await chooseOption(screen.getByLabelText('ভাগ করুন'), 'ধাপ অনুযায়ী');
-    expect(router.state.location.search).toBe('?by=stage');
     const stitching = refs.filter((r) => r.item.stageKey === 'stitching').length;
-    expect(within(await screen.findByRole('region', { name: 'সেলাই' })).getAllByRole('row')).toHaveLength(stitching + 1);
+    expect(within(region('সেলাই')).getAllByRole('row')).toHaveLength(stitching + 1);
+    // Nobody is on these garments: the worker column says so quietly, not in words on every row.
+    expect(within(region('সেলাই')).queryAllByText('–').length).toBe(stitching);
+
+    await chooseOption(screen.getByLabelText('ভাগ করুন'), 'কারিগর অনুযায়ী');
+    expect(router.state.location.search).toBe('?by=worker');
+    expect(within(await screen.findByRole('region', { name: 'কারিগর ঠিক হয়নি' })).getAllByRole('row')).toHaveLength(refs.length + 1);
+  });
+
+  it('opens by worker once somebody has work', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'uniform', path: '/app/work?view=list' });
+    const refs = workItems(Object.values(store.getSnapshot().state.orders), { staffId: 'uniform-owner', seesAll: true });
+    expect(refs.some((r) => r.item.assignedTo)).toBe(true);
+    await screen.findByText(`${bn(refs.length)}টি পোশাক`);
+    expect(screen.getByLabelText('ভাগ করুন').textContent).toContain('কারিগর অনুযায়ী');
   });
 
   it('shows a tailor only their own garments, by stage, without the worker filter', async () => {

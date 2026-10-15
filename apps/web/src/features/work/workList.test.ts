@@ -11,6 +11,7 @@ import {
   planAssign,
   planStageMove,
   readWorkQuery,
+  defaultGrouping,
   runBatch,
   stageMoveBody,
   stageOptions,
@@ -114,6 +115,19 @@ describe('filters', () => {
     expect(readWorkQuery(new URLSearchParams('by=colour'))).toEqual(DEFAULT_WORK_QUERY);
     expect(writeWorkQuery(DEFAULT_WORK_QUERY).toString()).toBe('');
     expect(writeWorkQuery({ by: 'stage', worker: 'all', stage: 'trial' }).toString()).toBe('by=stage&stage=trial');
+  });
+
+  it('groups by stage until somebody has work, then by worker', () => {
+    expect(defaultGrouping(all())).toBe('worker');
+    expect(defaultGrouping(all().filter((r) => !r.item.assignedTo))).toBe('stage');
+    expect(defaultGrouping([])).toBe('stage');
+  });
+
+  it('reads and writes against the default in force, so a chosen grouping always sticks', () => {
+    expect(readWorkQuery(new URLSearchParams(''), 'stage').by).toBe('stage');
+    expect(readWorkQuery(new URLSearchParams('by=worker'), 'stage').by).toBe('worker');
+    expect(writeWorkQuery({ by: 'worker', worker: 'all', stage: 'all' }, 'stage').toString()).toBe('by=worker');
+    expect(writeWorkQuery({ by: 'stage', worker: 'all', stage: 'all' }, 'stage').toString()).toBe('');
   });
 });
 
