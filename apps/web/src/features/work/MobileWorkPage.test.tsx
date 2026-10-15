@@ -31,6 +31,20 @@ describe('Phone work list', () => {
     expect(screen.getAllByRole('region')).toHaveLength(counts.start);
   });
 
+  it('puts the step tabs and print in one row with no visible title or count, the title kept for screen readers', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/work' });
+    const tabs = await screen.findByRole('tablist', { name: 'ধাপ' });
+    const print = screen.getByRole('link', { name: 'তালিকা প্রিন্ট করুন' });
+    expect(print.parentElement).toBe(tabs.parentElement);
+    expect(screen.getByRole('heading', { name: 'কাজের তালিকা', level: 1 }).classList.contains('sr-only')).toBe(true);
+    expect(screen.queryByText(/টি পোশাক$/)).toBeNull();
+  });
+
+  it('names a tailor’s page My Work for screen readers', async () => {
+    await renderApp({ layout: 'mobile', shop: 'nakshi', path: '/app/work', as: { staffId: 'nakshi-tailor', pin: '4444' } });
+    expect((await screen.findByRole('heading', { name: 'আমার কাজ', level: 1 })).classList.contains('sr-only')).toBe(true);
+  });
+
   it('shows a garment’s measurements as tiles with when they were taken, and closes with the ✕', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/work' });
     const [first] = await screen.findAllByRole('button', { name: /^মাপ/ });
