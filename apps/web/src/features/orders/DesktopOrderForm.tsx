@@ -1,5 +1,5 @@
 import { profileKey, templateById } from '@darzikhata/domain';
-import { AlertCircle, ArrowLeft, Info, Shirt, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Info, Shirt, Trash2, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Dialog } from '../../ui/Dialog';
@@ -57,6 +57,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const customerSearch = useRef<HTMLInputElement>(null);
   // Starting over replaces this whole form, so the button that was pressed is gone: land on the title.
   useEffect(() => {
     if (entry.generation > 0) heading.current?.focus();
@@ -120,6 +121,12 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
     setProblem(t('entry.saveFailed'));
   };
 
+  // Until a customer is picked, Save looks unavailable and only sends you to the customer search.
+  const draftCustomer = entry.draft.customer;
+  const noCustomer = !draftCustomer;
+  const customerName = customerId ? (state.customers[customerId]?.name ?? '') : draftCustomer?.kind === 'new' ? draftCustomer.name.trim() : '';
+  const toCustomerSearch = () => customerSearch.current?.focus();
+
   const chosenStatus = chosen ? statusLine(chosen) : null;
   const draftNote = t(entry.persists ? 'entry.newDraftNote' : 'entry.newOrderNote');
 
@@ -128,6 +135,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
       <CustomerBar
         entry={entry}
         errors={errors}
+        searchRef={customerSearch}
         heading={
           <div className="flex items-center gap-2">
             <Link
@@ -222,6 +230,21 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 </p>
               )}
             </div>
+            <div className="flex items-center gap-2 border-b border-dashed border-line px-5 py-2.5 text-sm">
+              <UserRound aria-hidden="true" size={16} className="shrink-0 text-muted" />
+              <span className="text-muted">{t('entry.step.customer')}</span>
+              {noCustomer ? (
+                <button
+                  type="button"
+                  onClick={toCustomerSearch}
+                  className="ms-auto font-semibold text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-focus"
+                >
+                  {t('entry.pickCustomer')}
+                </button>
+              ) : (
+                <span className="ms-auto truncate font-semibold">{customerName || '–'}</span>
+              )}
+            </div>
             <ul className="flex flex-col px-5 py-1 text-sm">
               {items.length === 0 && <li className="py-2 text-muted">{t('entry.noGarments')}</li>}
               {items.map((item) => (
@@ -259,7 +282,14 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 </span>
               </p>
             )}
-            <Button size="lg" data-tour="save-order" disabled={entry.saving} onClick={() => void save()}>
+            <Button
+              size="lg"
+              data-tour="save-order"
+              disabled={entry.saving}
+              aria-disabled={noCustomer || undefined}
+              className={noCustomer ? 'opacity-45 saturate-50' : ''}
+              onClick={() => (noCustomer ? toCustomerSearch() : void save())}
+            >
               {entry.saving ? t('entry.saving') : t('entry.saveAndReceipt')}
             </Button>
             <Button variant="ghost" className="text-muted" onClick={() => (entry.dirty ? setConfirmDiscard(true) : navigate('/app/orders'))}>

@@ -38,7 +38,7 @@ describe('Order entry on desktop', () => {
     expect(within(tiles()).getByRole('button', { name: 'শার্ট ১' }).getAttribute('aria-pressed')).toBe('true');
 
     await save();
-    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+    expect(screen.getByRole('alert').textContent).toBe('ভুলগুলো ঠিক করুন');
     expect(within(garments()).getByText('মাপ এখনো ঠিক আছে কিনা কাস্টমারের কাছে জেনে টিক দিন')).toBeTruthy();
 
     await userEvent.click(within(garments()).getByRole('checkbox', { name: CONFIRM }));
@@ -126,7 +126,7 @@ describe('Order entry on desktop', () => {
     await userEvent.type(within(summary).getByLabelText('অগ্রিম'), '500 tk');
     await save();
 
-    expect(screen.getByRole('alert').textContent).toBe('নিচের ভুলগুলো ঠিক করুন');
+    expect(screen.getByRole('alert').textContent).toBe('ভুলগুলো ঠিক করুন');
     expect(Object.keys(store.getSnapshot().state.orders)).toHaveLength(before);
     expect(screen.queryByRole('heading', { name: 'রসিদ' })).toBeNull();
   });
@@ -140,6 +140,40 @@ describe('Order entry on desktop', () => {
     expect(within(bar).getByText('আগের বাকি')).toBeTruthy();
     expect(within(bar).getByText('চলমান অর্ডার')).toBeTruthy();
     expect(within(bar).getByText('শেষ এসেছেন')).toBeTruthy();
+  });
+
+  it('asks for a customer at the top of the summary, and Save only goes to the customer search until one is picked', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
+    const summary = region('অর্ডারের হিসাব');
+    const search = within(bar).getByLabelText('কাস্টমার খুঁজুন');
+    const saveButton = within(summary).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' });
+    expect(saveButton.getAttribute('aria-disabled')).toBe('true');
+
+    await userEvent.click(saveButton);
+    expect(document.activeElement).toBe(search);
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await userEvent.click(document.body);
+    await userEvent.click(within(summary).getByRole('button', { name: 'কাস্টমার বেছে নিন' }));
+    expect(document.activeElement).toBe(search);
+
+    const customer = store.getSnapshot().state.customers['rahman-c1']!;
+    await userEvent.type(search, customer.name);
+    await userEvent.click(within(bar).getByRole('button', { name: new RegExp(`^${customer.name}`) }));
+    expect(within(summary).getByText(customer.name)).toBeTruthy();
+    expect(within(summary).queryByRole('button', { name: 'কাস্টমার বেছে নিন' })).toBeNull();
+    expect(saveButton.getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('names a new customer in the summary as it is typed', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
+    await userEvent.click(within(bar).getByRole('button', { name: 'নতুন কাস্টমার' }));
+    const summary = region('অর্ডারের হিসাব');
+    expect(within(summary).getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }).getAttribute('aria-disabled')).toBeNull();
+    await userEvent.type(within(bar).getByLabelText('নাম', { exact: true }), 'জসিম উদ্দিন');
+    expect(within(summary).getByText('জসিম উদ্দিন')).toBeTruthy();
   });
 
   it('never saves when Enter is pressed in a field', async () => {

@@ -372,7 +372,7 @@ export const en: Messages = {
   'entry.next': 'Next Step',
   'entry.back': 'Previous Step',
   'entry.saveFailed': 'Could not save the order. Please try again',
-  'entry.fixErrors': 'Please fix the problems below',
+  'entry.fixErrors': 'Fix the Problems',
   'entry.changeCustomer': 'Another Customer',
   'entry.garment': 'Garment',
   'entry.addGarment': 'Add Garment',
