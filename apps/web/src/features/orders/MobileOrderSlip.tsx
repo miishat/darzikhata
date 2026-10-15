@@ -16,6 +16,8 @@ import { ItemHeader } from './entry/ItemHeader';
 import { ItemMeasurements } from './entry/ItemMeasurements';
 import { ItemMoney, MoneyFields } from './entry/MoneyFields';
 import { SAVE_DOCK_SPACE, SaveDock } from './entry/SaveDock';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { PrototypeSaveBar, SAVE_BAR_KEYS, SAVE_BAR_VARIANTS } from './saveBarPrototype';
 import { useErrorText, useItemTitle } from './entry/shared';
 import type { OrderEntry } from './useOrderEntry';
 
@@ -54,6 +56,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [restoredShown, setRestoredShown] = useState(true);
+  const variant = useVariant(SAVE_BAR_KEYS); // PROTOTYPE
   const errors: DraftErrors = entry.attempted ? entry.errors : {};
   const errorText = useErrorText(errors);
 
@@ -199,7 +202,21 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
           {problem}
         </p>
       )}
-      <SaveDock totals={entry.totals} saving={entry.saving} onSave={() => void save()} />
+      {variant === '0' ? (
+        <SaveDock totals={entry.totals} saving={entry.saving} onSave={() => void save()} />
+      ) : (
+        <PrototypeSaveBar
+          variant={variant}
+          totals={entry.totals}
+          saving={entry.saving}
+          hasCustomer={!!customer}
+          hasGarment={items.length > 0}
+          onSave={() => void save()}
+          onPickCustomer={() => open({ kind: 'customer' })}
+          onAddGarment={() => open({ kind: 'add' })}
+        />
+      )}
+      <PrototypeSwitcher variants={SAVE_BAR_VARIANTS} />
 
       <Dialog open={sheet?.kind === 'customer'} title={t('entry.step.customer')} hideTitle onClose={close}>
         <div className="flex flex-col gap-3">

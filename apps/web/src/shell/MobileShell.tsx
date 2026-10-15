@@ -80,7 +80,7 @@ export function MobileShell({ role }: { role: Role }) {
         </main>
         <nav
           aria-label={t('nav.main')}
-          className="fixed inset-x-0 bottom-0 z-10 grid items-start border-t border-line bg-panel px-1 pt-1.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]"
+          className="fixed inset-x-0 bottom-0 z-10 grid items-start [html[data-hide-tabs]_&]:hidden border-t border-line bg-panel px-1 pt-1.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]"
           style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
         >
           {left.map(tab)}
