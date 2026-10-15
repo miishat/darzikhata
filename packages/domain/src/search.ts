@@ -64,14 +64,19 @@ export interface SearchableCustomer {
   phone: string | null;
 }
 
-/** 0 = no match. Higher is better: phone 3, name text 2, name sound-alike 1. */
+/**
+ * 0 = no match. Higher is better: phone 3, name text 2, name sound-alike 1.
+ * Digits match a phone from the first one typed: one or two match the number's start, three or more anywhere in it.
+ */
 export function customerMatchScore(customer: SearchableCustomer, query: string): number {
   const trimmed = query.trim();
   if (!trimmed) return 0;
 
   const queryDigits = normalizePhone(trimmed);
-  if (/^[\d\s+\-০-৯]+$/.test(trimmed) && queryDigits.length >= 3) {
-    return customer.phone && normalizePhone(customer.phone).includes(queryDigits) ? 3 : 0;
+  if (/^[\d\s+\-০-৯]+$/.test(trimmed) && queryDigits.length > 0) {
+    if (!customer.phone) return 0;
+    const phone = normalizePhone(customer.phone);
+    return (queryDigits.length >= 3 ? phone.includes(queryDigits) : phone.startsWith(queryDigits)) ? 3 : 0;
   }
 
   const names = [customer.name, customer.nameAlt].filter((n): n is string => !!n);

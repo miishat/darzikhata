@@ -82,6 +82,15 @@ describe('Order entry on a phone', () => {
     expect(screen.getByRole('button', { name: /^কাস্টমার/ }).textContent).not.toContain('কাস্টমার বেছে নিন');
   });
 
+  it('finds customers by phone from the first digit typed', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: /^কাস্টমার/ }));
+    const sheet = within(await screen.findByRole('dialog'));
+    await userEvent.type(sheet.getByRole('searchbox', { name: 'কাস্টমার খুঁজুন' }), '০১');
+    expect(sheet.queryByText('কোনো কাস্টমার পাওয়া যায়নি')).toBeNull();
+    expect(sheet.getAllByText(/^01/).length).toBeGreaterThan(0);
+  });
+
   it('opens the customer when saving an empty order, and saves nothing', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     const before = Object.keys(store.getSnapshot().state.orders).length;

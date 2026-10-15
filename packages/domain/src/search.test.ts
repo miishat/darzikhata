@@ -47,6 +47,15 @@ describe('customer search', () => {
     expect(searchCustomers(customers, '৩৪৫৬').map((c) => c.id)).toEqual(['1']);
   });
 
+  it('matches the start of a phone number from the first digit typed', () => {
+    expect(searchCustomers(customers, '0').map((c) => c.id)).toEqual(['2', '1']);
+    expect(searchCustomers(customers, '০১').map((c) => c.id)).toEqual(['2', '1']);
+    expect(searchCustomers(customers, '017').map((c) => c.id)).toEqual(['1']);
+    // One or two digits only match the start, so "12" does not pull in every number containing 12.
+    expect(searchCustomers(customers, '12')).toEqual([]);
+    expect(customerMatchScore(customers[2]!, '0')).toBe(0);
+  });
+
   it('matches name text directly', () => {
     expect(customerMatchScore(customers[1]!, 'karim')).toBe(2);
     expect(customerMatchScore(customers[1]!, 'করিম')).toBe(2);
