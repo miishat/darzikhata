@@ -1,6 +1,10 @@
 // PROTOTYPE (throwaway): audit #13. The sync status says "দেখতে হবে" (Needs Attention) without saying what, and the
 // sheet it opens puts that same text on the online switch's row. Current plus five ways to name what is waiting and
 // keep the switch about the connection, switchable via ?variant= on any page (open the header dot or sidebar block).
+import { syncStatus, type ReviewItem, type SyncStatus } from '@darzikhata/domain';
+import { useSearchParams } from 'react-router';
+import { useSnapshot } from '../data/StoreContext';
+import { useVisibleReview as useRealReview } from '../features/sync/useSync';
 import { useI18n } from '../i18n/I18nProvider';
 import { useVariant } from '../ui/PrototypeSwitcher';
 
@@ -43,4 +47,23 @@ export function useSyncWords() {
     sectionReview: pick('যাচাই', 'Review'),
     sectionConnection: pick('সংযোগ', 'Connection'),
   };
+}
+
+/**
+ * PROTOTYPE: the sync button and sheet read the review list through these, so the mockup always shows the
+ * needs-review state. With no real review items it pretends there are 2; ?review=N picks the count (0 for none).
+ */
+export function useVisibleReview(): ReviewItem[] {
+  const real = useRealReview();
+  const [params] = useSearchParams();
+  const asked = params.get('review');
+  const count = asked !== null ? Math.max(0, Number(asked) || 0) : real.length > 0 ? real.length : 2;
+  if (asked === null && real.length > 0) return real;
+  return Array.from({ length: count }, (_, i) => real[i] ?? ({} as ReviewItem));
+}
+
+export function useSyncStatus(): SyncStatus {
+  const { sync } = useSnapshot();
+  const review = useVisibleReview();
+  return syncStatus({ online: sync.online, syncing: sync.syncing, reviewCount: review.length });
 }
