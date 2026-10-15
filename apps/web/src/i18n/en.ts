@@ -487,7 +487,7 @@ export const en: Messages = {
   'orders.chipBranch': 'Branch: {name}',
   'orders.col.garmentsStage': 'Garments and Stage',
   'orders.col.delivery': 'Delivery',
-  'orders.unassigned': 'Not Decided',
+  'orders.noWorker': 'No Worker',
   'orders.range': '{from}–{to} of {total}',
   'orders.hint.move': 'Choose an Order',
   'orders.hint.open': 'Full Order',

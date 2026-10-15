@@ -3,7 +3,7 @@ import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
-import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders } from './orderList';
+import { DEFAULT_LIST_QUERY, needsWorkerSoon, orderRow, PAGE_SIZE, queryOrders } from './orderList';
 import { countViews } from './orderViews';
 import { chooseOption, optionLabels } from '../../test/chooseOption';
 
@@ -120,6 +120,29 @@ describe('Orders list', () => {
 
     await userEvent.click(row);
     expect(row.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('warns about a missing tailor only beside the date of an order that is late or due within three days', async () => {
+    const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
+    const state = store.getSnapshot().state;
+    const today = todayInDhaka(new Date());
+    await screen.findByRole('table', { name: 'অর্ডার তালিকা' });
+    let urgent = 0;
+    let calm = 0;
+    for (const r of bodyRows()) {
+      const order = Object.values(state.orders).find((o) => o.number === numberOf(r))!;
+      const cells = within(r).getAllByRole('cell');
+      const row = orderRow(order, state, today);
+      const warned = within(cells[2]!).queryByText('কারিগর নেই') !== null;
+      expect(warned).toBe(needsWorkerSoon(row, today));
+      // The worker column never warns: names, or a quiet dash with words for screen readers.
+      expect(within(cells[3]!).queryByText('ঠিক হয়নি')).toBeNull();
+      if (row.workers.length === 0) expect(cells[3]!.textContent).toContain('–');
+      if (warned) urgent += 1;
+      else if (row.unassignedDue !== null) calm += 1;
+    }
+    expect(urgent).toBeGreaterThan(0);
+    expect(calm).toBeGreaterThan(0);
   });
 
   it('drops the delivery and worker columns beside an open order and shows the time left under the number', async () => {

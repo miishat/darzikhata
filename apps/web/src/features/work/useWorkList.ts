@@ -9,6 +9,7 @@ import {
   filterWork,
   groupWork,
   readWorkQuery,
+  defaultGrouping,
   workItems,
   writeWorkQuery,
   type Viewer,
@@ -50,7 +51,10 @@ export function useWorkList(): WorkList {
   const staffId = current?.staff.id ?? '';
   const viewer = useMemo<Viewer>(() => ({ staffId, seesAll }), [staffId, seesAll]);
 
-  const parsed = readWorkQuery(params);
+  const orders = state.orders;
+  const all = useMemo(() => (current ? workItems(Object.values(orders), viewer) : NO_REFS), [orders, viewer, current]);
+  const defaultBy = defaultGrouping(all);
+  const parsed = readWorkQuery(params, defaultBy);
   const by = seesAll ? parsed.by : 'stage';
   const worker = seesAll ? parsed.worker : 'all';
   const { stage } = parsed;
@@ -62,11 +66,11 @@ export function useWorkList(): WorkList {
   const view: WorkView = asked === 'board' || asked === 'list' ? asked : readSetting(VIEW_KEY) === 'board' ? 'board' : 'list';
   const setQuery = useCallback(
     (next: WorkQuery) => {
-      const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
+      const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' }, seesAll ? defaultBy : 'stage');
       if (view === 'board') written.set('view', 'board');
       setParams(written, { replace: true });
     },
-    [setParams, seesAll, view],
+    [setParams, seesAll, view, defaultBy],
   );
   const setView = useCallback(
     (next: WorkView) => {
@@ -79,8 +83,6 @@ export function useWorkList(): WorkList {
     [setParams, params],
   );
 
-  const orders = state.orders;
-  const all = useMemo(() => (current ? workItems(Object.values(orders), viewer) : NO_REFS), [orders, viewer, current]);
   const shown = useMemo(() => filterWork(all, query), [all, query]);
   const groups = useMemo(() => (config ? groupWork(shown, query.by, config) : NO_GROUPS), [shown, query.by, config]);
 

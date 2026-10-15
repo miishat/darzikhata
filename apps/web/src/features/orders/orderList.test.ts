@@ -1,7 +1,7 @@
 import { emptyState, type ShopState } from '@darzikhata/domain';
 import { makeItem, makeOrder, makePayment } from '@darzikhata/domain/testing';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LIST_QUERY, orderRow, queryOrders, statusCounts, readListQuery, writeListQuery, type OrderListQuery } from './orderList';
+import { DEFAULT_LIST_QUERY, needsWorkerSoon, orderRow, queryOrders, statusCounts, readListQuery, writeListQuery, type OrderListQuery } from './orderList';
 
 const TODAY = '2026-10-03';
 const customer = (id: string, name: string, phone: string) => ({
@@ -51,6 +51,41 @@ describe('orderRow', () => {
     });
     expect(orderRow(s.orders['o1']!, s, TODAY)).toMatchObject({ overdue: true, balance: 70000 });
     expect(orderRow(s.orders['o3']!, s, TODAY)).toMatchObject({ nextDelivery: null, balance: -30000, workers: [] });
+  });
+
+  it('notes the earliest delivery of a garment still to be made that nobody is on', () => {
+    const s = state();
+    // A finished or cancelled garment without a worker does not count.
+    expect(orderRow(s.orders['o3']!, s, TODAY).unassignedDue).toBeNull();
+    expect(orderRow(s.orders['o1']!, s, TODAY).unassignedDue).toBeNull();
+    expect(orderRow(s.orders['o4']!, s, TODAY).unassignedDue).toBe('2026-10-10');
+  });
+});
+
+describe('needsWorkerSoon', () => {
+  const row = (items: Parameters<typeof makeItem>[0][]) => {
+    const order = makeOrder({ id: 'x', number: 'X-0001', customerId: 'rahim', items: items.map((i) => makeItem(i)) });
+    return orderRow(order, state(), TODAY);
+  };
+
+  it('is true when a garment nobody is on is late or due within three days', () => {
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: '2026-10-01' }]), TODAY)).toBe(true);
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: '2026-10-03' }]), TODAY)).toBe(true);
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: '2026-10-06' }]), TODAY)).toBe(true);
+  });
+
+  it('is false further out, without a date, or when somebody is on it', () => {
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: '2026-10-07' }]), TODAY)).toBe(false);
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: null }]), TODAY)).toBe(false);
+    expect(needsWorkerSoon(row([{ id: 'a', deliveryDate: '2026-10-04', assignedTo: 'tailor-1' }]), TODAY)).toBe(false);
+  });
+
+  it('goes by the garment nobody is on, not by the order’s earliest date', () => {
+    const r = row([
+      { id: 'a', deliveryDate: '2026-10-04', assignedTo: 'tailor-1' },
+      { id: 'b', deliveryDate: '2026-10-20' },
+    ]);
+    expect(needsWorkerSoon(r, TODAY)).toBe(false);
   });
 });
 

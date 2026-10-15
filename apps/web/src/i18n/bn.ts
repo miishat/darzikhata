@@ -486,7 +486,7 @@ export const bn = {
   'orders.chipBranch': 'শাখা: {name}',
   'orders.col.garmentsStage': 'পোশাক ও ধাপ',
   'orders.col.delivery': 'ডেলিভারি',
-  'orders.unassigned': 'ঠিক হয়নি',
+  'orders.noWorker': 'কারিগর নেই',
   'orders.range': '{from}–{to}, মোট {total}',
   'orders.hint.move': 'অর্ডার বাছুন',
   'orders.hint.open': 'পুরো অর্ডার',

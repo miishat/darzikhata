@@ -30,7 +30,16 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
   const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   const ids = refs.map((r) => r.item.id);
   const allOn = selected !== null && ids.every((id) => selected.has(id));
-  const staffName = (id: string | null) => (id === null ? t('work.unassigned') : (config?.staff.find((s) => s.id === id)?.name ?? id));
+  // Nobody on a garment shows as a quiet dash; the words are kept for screen readers.
+  const staffName = (id: string | null) =>
+    id === null ? (
+      <>
+        <span aria-hidden="true" className="text-muted">–</span>
+        <span className="sr-only">{t('work.unassigned')}</span>
+      </>
+    ) : (
+      (config?.staff.find((s) => s.id === id)?.name ?? id)
+    );
   const stagePill = (r: ItemRef) => {
     const index = r.item.stages.findIndex((s) => s.key === r.item.stageKey);
     const stage = r.item.stages[index];

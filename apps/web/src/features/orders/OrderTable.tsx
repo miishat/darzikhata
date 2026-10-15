@@ -1,5 +1,5 @@
 import { itemSummaryGroup, type Order } from '@darzikhata/domain';
-import { TriangleAlert } from 'lucide-react';
+import { UserX } from 'lucide-react';
 import { useRef, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -8,9 +8,9 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
-import { useCan } from '../common/hooks';
+import { useCan, useToday } from '../common/hooks';
 import { itemTitle } from '../common/orderText';
-import type { OrderRow } from './orderList';
+import { needsWorkerSoon, type OrderRow } from './orderList';
 
 /** "৳১,৪০০", or "ফেরত পাওনা ৳৩০০" when the shop owes the customer. */
 export function useBalanceText(): (balance: number) => string {
@@ -44,11 +44,6 @@ interface Props {
   onCloseDetail(): void;
 }
 
-/** Whether a garment still needs somebody on it but has nobody. */
-function needsWorker(item: Order['items'][number]): boolean {
-  return !item.cancelled && !item.assignedTo && itemSummaryGroup(item) !== 'delivered';
-}
-
 /**
  * Desktop list. A row selects its order and opens it beside the table; with focus in the table
  * Up and Down move the selection, Enter opens the full page and Escape closes the panel.
@@ -62,6 +57,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const workerNames = useWorkerNames();
   const body = useRef<HTMLTableSectionElement>(null);
   const showMoney = can('money.view');
+  const today = useToday();
   // With the side panel open the table is narrow: the delivery and workers columns give way (the panel
   // shows both) and the time left moves under the order number. The header stays put while the card scrolls.
   const panelOpen = activeId !== undefined;
@@ -110,7 +106,13 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
           const { order } = row;
           const selected = order.id === activeId;
           const live = order.items.filter((item) => !item.cancelled);
-          const hasUnassigned = live.some(needsWorker);
+          // Nobody making a garment only matters once its date is close, so the warning sits with that date.
+          const noWorker = needsWorkerSoon(row, today) && (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-semibold text-danger">
+              <UserX aria-hidden="true" size={14} />
+              {t('orders.noWorker')}
+            </span>
+          );
           return (
             <tr
               key={order.id}
@@ -141,6 +143,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                         <DueLabel date={row.nextDelivery} />
                       </span>
                     )}
+                    {panelOpen && noWorker}
                   </div>
                 </div>
               </td>
@@ -164,6 +167,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     <div className="flex flex-col items-start gap-0.5">
                       <span>{date(row.nextDelivery)}</span>
                       <DueLabel date={row.nextDelivery} />
+                      {noWorker}
                     </div>
                   ) : (
                     <span className="text-muted">-</span>
@@ -172,15 +176,14 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
               )}
               {!panelOpen && (
                 <td className="px-3 py-2 text-sm">
-                  <div className="flex flex-col gap-0.5">
-                    {row.workers.length > 0 && <span>{workerNames(row.workers)}</span>}
-                    {hasUnassigned && (
-                      <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-warn">
-                        <TriangleAlert aria-hidden="true" size={14} />
-                        {t('orders.unassigned')}
-                      </span>
-                    )}
-                  </div>
+                  {row.workers.length > 0 ? (
+                    workerNames(row.workers)
+                  ) : (
+                    <>
+                      <span aria-hidden="true" className="text-muted">–</span>
+                      <span className="sr-only">{t('work.unassigned')}</span>
+                    </>
+                  )}
                 </td>
               )}
               {showMoney && (
