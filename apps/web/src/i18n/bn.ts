@@ -398,6 +398,7 @@ export const bn = {
   'entry.fabricNote': 'কাপড়ের নোট',
   'entry.price': 'দাম (প্রতিটি)',
   'entry.deliveryDate': 'ডেলিভারির তারিখ',
+  'entry.addDeliveryDate': 'ডেলিভারির তারিখ দিন',
   'entry.trialDate': 'ট্রায়ালের তারিখ (ঐচ্ছিক)',
   'entry.discount': 'ছাড়',
   'entry.discountReason': 'ছাড়ের কারণ (ঐচ্ছিক)',

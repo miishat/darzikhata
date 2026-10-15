@@ -399,6 +399,7 @@ export const en: Messages = {
   'entry.fabricNote': 'Fabric Note',
   'entry.price': 'Price (Each)',
   'entry.deliveryDate': 'Delivery Date',
+  'entry.addDeliveryDate': 'Add a Delivery Date',
   'entry.trialDate': 'Trial Date (Optional)',
   'entry.discount': 'Discount',
   'entry.discountReason': 'Discount Reason (Optional)',
