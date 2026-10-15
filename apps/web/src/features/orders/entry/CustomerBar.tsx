@@ -1,13 +1,12 @@
 import { searchCustomers, type Gender } from '@darzikhata/domain';
 import { ArrowLeftRight, CalendarDays, ClipboardList, Search, UserRound, UserRoundPlus, Wallet, type LucideIcon } from 'lucide-react';
-import { useMemo, useState, type ReactNode, type Ref } from 'react';
+import { useId, useMemo, useState, type ReactNode, type Ref } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../../data/StoreContext';
 import { useI18n } from '../../../i18n/I18nProvider';
 import { Avatar } from '../../../ui/Avatar';
 import { Button } from '../../../ui/Button';
-import { ChoiceGroup } from '../../../ui/ChoiceGroup';
-import { TextField } from '../../../ui/TextField';
+import { Select } from '../../../ui/Select';
 import { useScopedState } from '../../branches/BranchScopeProvider';
 import { useCan } from '../../common/hooks';
 import { directoryRows } from '../../customers/directoryView';
@@ -180,44 +179,83 @@ function ChosenCustomer({ entry, customerId }: { entry: OrderEntry; customerId: 
   );
 }
 
-/** A new customer's details in one row, with a way back to searching. */
+/** A box with its label inside on the left, so a row of them stays one line tall. */
+function InlineField({
+  label,
+  value,
+  onChange,
+  error,
+  className = '',
+  tel = false,
+}: {
+  label: string;
+  value: string;
+  onChange(value: string): void;
+  error?: string | undefined;
+  className?: string;
+  tel?: boolean;
+}) {
+  const messageId = useId();
+  return (
+    <div className={`flex min-w-0 flex-col gap-1 ${className}`}>
+      <label
+        className={`flex min-h-11 items-stretch overflow-hidden rounded-lg border bg-panel focus-within:outline-2 focus-within:outline-focus ${error ? 'border-danger' : 'border-line'}`}
+      >
+        <span className="flex shrink-0 items-center border-e border-line bg-surface px-3 text-sm text-muted">{label}</span>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? messageId : undefined}
+          autoComplete="off"
+          {...(tel ? { type: 'tel', inputMode: 'tel' as const } : {})}
+          className="min-w-0 flex-1 bg-transparent px-3 text-ink outline-none"
+        />
+      </label>
+      {error && (
+        <p id={messageId} className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** A new customer's details in one row: name, phone, other-language name, gender, and an icon back to searching. */
 function NewCustomerFields({ entry, errors }: { entry: OrderEntry; errors: DraftErrors }) {
   const { t } = useI18n();
   const errorText = useErrorText(errors);
   const customer = entry.draft.customer;
   if (customer?.kind !== 'new') return null;
   const set = (changes: Partial<typeof customer>) => entry.setCustomer({ ...customer, ...changes });
-  const genders: Array<{ value: Gender; label: string }> = [
-    { value: 'male', label: t('gender.male') },
-    { value: 'female', label: t('gender.female') },
-    { value: 'other', label: t('gender.other') },
+  const genderLabel = t('customerForm.gender');
+  // The chosen gender shows with its label, since the menu has no label of its own beside it.
+  const genders = [
+    { value: '', label: `${genderLabel}: ${t('entry.genderPick')}` },
+    ...(['male', 'female', 'other'] as const).map((g) => ({ value: g, label: `${genderLabel}: ${t(`gender.${g}`)}` })),
   ];
+  // On a narrow screen the row wraps rather than squeezing the boxes too small to type in.
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
-      <TextField
-        label={t('customerForm.name')}
-        className="w-56"
-        value={customer.name}
-        onChange={(e) => set({ name: e.target.value })}
-        error={errorText('customer.name')}
-        autoComplete="off"
+    <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+      <InlineField label={t('customerForm.name')} className="min-w-44 flex-[3]" value={customer.name} onChange={(name) => set({ name })} error={errorText('customer.name')} />
+      <InlineField label={t('customerForm.phone')} className="min-w-40 flex-[2]" value={customer.phone} onChange={(phone) => set({ phone })} error={errorText('customer.phone')} tel />
+      <InlineField label={t('customerForm.nameAlt')} className="min-w-48 flex-[3]" value={customer.nameAlt} onChange={(nameAlt) => set({ nameAlt })} />
+      <Select
+        label={genderLabel}
+        size="lg"
+        value={customer.gender ?? ''}
+        options={genders}
+        onChange={(g) => set({ gender: g === '' ? null : (g as Gender) })}
       />
-      <TextField label={t('customerForm.nameAlt')} className="w-56" value={customer.nameAlt} onChange={(e) => set({ nameAlt: e.target.value })} autoComplete="off" />
-      <TextField
-        label={t('customerForm.phone')}
-        className="w-44"
-        value={customer.phone}
-        onChange={(e) => set({ phone: e.target.value })}
-        error={errorText('customer.phone')}
-        type="tel"
-        inputMode="tel"
-        autoComplete="off"
-      />
-      <ChoiceGroup legend={t('customerForm.gender')} value={customer.gender} options={genders} onChange={(gender) => set({ gender })} />
-      <Button variant="ghost" onClick={() => entry.setCustomer(null)}>
-        <ArrowLeftRight aria-hidden="true" size={16} />
-        {t('entry.changeCustomer')}
-      </Button>
+      <button
+        type="button"
+        onClick={() => entry.setCustomer(null)}
+        aria-label={t('entry.changeCustomer')}
+        title={t('entry.changeCustomer')}
+        className="grid size-11 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+      >
+        <ArrowLeftRight aria-hidden="true" size={18} />
+      </button>
     </div>
   );
 }

@@ -176,6 +176,38 @@ describe('Order entry on desktop', () => {
     expect(within(summary).getByText('জসিম উদ্দিন')).toBeTruthy();
   });
 
+  it('takes a new customer in one row: name, phone, other-language name, gender from a menu and an icon back to search', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
+    await userEvent.click(within(bar).getByRole('button', { name: 'নতুন কাস্টমার' }));
+
+    const order = [within(bar).getByLabelText('নাম', { exact: true }), within(bar).getByLabelText('ফোন', { exact: true }), within(bar).getByLabelText('অন্য ভাষায় নাম')];
+    const inputs = Array.from(bar.querySelectorAll('input'));
+    expect(order.map((box) => inputs.indexOf(box as HTMLInputElement))).toEqual([0, 1, 2]);
+
+    const gender = within(bar).getByRole('combobox', { name: 'লিঙ্গ' });
+    expect(gender.textContent).toContain('লিঙ্গ: বেছে নিন');
+    expect(within(bar).queryByRole('radio')).toBeNull();
+    await chooseOption(gender, 'লিঙ্গ: মহিলা');
+    expect(within(bar).getByRole('combobox', { name: 'লিঙ্গ' }).textContent).toContain('লিঙ্গ: মহিলা');
+
+    const back = within(bar).getByRole('button', { name: 'অন্য কাস্টমার' });
+    expect(back.textContent).toBe('');
+    await userEvent.type(within(bar).getByLabelText('নাম', { exact: true }), 'জসিম');
+    await userEvent.click(back);
+    expect(within(bar).getByLabelText('কাস্টমার খুঁজুন')).toBeTruthy();
+  });
+
+  it('shows a new customer’s missing name under its box after a failed save', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
+    await userEvent.click(within(bar).getByRole('button', { name: 'নতুন কাস্টমার' }));
+    await save();
+    const name = within(bar).getByLabelText('নাম', { exact: true });
+    expect(name.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(name.getAttribute('aria-describedby')!)?.textContent).toBe('নাম লিখুন');
+  });
+
   it('never saves when Enter is pressed in a field', async () => {
     const { store } = await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
     const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
