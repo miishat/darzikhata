@@ -137,7 +137,9 @@ export function ItemMeasurements({ entry, item, errors, tiles = false, onDone, o
   const onValues = (values: Record<string, number>) => entry.updateItem(item.key, { measurements: { ...m, values } });
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted">{Object.keys(previous).length > 0 ? t('entry.prefillNote') : t('entry.fractionNote')}</p>
+      {!(Object.keys(previous).length === 0 && new URLSearchParams(location.search).get('variant') === '4') && ( // PROTOTYPE: variant 4 shows this tip in the heading
+        <p className="text-sm text-muted">{Object.keys(previous).length > 0 ? t('entry.prefillNote') : t('entry.fractionNote')}</p>
+      )}
       <DesktopMeasureFields template={template} values={m.values} previous={previous} errors={fieldErrors} onChange={onValues} />
     </div>
   );

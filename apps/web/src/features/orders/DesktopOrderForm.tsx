@@ -6,6 +6,8 @@ import { Dialog } from '../../ui/Dialog';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { SCROLL_KEYS, SCROLL_VARIANTS, SectionFolds, SectionTabs, sectionWord, type Section } from './garmentScrollPrototype';
 import type { DraftItem } from './draft';
 import { CustomerBar } from './entry/CustomerBar';
 import { AddGarmentButtons, GarmentTiles, type LineStatus } from './entry/GarmentTiles';
@@ -46,7 +48,7 @@ function Card({ title, className = '', children }: { title: string; className?: 
  * chosen one's measurements and details, and a receipt beside them that fills in as you type, with the money and save.
  */
 export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
-  const { t, money, number } = useI18n();
+  const { t, money, number, language } = useI18n();
   const { config, state } = useSnapshot();
   const navigate = useNavigate();
   const title = useItemTitle(entry);
@@ -57,6 +59,9 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const variant = useVariant(SCROLL_KEYS); // PROTOTYPE
+  const pageScroll = variant === '1' || variant === '2';
+  const tight = variant === '3' || variant === '4' || variant === '5'; // remove link moves up beside the quantity
   const customerSearch = useRef<HTMLInputElement>(null);
   // Starting over replaces this whole form, so the button that was pressed is gone: land on the title.
   useEffect(() => {
@@ -131,7 +136,8 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const draftNote = t(entry.persists ? 'entry.newDraftNote' : 'entry.newOrderNote');
 
   return (
-    <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-3">
+    <div className={`flex flex-col gap-3 ${pageScroll ? '' : 'h-[calc(100dvh-6.5rem)] min-h-96'}`}>
+      <PrototypeSwitcher variants={SCROLL_VARIANTS} />
       <CustomerBar
         entry={entry}
         errors={errors}
@@ -152,14 +158,16 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           </div>
         }
       />
-      <div className="flex min-h-0 flex-1 gap-4">
-        <Card title={t('entry.step.garments')} className="min-w-0 flex-1">
+      <div className={`flex gap-4 ${pageScroll ? 'items-start' : 'min-h-0 flex-1'}`}>
+        <Card title={t('entry.step.garments')} className={`min-w-0 flex-1 ${pageScroll ? 'overflow-visible!' : ''}`}>
           {items.length > 0 && (
-            <GarmentTiles entry={entry} chosenKey={chosenKey} onChoose={setChosenKey} onAdd={add} status={statusLine} hasErrors={lineHasErrors} />
+            <div className={variant === '2' ? 'sticky top-0 z-10 rounded-t-2xl bg-panel' : pageScroll ? 'rounded-t-2xl' : ''}>
+              <GarmentTiles entry={entry} chosenKey={chosenKey} onChoose={setChosenKey} onAdd={add} status={statusLine} hasErrors={lineHasErrors} />
+            </div>
           )}
-          <div className="min-h-0 flex-1 overflow-auto p-5">
+          <div className={pageScroll ? 'p-5' : `min-h-0 flex-1 overflow-auto ${variant === '4' ? 'p-3' : tight ? 'p-4' : 'p-5'}`}>
             {chosen ? (
-              <div className="flex min-h-full flex-col gap-5">
+              <div className={`flex min-h-full flex-col ${tight ? 'gap-3' : 'gap-5'}`}>
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="me-auto flex flex-col items-start gap-1">
                     {chosenStatus && (
@@ -177,18 +185,61 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                     />
                   )}
                   <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} />
+                  {tight && (
+                    <button
+                      type="button"
+                      onClick={() => entry.removeItem(chosen.key)}
+                      aria-label={t('entry.removeItem', { item: title(chosen) })}
+                      title={t('entry.removeItem', { item: title(chosen) })}
+                      className="grid size-11 place-items-center rounded-lg text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+                    >
+                      <Trash2 aria-hidden="true" size={18} />
+                    </button>
+                  )}
                 </div>
-                <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />
-                <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} desktop />
-                <ItemSchedule key={`${chosen.key}:schedule`} entry={entry} item={chosen} errors={errors} />
-                <button
-                  type="button"
-                  onClick={() => entry.removeItem(chosen.key)}
-                  className="inline-flex min-h-11 items-center gap-2 mt-auto self-center rounded-lg px-3 text-sm font-semibold text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                >
-                  <Trash2 aria-hidden="true" size={18} />
-                  {t('entry.removeItem', { item: title(chosen) })}
-                </button>
+                {variant === '3' || variant === '4' ? (
+                  (() => {
+                    const bad = (test: (path: string) => boolean) => Object.keys(errors).some((p) => p.startsWith(`items.${chosen.key}.`) && test(p.slice(`items.${chosen.key}.`.length)));
+                    const sections: Section[] = [
+                      {
+                        id: 'measurements',
+                        label: sectionWord(language, 'measurements'),
+                        bad: bad((p) => p.startsWith('measurements')),
+                        hint: t('entry.fractionNote'),
+                        node: <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />,
+                      },
+                      {
+                        id: 'design',
+                        label: sectionWord(language, 'design'),
+                        bad: false,
+                        node: <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} desktop />,
+                      },
+                      {
+                        id: 'dates',
+                        label: sectionWord(language, 'dates'),
+                        bad: bad((p) => !p.startsWith('measurements')),
+                        node: <ItemSchedule key={`${chosen.key}:schedule`} entry={entry} item={chosen} errors={errors} />,
+                      },
+                    ];
+                    return variant === '3' ? <SectionTabs key={chosen.key} sections={sections} /> : <SectionFolds key={chosen.key} sections={sections} />;
+                  })()
+                ) : (
+                  <>
+                    <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />
+                    <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} desktop />
+                    <ItemSchedule key={`${chosen.key}:schedule`} entry={entry} item={chosen} errors={errors} />
+                  </>
+                )}
+                {!tight && (
+                  <button
+                    type="button"
+                    onClick={() => entry.removeItem(chosen.key)}
+                    className="inline-flex min-h-11 items-center gap-2 mt-auto self-center rounded-lg px-3 text-sm font-semibold text-danger hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  >
+                    <Trash2 aria-hidden="true" size={18} />
+                    {t('entry.removeItem', { item: title(chosen) })}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid h-full place-items-center">
@@ -207,7 +258,10 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           </div>
         </Card>
 
-        <Card title={t('entry.summary')} className="w-80 shrink-0 xl:w-[340px]">
+        <Card
+          title={t('entry.summary')}
+          className={`w-80 shrink-0 xl:w-[340px] ${pageScroll ? 'sticky top-6 h-[calc(100dvh-3rem)] self-start' : ''}`}
+        >
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="flex flex-col gap-0.5 border-b border-dashed border-line px-5 py-2.5 text-center">
               {/* The explanation sits behind an icon so the column fits without scrolling. */}
