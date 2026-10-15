@@ -375,7 +375,7 @@ export const bn = {
   'entry.next': 'পরের ধাপ',
   'entry.back': 'আগের ধাপ',
   'entry.saveFailed': 'অর্ডার সেভ করা যায়নি। আবার চেষ্টা করুন',
-  'entry.fixErrors': 'নিচের ভুলগুলো ঠিক করুন',
+  'entry.fixErrors': 'ভুলগুলো ঠিক করুন',
   'entry.changeCustomer': 'অন্য কাস্টমার',
   'entry.garment': 'পোশাক',
   'entry.addGarment': 'পোশাক যোগ করুন',

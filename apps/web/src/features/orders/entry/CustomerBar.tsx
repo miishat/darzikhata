@@ -1,6 +1,6 @@
 import { searchCustomers, type Gender } from '@darzikhata/domain';
 import { ArrowLeftRight, CalendarDays, ClipboardList, Search, UserRound, UserRoundPlus, Wallet, type LucideIcon } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode, type Ref } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../../data/StoreContext';
 import { useI18n } from '../../../i18n/I18nProvider';
@@ -24,11 +24,13 @@ function CustomerSearch({
   onDone,
   autoFocus = false,
   floating = false,
+  inputRef,
 }: {
   entry: OrderEntry;
   error?: string | undefined;
   onDone?(): void;
   autoFocus?: boolean;
+  inputRef?: Ref<HTMLInputElement> | undefined;
   /** Show the results over the page under the box, instead of pushing what follows down. */
   floating?: boolean;
 }) {
@@ -43,6 +45,7 @@ function CustomerSearch({
       >
         <Search aria-hidden="true" size={16} className="shrink-0 text-muted" />
         <input
+          ref={inputRef}
           type="search"
           // Focus moves here when the change menu opens.
           autoFocus={autoFocus} // eslint-disable-line jsx-a11y/no-autofocus
@@ -223,7 +226,18 @@ function NewCustomerFields({ entry, errors }: { entry: OrderEntry; errors: Draft
  * Desktop order entry's top bar: the page title, then the customer. Before one is chosen, a search with a "new
  * customer" button; a new customer's fields in a row; or the chosen customer with what they owe and their orders.
  */
-export function CustomerBar({ entry, errors, heading }: { entry: OrderEntry; errors: DraftErrors; heading: ReactNode }) {
+export function CustomerBar({
+  entry,
+  errors,
+  heading,
+  searchRef,
+}: {
+  entry: OrderEntry;
+  errors: DraftErrors;
+  heading: ReactNode;
+  /** The search box shown while no customer is picked, so the rest of the form can send focus there. */
+  searchRef?: Ref<HTMLInputElement>;
+}) {
   const { t } = useI18n();
   const errorText = useErrorText(errors);
   const customer = entry.draft.customer;
@@ -238,7 +252,7 @@ export function CustomerBar({ entry, errors, heading }: { entry: OrderEntry; err
       ) : (
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <div className="relative min-w-0 flex-1">
-            <CustomerSearch entry={entry} error={errorText('customer')} floating />
+            <CustomerSearch entry={entry} error={errorText('customer')} floating inputRef={searchRef} />
           </div>
           <Button variant="secondary" className="min-h-11 shrink-0" data-tour="new-customer" onClick={() => newCustomer(entry)}>
             <UserRoundPlus aria-hidden="true" size={16} />
