@@ -18,6 +18,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A cancelled garment on the phone has the more-actions menu beside its reason.
 
 ### Changed
+- Phone new order: the save bar takes the tab bar's place at the bottom of the screen instead of sitting on top of it. Two ticks, Customer and Garment, show what is still needed, and "Save Order" stays grey until both are ticked. Tapping it while grey still opens what is missing.
 - A garment in the desktop order panel shows how long it has left as a small chip with a clock beside its stage (a warning chip when late), instead of after the delivery date.
 - The customer summary on desktop (orders, order value, owed, last visit) is one bordered strip with thin dividers instead of separate tinted boxes. The owed cell is still tinted when money is due.
 - The sample shops show what the app does now: some garments carry photos (fabric and design swatches), a few are for a named wearer, some orders and customers have notes, some orders have a status link (one revoked and sent again), a rush charge or allowance, a garment sent back for rework with the reason, a job moved to another tailor and a delivery date pushed back. Design notes fit the garment (no blouse notes on a panjabi) and Rahman Tailors no longer gets repeated or women's names once the first twenty men are used.
@@ -106,6 +107,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The take payment buttons no longer carry an icon.
 
 ### Fixed
+- The back arrow on the phone new order page did nothing when the page was the first one opened in the tab (after a reload, or from a link). It now goes to the order list.
 - The Nakshi Boutique sample shop's summary said "QC" even in Bangla. It now says মান যাচাই, the same name its quality check stage uses, and "quality check" in English.
 - The New Customer plus button beside the narrowed customer list shows a full-size plus; it had been squeezed to a dot.
 - The Open Full Page button in the order beside the list is the same size as the More and Close buttons next to it, so the three line up.
