@@ -1,9 +1,10 @@
 import { balanceDue, searchCustomers, type Customer } from '@darzikhata/domain';
 import { Plus, Search } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Link } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageSearch } from '../../shell/pageSearch';
 import { Avatar } from '../../ui/Avatar';
 import { useScopedState } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
@@ -13,12 +14,17 @@ interface Props {
   onQueryChange(query: string): void;
 }
 
-/** Phone: a search bar with an add button and one card per customer it finds. The desktop page uses CustomerDirectory. */
+/**
+ * Phone: a search bar with an add button, pinned under the header, and one card per customer it finds. The header
+ * search comes to this box. The desktop page uses CustomerDirectory.
+ */
 export function CustomerList({ query, onQueryChange }: Props) {
   const { t } = useI18n();
   const scoped = useScopedState();
   const can = useCan();
   const { state } = useSnapshot();
+  const searchBox = useRef<HTMLInputElement>(null);
+  usePageSearch(searchBox);
 
   const shown = useMemo(() => {
     const all = Object.values(state.customers);
@@ -36,11 +42,15 @@ export function CustomerList({ query, onQueryChange }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+      {/* The tab bar already says where you are, so the heading is for screen readers only. */}
+      <h1 className="sr-only">{t('nav.customers')}</h1>
+      {/* Pinned under the shell header (3.5rem), so search and add stay in reach while the list scrolls. */}
+      <div className="sticky top-14 z-[8] -mx-4 -mt-4 flex items-center gap-2 bg-surface px-4 pt-3 pb-2 shadow-sm">
         <label className="flex min-h-12 flex-1 items-center gap-2 rounded-2xl border border-line bg-panel px-3 focus-within:outline-2 focus-within:outline-focus">
           <Search size={18} aria-hidden="true" className="shrink-0 text-muted" />
           <span className="sr-only">{t('customers.search')}</span>
           <input
+            ref={searchBox}
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
