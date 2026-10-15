@@ -12,9 +12,8 @@ export function useVisibleReview(): ReviewItem[] {
   return useMemo(() => (role ? sync.review.filter((item) => canReview(item, scoped, role)) : []), [sync.review, scoped, role]);
 }
 
-/** Online, offline, syncing, or needs attention when something here waits for this person. */
+/** Online, offline or syncing. Changes waiting for this person are counted separately, by useVisibleReview. */
 export function useSyncStatus(): SyncStatus {
   const { sync } = useSnapshot();
-  const review = useVisibleReview();
-  return syncStatus({ online: sync.online, syncing: sync.syncing, reviewCount: review.length });
+  return syncStatus({ online: sync.online, syncing: sync.syncing });
 }

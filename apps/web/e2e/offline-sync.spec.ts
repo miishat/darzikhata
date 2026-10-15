@@ -8,12 +8,12 @@ test('changes made offline sync later, and the waiting change is settled', async
   await openShop(page, 'রহমান টেইলার্স');
   const syncButton = page.locator('[data-tour="sync-status"]');
   const dialog = page.getByRole('dialog', { name: 'সিঙ্ক' });
-  await expect(syncButton).toHaveAccessibleName('দেখতে হবে');
+  await expect(syncButton).toHaveAccessibleName('অনলাইন · যাচাই বাকি ১');
 
   await syncButton.click();
   await dialog.getByRole('switch', { name: 'অফলাইনে যান' }).click();
   await page.keyboard.press('Escape');
-  await expect(syncButton).toHaveAccessibleName('অফলাইন');
+  await expect(syncButton).toHaveAccessibleName('অফলাইন · যাচাই বাকি ১');
 
   // The order and its advance stay on this device, even across a reload.
   await page.getByRole('link', { name: 'নতুন অর্ডার' }).click();
@@ -26,9 +26,9 @@ test('changes made offline sync later, and the waiting change is settled', async
   await expect(dialog.getByText(/^এই ডিভাইসে সিঙ্ক বাকি: /)).toBeVisible();
   await dialog.getByRole('switch', { name: 'অনলাইনে যান' }).click();
   await expect(dialog.getByText('সব পরিবর্তন সিঙ্ক হয়েছে')).toBeVisible();
-  await expect(syncButton).toHaveAccessibleName('দেখতে হবে');
+  await expect(syncButton).toHaveAccessibleName('অনলাইন · যাচাই বাকি ১');
 
-  await dialog.getByRole('link', { name: 'যাচাই করুন' }).click();
+  await dialog.locator('[data-tour="review-link"]').click();
   await expect(page).toHaveURL(/\/app\/review$/);
   const entry = page.getByRole('region', { name: 'কাস্টমার: সুমন দাস' });
   await expect(entry.getByRole('row', { name: /^ফোন/ })).toContainText('01712345678');

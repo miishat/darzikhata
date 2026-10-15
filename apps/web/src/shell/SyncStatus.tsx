@@ -1,3 +1,4 @@
+import type { SyncStatus } from '@darzikhata/domain';
 import { useEffect, useState } from 'react';
 import { ChevronRight, ClipboardCheck, RefreshCw, Smartphone, Wifi, WifiOff } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
@@ -11,59 +12,72 @@ import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Switch } from '../ui/Switch';
 
-const STATUS_KEY: Record<string, MessageKey> = {
+const STATUS_KEY: Record<SyncStatus, MessageKey> = {
   online: 'sync.online',
   offline: 'sync.offline',
   syncing: 'sync.syncing',
-  'needs-attention': 'sync.needsAttention',
 };
-const TONE: Record<string, string> = {
+const TONE: Record<SyncStatus, string> = {
   online: 'bg-ok-soft text-ok',
   offline: 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink',
   syncing: 'bg-surface text-muted',
-  'needs-attention': 'ring-1 ring-inset ring-warn-line bg-warn-soft text-warn-ink',
 };
-const DOT: Record<string, string> = {
+const DOT: Record<SyncStatus, string> = {
   online: 'bg-ok',
   offline: 'bg-warn',
   syncing: 'bg-muted',
-  'needs-attention': 'bg-warn',
 };
 
 /**
- * The sync status: a pill, a full-width block (sidebar) or a coloured dot (the folded sidebar rail).
- * It opens the sync dialog: online switch, waiting changes, review and the demo's other device.
+ * The sync status: a pill, a full-width block (sidebar) or a coloured dot (the phone header and the folded sidebar rail).
+ * Its colour is the connection; changes waiting for this person's review show as a small orange count beside it.
+ * It opens the sync dialog: changes to review, online switch, waiting changes and the demo's other device.
  */
 export function SyncButton({ block = false, dot = false }: { block?: boolean; dot?: boolean }) {
   const { t, number, dateTime } = useI18n();
   const { sync } = useSnapshot();
   const status = useSyncStatus();
+  const review = useVisibleReview();
   const [open, setOpen] = useState(false);
-  const label = t(STATUS_KEY[status]!) + (sync.pending > 0 ? ` · ${t('sync.waiting', { count: number(sync.pending) })}` : '');
+  const reviewCount = number(review.length);
+  const connection = t(STATUS_KEY[status]) + (sync.pending > 0 ? ` · ${t('sync.waiting', { count: number(sync.pending) })}` : '');
+  const label = review.length > 0 ? `${connection} · ${t('sync.toReview', { count: reviewCount })}` : connection;
   return (
     <>
       <button
         type="button"
         data-tour="sync-status"
         onClick={() => setOpen(true)}
-        aria-label={block || dot ? label : undefined}
+        aria-label={block || dot || review.length > 0 ? label : undefined}
         title={dot ? label : undefined}
         className={
           dot
-            ? `grid size-11 shrink-0 place-items-center rounded-full ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
+            ? `relative grid size-11 shrink-0 place-items-center rounded-full ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
             : block
             ? `flex min-h-12 w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
             : `inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold ${TONE[status]} focus-visible:outline-2 focus-visible:outline-focus`
         }
       >
         <span aria-hidden="true" className={`shrink-0 rounded-full ${dot ? 'size-3' : 'size-2'} ${DOT[status]}`} />
-        {dot ? null : block ? (
-          <span className="min-w-0">
-            <span className="block truncate">{label}</span>
-            <span className="block truncate font-normal">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
-          </span>
+        {dot ? (
+          review.length > 0 && (
+            <span aria-hidden="true" className="absolute right-0.5 top-0.5 grid min-w-5 place-items-center rounded-full bg-warn px-1 text-[11px] font-bold leading-5 text-white">
+              {reviewCount}
+            </span>
+          )
+        ) : block ? (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate">{connection}</span>
+              <span className="block truncate font-normal">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
+            </span>
+            {review.length > 0 && <ReviewCount count={reviewCount} />}
+          </>
         ) : (
-          label
+          <>
+            {connection}
+            {review.length > 0 && <ReviewCount count={reviewCount} />}
+          </>
         )}
       </button>
       <span aria-live="polite" className="sr-only">
@@ -71,6 +85,16 @@ export function SyncButton({ block = false, dot = false }: { block?: boolean; do
       </span>
       <SyncDialog open={open} onClose={() => setOpen(false)} />
     </>
+  );
+}
+
+/** The small orange count of changes waiting for review, beside the connection. */
+function ReviewCount({ count }: { count: string }) {
+  return (
+    <span aria-hidden="true" className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 font-bold text-warn-ink ring-1 ring-inset ring-warn-line">
+      <ClipboardCheck size={14} />
+      {count}
+    </span>
   );
 }
 
@@ -114,34 +138,30 @@ function useOtherDevice(open: boolean) {
   return { target, outcome, push };
 }
 
+/** What the online switch's row says under "Stay Online": whether this device is online now, and when it last synced. */
+function useConnectionNote(): string {
+  const { t, dateTime } = useI18n();
+  const { sync } = useSnapshot();
+  const last = sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never');
+  return `${t(sync.online ? 'sync.nowOnline' : 'sync.nowOffline')} · ${last}`;
+}
+
 /**
- * The desktop sync popup: the status with the online switch, Sync Now with what is waiting, a highlighted link
- * when changes need review, and the demo's other device. It grows out of the sync button; its title is announced but not shown.
+ * The desktop sync popup: a highlighted link first when changes need review, then the online switch, Sync Now with
+ * what is waiting, and the demo's other device. It grows out of the sync button; its title is announced but not shown.
  */
 function DesktopSyncDialog({ open, onClose }: SyncDialogProps) {
-  const { t, number, dateTime } = useI18n();
+  const { t, number } = useI18n();
   const store = useStore();
   const { sync } = useSnapshot();
   const review = useVisibleReview();
   const status = useSyncStatus();
+  const note = useConnectionNote();
   const other = useOtherDevice(open);
 
   return (
     <Dialog open={open} title={t('sync.title')} onClose={onClose} hideTitle animated>
       <div className="space-y-3 text-ink">
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${DOT[status]}`} />
-          <span className="min-w-0 flex-1">
-            <span className="block font-display text-lg font-bold leading-tight">{t(STATUS_KEY[status]!)}</span>
-            <span className="block text-sm text-muted">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
-          </span>
-          <Switch on={sync.online} onChange={(on) => void store.setOnline(on)} label={t(sync.online ? 'sync.goOffline' : 'sync.goOnline')} />
-        </div>
-        <Button className="w-full" disabled={!sync.online || sync.syncing} onClick={() => void store.syncNow()}>
-          <RefreshCw size={16} aria-hidden="true" className={sync.syncing ? 'animate-spin' : ''} />
-          {t('sync.now')}
-        </Button>
-        <p className="text-center text-sm text-muted">{sync.pending > 0 ? t('sync.pending', { count: number(sync.pending) }) : t('sync.allSent')}</p>
         {review.length > 0 && (
           <Link
             to="/app/review"
@@ -154,6 +174,19 @@ function DesktopSyncDialog({ open, onClose }: SyncDialogProps) {
             <span className="text-sm font-bold underline">{t('sync.openReview')}</span>
           </Link>
         )}
+        <div className="flex items-center gap-3">
+          <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${DOT[status]}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-lg font-bold leading-tight">{t('sync.stayOnline')}</span>
+            <span className="block text-sm text-muted">{note}</span>
+          </span>
+          <Switch on={sync.online} onChange={(on) => void store.setOnline(on)} label={t(sync.online ? 'sync.goOffline' : 'sync.goOnline')} />
+        </div>
+        <Button className="w-full" disabled={!sync.online || sync.syncing} onClick={() => void store.syncNow()}>
+          <RefreshCw size={16} aria-hidden="true" className={sync.syncing ? 'animate-spin' : ''} />
+          {t('sync.now')}
+        </Button>
+        <p className="text-center text-sm text-muted">{sync.pending > 0 ? t('sync.pending', { count: number(sync.pending) }) : t('sync.allSent')}</p>
         <hr className="border-line" />
         <div>
           <Button variant="secondary" className="w-full" disabled={!other.target} onClick={() => void other.push()}>
@@ -170,13 +203,13 @@ function DesktopSyncDialog({ open, onClose }: SyncDialogProps) {
   );
 }
 
-/** The phone's sync sheet: online switch, sync now, changes to review, and the demo's other device, as settings-style rows. */
+/** The phone's sync sheet: changes to review first, then the online switch, sync now and the demo's other device, as settings-style rows. */
 function PhoneSyncDialog({ open, onClose }: SyncDialogProps) {
-  const { t, number, dateTime } = useI18n();
+  const { t, number } = useI18n();
   const store = useStore();
   const { sync } = useSnapshot();
   const review = useVisibleReview();
-  const status = useSyncStatus();
+  const note = useConnectionNote();
   const { target, outcome, push: pushOther } = useOtherDevice(open);
 
   return (
@@ -194,11 +227,23 @@ function PhoneSyncDialog({ open, onClose }: SyncDialogProps) {
     >
       <div className="space-y-3 text-ink">
         <div className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
+          {review.length > 0 && (
+            <Link to="/app/review" data-tour="review-link" onClick={onClose} className={`${ROW} bg-warn-soft`}>
+              <span className={`${TILE} bg-warn text-white`}>
+                <ClipboardCheck size={20} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-warn-ink">{t('sync.reviewCount', { count: number(review.length) })}</span>
+                <span className="block text-sm text-muted">{t('sync.reviewWhy')}</span>
+              </span>
+              <ChevronRight size={18} aria-hidden="true" className="text-muted" />
+            </Link>
+          )}
           <div className={ROW}>
             <span className={TILE}>{sync.online ? <Wifi size={20} aria-hidden="true" /> : <WifiOff size={20} aria-hidden="true" />}</span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold">{t(STATUS_KEY[status]!)}</span>
-              <span className="block text-sm text-muted">{sync.lastSyncAt ? t('sync.last', { time: dateTime(sync.lastSyncAt) }) : t('sync.never')}</span>
+              <span className="block font-semibold">{t('sync.stayOnline')}</span>
+              <span className="block text-sm text-muted">{note}</span>
             </span>
             <Switch on={sync.online} onChange={(on) => void store.setOnline(on)} label={t(sync.online ? 'sync.goOffline' : 'sync.goOnline')} />
           </div>
@@ -212,18 +257,6 @@ function PhoneSyncDialog({ open, onClose }: SyncDialogProps) {
             </span>
             <ChevronRight size={18} aria-hidden="true" className="text-muted" />
           </button>
-          {review.length > 0 && (
-            <Link to="/app/review" data-tour="review-link" onClick={onClose} className={ROW}>
-              <span className={`${TILE} bg-warn-soft text-warn-ink`}>
-                <ClipboardCheck size={20} aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{t('sync.openReview')}</span>
-                <span className="block text-sm text-muted">{t('sync.reviewCount', { count: number(review.length) })}</span>
-              </span>
-              <ChevronRight size={18} aria-hidden="true" className="text-muted" />
-            </Link>
-          )}
         </div>
         <div className="overflow-hidden rounded-2xl bg-surface">
           <button type="button" disabled={!target} onClick={() => void pushOther()} className={ROW}>
