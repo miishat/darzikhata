@@ -124,11 +124,19 @@ describe('Order detail on a phone', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('says what to do next on an alteration, not the stage name', async () => {
+    const { order } = await openOrder('rahman', (o) => o.items.some((i) => !i.cancelled && i.stageKey === 'booked' && i.stages.some((s) => s.key === 'working')));
+    const item = order.items.find((i) => !i.cancelled && i.stageKey === 'booked' && i.stages.some((s) => s.key === 'working'))!;
+    const card = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(order.items.indexOf(item) + 1))}` });
+    expect(within(card).getByRole('button', { name: 'কাজ শুরু করুন' })).toBeTruthy();
+    expect(within(card).queryByRole('button', { name: /এ নিন$/ })).toBeNull();
+  });
+
   it('moves a garment on with the filled card button named for the next stage', async () => {
     const { store, order } = await openOrder('rahman', (o) => o.items.some((i) => !i.cancelled && i.stageKey === 'cutting'));
     const item = order.items.find((i) => !i.cancelled && i.stageKey === 'cutting')!;
     const card = screen.getByRole('region', { name: `${item.garmentName.bn} ${toBanglaDigits(String(order.items.indexOf(item) + 1))}` });
-    const button = within(card).getByRole('button', { name: 'সেলাই এ নিন' });
+    const button = within(card).getByRole('button', { name: 'সেলাই শুরু করুন' });
     expect(button.className).toMatch(/(^|\s)bg-brand(\s|$)/);
     await userEvent.click(button);
     await act(async () => undefined);

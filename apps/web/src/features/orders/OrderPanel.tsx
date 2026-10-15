@@ -20,7 +20,7 @@ import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { PanelItemDetails } from './PanelItemDetails';
-import { nextMove } from './stageMoves';
+import { moveOnText, nextMove } from './stageMoves';
 
 /** Where the order's own page lives; the list's own filters stay in the address so Back returns to them. */
 export function fullPageTo(orderId: string, search: string): { pathname: string; search: string } {
@@ -405,7 +405,7 @@ export function PanelItem({ order, item }: { order: Order; item: OrderItem }) {
                   order={order}
                   item={item}
                   stageKey={next.stage.key}
-                  label={t('item.moveTo', { stage: label(next.stage.label) })}
+                  label={moveOnText(next.stage, { t, label })}
                   render={(props) => (
                     <button type="button" disabled={props.disabled} onClick={props.onClick} className={`${buttonClasses('secondary')} w-full border-brand text-brand-strong`}>
                       {props.children}

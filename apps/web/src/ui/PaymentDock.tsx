@@ -1,7 +1,7 @@
 import type { Order } from '@darzikhata/domain';
 import { moneySummary } from '@darzikhata/domain';
 import { ChevronDown, ChevronUp, Printer } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -12,17 +12,40 @@ export const PAYMENT_DOCK_SPACE = 'pb-36';
 export const DOCK_FLAG = 'dockOpen';
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
+/** How long the page must be still before the hidden balance tab comes back. */
+const SCROLL_SETTLE_MS = 600;
 /** The nav bar's height: tab row plus its 1px border plus the larger of 0.875rem and the safe area. */
 const NAV_TOP = 'bottom-[calc(3.875rem+1px+max(0.875rem,env(safe-area-inset-bottom)))]';
 
 /**
  * Phone payment bar attached to the top of the tab bar: what is left to pay, receipt print and "take payment".
  * It starts hidden; the chevron hides the whole bar, leaving a small tab with the balance on the nav bar's edge.
+ * That tab fades out while the page scrolls, so it never sits on what is being read.
  */
 export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrint: boolean; onTake(): void }) {
   const { t, money } = useI18n();
   const [open, setOpen] = useState(false);
   const { paid, balance } = moneySummary(order);
+  // The small balance tab floats over the page, so it steps aside while the page scrolls and comes back once it
+  // settles. It stays put while it has keyboard focus.
+  const tab = useRef<HTMLButtonElement>(null);
+  const [scrolling, setScrolling] = useState(false);
+  useEffect(() => {
+    if (open) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      if (document.activeElement === tab.current) return;
+      setScrolling(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setScrolling(false), SCROLL_SETTLE_MS);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(timer);
+      setScrolling(false);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -34,8 +57,12 @@ export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrin
 
   if (!open) {
     return (
-      <div className={`fixed right-3 ${NAV_TOP} z-[9]`}>
+      <div
+        inert={scrolling}
+        className={`fixed right-3 ${NAV_TOP} z-[9] transition-opacity duration-200 motion-reduce:transition-none ${scrolling ? 'opacity-0' : 'opacity-100'}`}
+      >
         <button
+          ref={tab}
           type="button"
           aria-label={t('payments.dockShow')}
           aria-expanded={false}

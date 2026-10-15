@@ -12,7 +12,7 @@ import { itemTitle } from '../common/orderText';
 import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
-import { nextMove } from './stageMoves';
+import { moveOnText, nextMove } from './stageMoves';
 import { MeasurementSheet } from '../customers/MeasurementSheet';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
@@ -224,7 +224,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                     order={order}
                     item={item}
                     stageKey={next.stage.key}
-                    label={t('item.moveTo', { stage: label(next.stage.label) })}
+                    label={moveOnText(next.stage, { t, label })}
                     render={(props) => <PrimaryButton {...props} />}
                   />
                 )
