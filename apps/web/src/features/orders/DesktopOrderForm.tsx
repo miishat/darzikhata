@@ -1,11 +1,13 @@
 import { profileKey, templateById } from '@darzikhata/domain';
-import { AlertCircle, ArrowLeft, Info, Shirt, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, Circle, Info, Lock, Shirt, Trash2, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Dialog } from '../../ui/Dialog';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { SAVE_KEYS, SAVE_VARIANTS, saveWord, type SaveWord } from './saveButtonPrototype';
 import type { DraftItem } from './draft';
 import { CustomerBar } from './entry/CustomerBar';
 import { AddGarmentButtons, GarmentTiles, type LineStatus } from './entry/GarmentTiles';
@@ -46,7 +48,7 @@ function Card({ title, className = '', children }: { title: string; className?: 
  * chosen one's measurements and details, and a receipt beside them that fills in as you type, with the money and save.
  */
 export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
-  const { t, money, number } = useI18n();
+  const { t, money, number, language } = useI18n();
   const { config, state } = useSnapshot();
   const navigate = useNavigate();
   const title = useItemTitle(entry);
@@ -93,6 +95,22 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
     .map((i) => `${title(i)}: ${t('entry.statusMissing', { n: number(missing[i.key]!) })}`)
     .join(', ');
 
+  // PROTOTYPE: how Save looks before a customer is picked.
+  const variant = useVariant(SAVE_KEYS);
+  const w = (k: SaveWord) => saveWord(language, k);
+  const draftCustomer = entry.draft.customer;
+  const hasCustomer = Boolean(draftCustomer);
+  const customerName = customerId ? (state.customers[customerId]?.name ?? '') : draftCustomer?.kind === 'new' ? draftCustomer.name : '';
+  const toSearch = () => document.querySelector<HTMLInputElement>(`input[aria-label="${t('customers.search')}"]`)?.focus();
+  const blocked = variant !== '0' && !hasCustomer;
+  const faded = variant === '3' ? !hasCustomer || items.length === 0 : blocked && variant !== '2';
+  const check = (done: boolean, text: string) => (
+    <li className={`flex items-center gap-2 ${done ? 'text-ok' : 'text-muted'}`}>
+      {done ? <Check aria-hidden="true" size={16} /> : <Circle aria-hidden="true" size={16} />}
+      <span className={done ? 'line-through decoration-ok/40' : ''}>{text}</span>
+    </li>
+  );
+
   // A newly added line becomes the chosen one in the same render, so typing never lands in the previous one.
   const add = (templateId: string) => {
     const key = entry.addItem(templateId);
@@ -125,6 +143,11 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
 
   return (
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-3">
+      <PrototypeSwitcher variants={SAVE_VARIANTS} />
+      <div className={variant === '5' && !hasCustomer ? 'relative rounded-2xl ring-2 ring-brand ring-offset-2 ring-offset-surface' : 'contents'}>
+      {variant === '5' && !hasCustomer && (
+        <span className="absolute -top-3 end-6 z-10 rounded-full bg-brand px-2.5 py-0.5 text-xs font-semibold text-on-brand">{w('startHere')}</span>
+      )}
       <CustomerBar
         entry={entry}
         errors={errors}
@@ -144,6 +167,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
           </div>
         }
       />
+      </div>
       <div className="flex min-h-0 flex-1 gap-4">
         <Card title={t('entry.step.garments')} className="min-w-0 flex-1">
           {items.length > 0 && (
@@ -222,6 +246,23 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 </p>
               )}
             </div>
+            {variant === '4' && (
+              <div className="flex items-center gap-2 border-b border-dashed border-line px-5 py-2.5 text-sm">
+                <UserRound aria-hidden="true" size={16} className="shrink-0 text-muted" />
+                <span className="text-muted">{w('customer')}</span>
+                {hasCustomer ? (
+                  <span className="ms-auto truncate font-semibold">{customerName || '–'}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toSearch}
+                    className="ms-auto font-semibold text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-focus"
+                  >
+                    {t('entry.pickCustomer')}
+                  </button>
+                )}
+              </div>
+            )}
             <ul className="flex flex-col px-5 py-1 text-sm">
               {items.length === 0 && <li className="py-2 text-muted">{t('entry.noGarments')}</li>}
               {items.map((item) => (
@@ -259,9 +300,37 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 </span>
               </p>
             )}
-            <Button size="lg" data-tour="save-order" disabled={entry.saving} onClick={() => void save()}>
-              {entry.saving ? t('entry.saving') : t('entry.saveAndReceipt')}
-            </Button>
+            {variant === '1' && blocked && (
+              <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-warn-ink">
+                <UserRound aria-hidden="true" size={16} />
+                {w('needCustomer')}
+              </p>
+            )}
+            {variant === '3' && (
+              <ul className="flex flex-col gap-1 text-sm">
+                {check(hasCustomer, w('customer'))}
+                {check(items.length > 0, w('garment'))}
+              </ul>
+            )}
+            {variant === '2' && blocked ? (
+              <Button size="lg" variant="secondary" data-tour="save-order" onClick={toSearch}>
+                <UserRound aria-hidden="true" size={18} />
+                {w('pickFirst')}
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                data-tour="save-order"
+                disabled={entry.saving}
+                aria-disabled={faded || undefined}
+                className={faded ? 'opacity-45 saturate-50' : ''}
+                onClick={() => (blocked ? toSearch() : void save())}
+              >
+                {variant === '5' && blocked && <Lock aria-hidden="true" size={18} />}
+                {entry.saving ? t('entry.saving') : t('entry.saveAndReceipt')}
+              </Button>
+            )}
+            {variant === '5' && blocked && <p className="-mt-1 text-center text-xs text-muted">{w('needCustomer')}</p>}
             <Button variant="ghost" className="text-muted" onClick={() => (entry.dirty ? setConfirmDiscard(true) : navigate('/app/orders'))}>
               {t('entry.discardDraft')}
             </Button>
