@@ -17,6 +17,8 @@ import { measureStatus, missingCounts } from './entry/measureStatus';
 import { ItemSchedule, MoneyFields } from './entry/MoneyFields';
 import { useErrorText, useItemTitle } from './entry/shared';
 import { SourceSwitch } from './entry/SourceSwitch';
+import { RECEIPT_MONEY_VARIANTS, ReceiptMoneyPrototype, type ReceiptVariant } from './entry/ReceiptMoneyPrototype';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
 import type { OrderEntry } from './useOrderEntry';
 
 interface Props {
@@ -51,6 +53,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   const { config, state } = useSnapshot();
   const navigate = useNavigate();
   const title = useItemTitle(entry);
+  const variant = useVariant(Object.keys(RECEIPT_MONEY_VARIANTS)); // PROTOTYPE
   const [chosenKey, setChosenKey] = useState<string | null>(
     () => entry.draft.items.find((i) => i.measurements.kind === 'saved')?.key ?? entry.draft.items[0]?.key ?? null,
   );
@@ -201,6 +204,10 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
 
         <Card title={t('entry.summary')} className="w-80 shrink-0 xl:w-[340px]">
           <div className="min-h-0 flex-1 overflow-auto">
+            {variant !== '0' ? (
+              <ReceiptMoneyPrototype variant={variant as ReceiptVariant} entry={entry} errors={errors} />
+            ) : (
+            <>
             <div className="flex flex-col gap-1 border-b border-dashed border-line px-5 py-4 text-center">
               <p className="text-xs font-semibold text-muted">{t('receipt.title')}</p>
               <p className="font-display text-lg font-bold">{t('nav.newOrder')}</p>
@@ -233,9 +240,25 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
             <div className="px-5 pt-2 pb-4">
               <MoneyFields entry={entry} errors={errors} />
             </div>
+            </>
+            )}
           </div>
           <div className="flex flex-col gap-3 border-t border-line p-4">
-            <DraftSummary totals={entry.totals} desktop />
+            {variant === '0' ? (
+              <DraftSummary totals={entry.totals} desktop />
+            ) : variant !== '4' ? (
+              // PROTOTYPE: total and balance on one line; price and advance already sit by their inputs above.
+              <dl className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1.5">
+                  <dt className="text-sm text-muted">{t('money.total')}</dt>
+                  <dd className="font-display text-lg font-bold">{money(entry.totals.total)}</dd>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <dt className="text-sm text-muted">{t('entry.balanceLeft')}</dt>
+                  <dd className="font-display text-lg font-bold text-warn">{money(entry.totals.balance)}</dd>
+                </div>
+              </dl>
+            ) : null}
             {(hasErrors || problem) && (
               <p role="alert" className="flex gap-2 rounded-lg border border-danger px-3 py-2 text-sm text-danger">
                 <AlertCircle aria-hidden="true" size={16} className="mt-0.5 shrink-0" />
@@ -278,6 +301,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
       >
         <p>{t('entry.discardBody')}</p>
       </Dialog>
+      <PrototypeSwitcher variants={RECEIPT_MONEY_VARIANTS} />
     </div>
   );
 }
