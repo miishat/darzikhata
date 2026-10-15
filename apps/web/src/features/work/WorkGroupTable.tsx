@@ -6,6 +6,8 @@ import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
 import { useSnapshot } from '../../data/StoreContext';
 import { useToday } from '../common/hooks';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { UNASSIGNED_KEYS } from '../orders/unassignedPrototype';
 import { isLate } from './BoardView';
 import { itemSummaryGroup, type ItemRef } from '@darzikhata/domain';
 import type { WorkGrouping } from './workList';
@@ -30,7 +32,9 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
   const head = 'whitespace-nowrap px-3 py-2 text-start text-sm font-semibold text-muted';
   const ids = refs.map((r) => r.item.id);
   const allOn = selected !== null && ids.every((id) => selected.has(id));
-  const staffName = (id: string | null) => (id === null ? t('work.unassigned') : (config?.staff.find((s) => s.id === id)?.name ?? id));
+  const variant = useVariant(UNASSIGNED_KEYS); // PROTOTYPE: a quiet dash instead of "no worker yet" on every row
+  const staffName = (id: string | null) =>
+    id === null ? (variant === '0' ? t('work.unassigned') : <span className="text-muted">–</span>) : (config?.staff.find((s) => s.id === id)?.name ?? id);
   const stagePill = (r: ItemRef) => {
     const index = r.item.stages.findIndex((s) => s.key === r.item.stageKey);
     const stage = r.item.stages[index];

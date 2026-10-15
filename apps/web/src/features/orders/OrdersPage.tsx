@@ -14,7 +14,10 @@ import { OrderDetail } from './OrderDetail';
 import { OrderFilters, SortButton } from './OrderFilters';
 import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
-import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
+import { DEFAULT_LIST_QUERY, orderRow, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { NOBODY, protoText, UNASSIGNED_KEYS, UNASSIGNED_VARIANTS } from './unassignedPrototype';
+import { UserX } from 'lucide-react';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
 import { usePanelGrow } from '../../ui/usePanelGrow';
@@ -35,7 +38,7 @@ const VIEW_ICONS: Record<OrderView, LucideIcon> = {
  * its filters and the table's scroll position stay put when an order opens or closes.
  */
 export function OrdersPage() {
-  const { t, number, money: formatMoney } = useI18n();
+  const { t, number, language, money: formatMoney } = useI18n();
   const { kind } = useShell();
   const can = useCan();
   const state = useScopedState();
@@ -65,7 +68,17 @@ export function OrdersPage() {
   useEffect(() => {
     scroller.current?.scrollTo?.({ top: 0 });
   }, [page, status, dueOnly]);
-  const update = (next: OrderListQuery) => setParams(writeListQuery(next), { replace: true });
+  // PROTOTYPE: keep ?variant= when the filters are rewritten, and count the orders with a garment nobody is on.
+  const variant = useVariant(UNASSIGNED_KEYS);
+  const unassignedCount = useMemo(
+    () => Object.values(state.orders).filter((o) => orderRow(o, state, today).unassigned).length,
+    [state, today],
+  );
+  const update = (next: OrderListQuery) => {
+    const written = writeListQuery(next);
+    if (params.get('variant')) written.set('variant', params.get('variant')!);
+    setParams(written, { replace: true });
+  };
   const change = (fields: Partial<OrderListQuery>) => update({ ...query, ...fields, page: fields.page ?? 1 });
   const full = params.get('full') === '1';
   // Closing an order, or leaving its own page, keeps the list's filters in the address.
@@ -135,7 +148,7 @@ export function OrdersPage() {
           <ViewTabs
             tiles
             label={t('orders.tabs')}
-            views={tabViews.map((v: OrderView) => ({
+            views={[...tabViews.map((v: OrderView) => ({
               value: v,
               label: t(`orders.chip.${v === 'late' ? 'overdue' : v}`),
               count: viewCounts[v],
@@ -143,12 +156,26 @@ export function OrdersPage() {
               warn: v === 'late' || v === 'owed',
               // The amount owed is a lot to fit once the order panel narrows the tiles.
               note: v === 'owed' && !orderId ? formatMoney(owedTotal) : undefined,
-            }))}
-            value={view}
-            onChange={(next) => change(viewQuery(next as OrderView))}
+            })),
+            // PROTOTYPE variant 2: "no tailor" as one more tile, a filter like the others.
+            ...(variant === '2' ? [{ value: NOBODY, label: protoText('tile', language), count: unassignedCount, icon: UserX, warn: false, note: undefined }] : [])]}
+            value={variant === '2' && query.worker === NOBODY ? NOBODY : view}
+            onChange={(next) =>
+              next === NOBODY ? change({ status: 'all', dueOnly: false, worker: NOBODY }) : change({ ...viewQuery(next as OrderView), ...(variant === '2' ? { worker: '' } : {}) })
+            }
             panelId={panelId}
           />
           <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts} />
+          {/* PROTOTYPE variant 1: one line for the whole list instead of a warning on every row. */}
+          {variant === '1' && unassignedCount > 0 && query.worker !== NOBODY && (
+            <p className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-sm">
+              <UserX aria-hidden="true" size={16} className="text-muted" />
+              {protoText('banner', language, number(unassignedCount))}
+              <button type="button" onClick={() => change({ worker: NOBODY })} className="font-semibold text-brand-strong underline">
+                {protoText('show', language)}
+              </button>
+            </p>
+          )}
         </div>
         {/* relative: keeps absolutely placed screen-reader text inside this scroll area, so the page itself never scrolls. */}
         <div
@@ -190,6 +217,7 @@ export function OrdersPage() {
           </div>
         </div>
       </div>
+      <PrototypeSwitcher variants={UNASSIGNED_VARIANTS} />
       {orderId && (
         <section ref={panelCard} aria-label={t('orders.detail')} className={`${CARD} w-[min(560px,44%)] shrink-0`}>
           <OrderDetail orderId={orderId} onClose={closeOrder} />

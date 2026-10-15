@@ -48,6 +48,8 @@ export interface OrderRow {
   balance: Poisha;
   /** Staff ids of the garments' makers, once each, cancelled garments left out. */
   workers: string[];
+  /** PROTOTYPE: a garment still to be made has nobody on it. */
+  unassigned: boolean;
 }
 
 export interface OrderPage {
@@ -62,11 +64,13 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
   let overdue = false;
   let trial = false;
   const workers: string[] = [];
+  let unassigned = false;
   for (const item of order.items) {
     if (item.cancelled) continue;
     if (item.assignedTo && !workers.includes(item.assignedTo)) workers.push(item.assignedTo);
     const group = itemSummaryGroup(item);
     if (group === 'delivered') continue;
+    if (!item.assignedTo) unassigned = true;
     if (group === 'unfinished' && (item.stageKey === 'trial' || item.trialDate === today)) trial = true;
     if (item.deliveryDate) {
       if (nextDelivery === null || item.deliveryDate < nextDelivery) nextDelivery = item.deliveryDate;
@@ -83,6 +87,7 @@ export function orderRow(order: Order, state: ShopState, today: string): OrderRo
     total: orderTotal(order),
     balance: balanceDue(order),
     workers,
+    unassigned,
   };
 }
 
@@ -157,7 +162,7 @@ export function queryOrders(state: ShopState, query: OrderListQuery, today: stri
         matchesStatus(row, query.status) &&
         matchesText(row, query.text) &&
         (!query.dueOnly || row.balance > 0) &&
-        (!query.worker || row.workers.includes(query.worker)) &&
+        (!query.worker || (query.worker === 'none' ? row.unassigned : row.workers.includes(query.worker))) &&
         matchesRange(row, query.from, query.to),
     )
     .sort(compare(query.sort));

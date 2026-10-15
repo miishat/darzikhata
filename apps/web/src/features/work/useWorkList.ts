@@ -32,6 +32,8 @@ export interface WorkList {
   all: ItemRef[];
   shown: ItemRef[];
   groups: WorkGroup[];
+  /** PROTOTYPE: grouped by stage only because nobody has been given work yet. */
+  autoStage: boolean;
 }
 
 /**
@@ -51,7 +53,14 @@ export function useWorkList(): WorkList {
   const viewer = useMemo<Viewer>(() => ({ staffId, seesAll }), [staffId, seesAll]);
 
   const parsed = readWorkQuery(params);
-  const by = seesAll ? parsed.by : 'stage';
+  // PROTOTYPE: in every new variant, grouping by worker is pointless while nobody has work, so the list opens by
+  // stage until somebody is assigned. A grouping the person picks is kept in the address and always wins.
+  const variant = params.get('variant');
+  const orders = state.orders;
+  const all = useMemo(() => (current ? workItems(Object.values(orders), viewer) : NO_REFS), [orders, viewer, current]);
+  const nobodyAssigned = all.every((r) => !r.item.assignedTo);
+  const autoStage = variant !== null && variant !== '0' && !params.get('by') && nobodyAssigned;
+  const by = seesAll ? (autoStage ? 'stage' : parsed.by) : 'stage';
   const worker = seesAll ? parsed.worker : 'all';
   const { stage } = parsed;
   const query = useMemo<WorkQuery>(() => ({ by, worker, stage }), [by, worker, stage]);
@@ -64,9 +73,13 @@ export function useWorkList(): WorkList {
     (next: WorkQuery) => {
       const written = writeWorkQuery(seesAll ? next : { ...next, by: 'stage', worker: 'all' });
       if (view === 'board') written.set('view', 'board');
+      if (variant) {
+        written.set('variant', variant);
+        if (seesAll) written.set('by', next.by);
+      }
       setParams(written, { replace: true });
     },
-    [setParams, seesAll, view],
+    [setParams, seesAll, view, variant],
   );
   const setView = useCallback(
     (next: WorkView) => {
@@ -79,10 +92,8 @@ export function useWorkList(): WorkList {
     [setParams, params],
   );
 
-  const orders = state.orders;
-  const all = useMemo(() => (current ? workItems(Object.values(orders), viewer) : NO_REFS), [orders, viewer, current]);
   const shown = useMemo(() => filterWork(all, query), [all, query]);
   const groups = useMemo(() => (config ? groupWork(shown, query.by, config) : NO_GROUPS), [shown, query.by, config]);
 
-  return { view, setView, viewer, query, setQuery, all, shown, groups };
+  return { view, setView, viewer, query, setQuery, all, shown, groups, autoStage };
 }

@@ -12,6 +12,8 @@ import { useBranchScope } from '../branches/BranchScopeProvider';
 import { useCan } from '../common/hooks';
 import { type OrderListQuery, type OrderSort, type OrderStatusFilter } from './orderList';
 import { viewOfQuery } from './orderViews';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { NOBODY, UNASSIGNED_KEYS } from './unassignedPrototype';
 import { Select } from '../../ui/Select';
 
 interface Props {
@@ -155,7 +157,8 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
   const { config } = useSnapshot();
   const { allowed, choice, setChoice } = useBranchScope();
   const staff = config?.staff ?? [];
-  const workerName = (id: string) => staff.find((s) => s.id === id)?.name ?? id;
+  const workerName = (id: string) => (id === NOBODY ? t('work.unassigned') : (staff.find((s) => s.id === id)?.name ?? id));
+  const variant = useVariant(UNASSIGNED_KEYS); // PROTOTYPE
 
   const chips: Array<{ key: string; label: string; remove(): void }> = [];
   // A tab shows the status or money filter; only what no tab can show is listed as a chip.
@@ -197,6 +200,16 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
           >
             {t('orders.filter.anyWorker')}
           </button>
+          {variant === '3' && (
+            <button
+              type="button"
+              aria-pressed={query.worker === NOBODY}
+              onClick={() => onChange({ worker: NOBODY })}
+              className={`rounded-lg px-3 py-2 text-start text-sm ${query.worker === NOBODY ? 'bg-brand-soft font-semibold text-brand-strong' : 'text-ink hover:bg-surface'}`}
+            >
+              {t('work.unassigned')}
+            </button>
+          )}
           {staff.map((person) => (
             <button
               key={person.id}

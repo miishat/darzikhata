@@ -1,4 +1,6 @@
 import type { ItemRef } from '@darzikhata/domain';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { protoText, UNASSIGNED_KEYS, UNASSIGNED_VARIANTS } from '../orders/unassignedPrototype';
 import { useEffect, useMemo, useState } from 'react';
 import { Columns3, List, Printer } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
@@ -22,11 +24,12 @@ type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
 
 /** Everyone's unfinished garments for supervisors, or just your own; with batch assign and stage moves. */
 function DesktopWorkPage() {
-  const { t, number, label } = useI18n();
+  const { t, number, label, language } = useI18n();
   const can = useCan();
   const { config } = useSnapshot();
   const { branchIds } = useBranchScope();
-  const { view, setView, viewer, query, setQuery, all, shown, groups } = useWorkList();
+  const { view, setView, viewer, query, setQuery, all, shown, groups, autoStage } = useWorkList();
+  const variant = useVariant(UNASSIGNED_KEYS); // PROTOTYPE
   const [params] = useSearchParams();
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [open, setOpen] = useState<Open>(null);
@@ -147,6 +150,8 @@ function DesktopWorkPage() {
               options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
               onChange={(stage) => setQuery({ ...query, stage })}
             />
+            {/* PROTOTYPE variant 5: say why the list is by stage. */}
+            {variant === '5' && autoStage && <p className="basis-full text-sm text-muted">{protoText('hint', language)}</p>}
           </div>
         )}
       </div>
@@ -184,6 +189,7 @@ function DesktopWorkPage() {
       )}
       {open?.kind === 'assign' && <BatchAssignDialog refs={open.refs} onClose={closeDialog} />}
       {open?.kind === 'stage' && <BatchStageDialog refs={open.refs} onClose={closeDialog} />}
+      <PrototypeSwitcher variants={UNASSIGNED_VARIANTS} />
     </div>
   );
 }

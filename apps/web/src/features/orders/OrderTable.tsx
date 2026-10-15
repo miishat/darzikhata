@@ -8,7 +8,9 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
-import { useCan } from '../common/hooks';
+import { useCan, useToday } from '../common/hooks';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { protoText, UNASSIGNED_KEYS } from './unassignedPrototype';
 import { itemTitle } from '../common/orderText';
 import type { OrderRow } from './orderList';
 
@@ -65,6 +67,13 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   // With the side panel open the table is narrow: the delivery and workers columns give way (the panel
   // shows both) and the time left moves under the order number. The header stays put while the card scrolls.
   const panelOpen = activeId !== undefined;
+  // PROTOTYPE: which way the "no tailor" warning is shown.
+  const variant = useVariant(UNASSIGNED_KEYS);
+  const today = useToday();
+  const soon = new Date(`${today}T00:00:00Z`);
+  soon.setUTCDate(soon.getUTCDate() + 3);
+  const soonDay = soon.toISOString().slice(0, 10);
+  const workersColumn = !panelOpen && variant !== '5' && !(variant === '3' && rows.every((r) => r.workers.length === 0));
   const head = 'sticky top-0 z-10 whitespace-nowrap border-b border-line bg-panel px-3 py-2 text-start text-sm font-semibold text-muted';
   const target = (id: string) => ({ pathname: `/app/orders/${id}`, search });
   // One tab stop for the whole table: the open order, or the first row.
@@ -101,7 +110,7 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
           <th scope="col" className={head}>{t('orders.col.customer')}</th>
           <th scope="col" className={head}>{t('orders.col.garmentsStage')}</th>
           {!panelOpen && <th scope="col" className={head}>{t('orders.col.delivery')}</th>}
-          {!panelOpen && <th scope="col" className={head}>{t('orders.col.workers')}</th>}
+          {workersColumn && <th scope="col" className={head}>{t('orders.col.workers')}</th>}
           {showMoney && <th scope="col" className={`${head} text-end`}>{t('orders.col.balance')}</th>}
         </tr>
       </thead>
@@ -111,6 +120,9 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
           const selected = order.id === activeId;
           const live = order.items.filter((item) => !item.cancelled);
           const hasUnassigned = live.some(needsWorker);
+          // PROTOTYPE: today every row warns; variant 4 warns only when the order is late or due within three days.
+          const urgent = row.overdue || (row.nextDelivery !== null && row.nextDelivery <= soonDay);
+          const warn = hasUnassigned && (variant === '0' || (variant === '4' && urgent));
           return (
             <tr
               key={order.id}
@@ -135,7 +147,10 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     >
                       {row.customer?.name ?? order.number}
                     </Link>
-                    <span className="text-sm text-muted">{order.number}</span>
+                    <span className="text-sm text-muted">
+                      {order.number}
+                      {variant === '5' && hasUnassigned && <span> · {protoText('line', language)}</span>}
+                    </span>
                     {panelOpen && row.nextDelivery && (
                       <span className="w-fit">
                         <DueLabel date={row.nextDelivery} />
@@ -170,11 +185,12 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                   )}
                 </td>
               )}
-              {!panelOpen && (
+              {workersColumn && (
                 <td className="px-3 py-2 text-sm">
                   <div className="flex flex-col gap-0.5">
                     {row.workers.length > 0 && <span>{workerNames(row.workers)}</span>}
-                    {hasUnassigned && (
+                    {!warn && variant !== '0' && row.workers.length === 0 && <span className="text-muted">–</span>}
+                    {warn && (
                       <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-warn">
                         <TriangleAlert aria-hidden="true" size={14} />
                         {t('orders.unassigned')}
