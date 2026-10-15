@@ -82,8 +82,12 @@ export function ItemSchedule({ entry, item, errors }: { entry: OrderEntry; item:
   );
 }
 
-/** The order-wide discount, advance and notes. */
-export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: DraftErrors }) {
+/**
+ * The order-wide discount, advance and notes. `onlyWhatApplies` keeps them short enough for the desktop receipt column:
+ * the discount reason shows only with a discount and the TrxID only for a non-cash advance, each forgotten when it is
+ * hidden, and the note is one line.
+ */
+export function MoneyFields({ entry, errors, onlyWhatApplies = false }: { entry: OrderEntry; errors: DraftErrors; onlyWhatApplies?: boolean }) {
   const { t } = useI18n();
   const errorText = useErrorText(errors);
   const { discount, advance, notes } = entry.draft;
@@ -93,22 +97,29 @@ export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: Draf
     { value: 'nagad', label: t('method.nagad') },
     { value: 'bank', label: t('method.bank') },
   ];
+  const showReason = !onlyWhatApplies || (discount.amount ?? 0) > 0;
+  const showReference = !onlyWhatApplies || advance.method !== 'cash';
   return (
     <div className="flex flex-col gap-3">
       <NumberField
         label={t('entry.discount')}
         kind="money"
         initialValue={discount.amount}
-        onValueChange={(amount) => entry.update({ discount: { ...entry.draft.discount, amount } })}
+        onValueChange={(amount) => {
+          const reason = onlyWhatApplies && !amount ? '' : entry.draft.discount.reason;
+          entry.update({ discount: { amount, reason } });
+        }}
         onInvalidChange={(bad) => entry.setUnreadable('discount', bad)}
         error={errorText('discount.amount')}
       />
-      <TextField
-        label={t('entry.discountReason')}
-        value={discount.reason}
-        onChange={(e) => entry.update({ discount: { ...entry.draft.discount, reason: e.target.value } })}
-        autoComplete="off"
-      />
+      {showReason && (
+        <TextField
+          label={t('entry.discountReason')}
+          value={discount.reason}
+          onChange={(e) => entry.update({ discount: { ...entry.draft.discount, reason: e.target.value } })}
+          autoComplete="off"
+        />
+      )}
       <div data-tour="advance">
         <NumberField
           label={t('entry.advance')}
@@ -123,15 +134,24 @@ export function MoneyFields({ entry, errors }: { entry: OrderEntry; errors: Draf
         legend={t('payment.method')}
         value={advance.method}
         options={methods}
-        onChange={(method) => entry.update({ advance: { ...entry.draft.advance, method } })}
+        onChange={(method) => {
+          const reference = onlyWhatApplies && method === 'cash' ? '' : entry.draft.advance.reference;
+          entry.update({ advance: { ...entry.draft.advance, method, reference } });
+        }}
       />
-      <TextField
-        label={t('payment.reference')}
-        value={advance.reference}
-        onChange={(e) => entry.update({ advance: { ...entry.draft.advance, reference: e.target.value } })}
-        autoComplete="off"
-      />
-      <TextAreaField label={t('entry.notes')} value={notes} onChange={(e) => entry.update({ notes: e.target.value })} />
+      {showReference && (
+        <TextField
+          label={t('payment.reference')}
+          value={advance.reference}
+          onChange={(e) => entry.update({ advance: { ...entry.draft.advance, reference: e.target.value } })}
+          autoComplete="off"
+        />
+      )}
+      {onlyWhatApplies ? (
+        <TextField label={t('entry.notes')} value={notes} onChange={(e) => entry.update({ notes: e.target.value })} autoComplete="off" />
+      ) : (
+        <TextAreaField label={t('entry.notes')} value={notes} onChange={(e) => entry.update({ notes: e.target.value })} />
+      )}
     </div>
   );
 }

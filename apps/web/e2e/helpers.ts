@@ -69,9 +69,9 @@ export async function takeFirstOrder(page: Page) {
     await showing('পাঞ্জাবি ২');
     await fill(middle, { ...SHIRT, 'ঝুল': '42' });
 
-    await right.getByLabel('অগ্রিম').fill('১০০০');
-    await expect(right.getByRole('row', { name: /^মোট/ })).toContainText('৳২,৪০০');
-    await expect(right.getByRole('row', { name: /^বাকি/ })).toContainText('৳১,৪০০');
+    await right.getByLabel('অগ্রিম', { exact: true }).fill('১০০০');
+    await expect(right.getByRole('group', { name: 'মোট', exact: true })).toContainText('৳২,৪০০');
+    await expect(right.getByRole('group', { name: 'বাকি থাকবে' })).toContainText('৳১,৪০০');
     await right.getByRole('button', { name: 'অর্ডার সেভ করে রসিদ দেখান' }).click();
   }
 
