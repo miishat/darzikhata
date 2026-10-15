@@ -27,7 +27,7 @@ export async function takeFirstOrder(page: Page) {
       await page.getByRole('button', { name: 'পোশাক যোগ করুন' }).click();
       await page.getByRole('dialog').getByRole('button', { name, exact: true }).click();
     };
-    await page.getByRole('button', { name: /^কাস্টমার/ }).click();
+    await page.getByRole('button', { name: /^কাস্টমার(?! ·)/ }).click();
     await page.getByRole('button', { name: 'নতুন কাস্টমার' }).click();
     await page.getByLabel('নাম', { exact: true }).fill('জসিম উদ্দিন');
     await page.getByLabel('ফোন', { exact: true }).fill('01799887766');

@@ -11,6 +11,9 @@ export const PAYMENT_DOCK_SPACE = 'pb-36';
 /** Set on <html> while the open dock is showing, so the shell can shrink its raised New order button to a regular tab. */
 export const DOCK_FLAG = 'dockOpen';
 
+/** Set on <html> while a bar takes the tab bar's place (the new order save bar), so the shell hides its tab bar. */
+export const HIDE_TABS_FLAG = 'hideTabs';
+
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 /** How long the page must be still before the hidden balance tab comes back. */
 const SCROLL_SETTLE_MS = 600;

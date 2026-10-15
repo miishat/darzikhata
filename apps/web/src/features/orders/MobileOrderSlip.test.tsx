@@ -10,13 +10,15 @@ async function fill(scope: HTMLElement, values: Record<string, string>) {
   for (const [label, value] of Object.entries(values)) await userEvent.type(within(scope).getByLabelText(label), value);
 }
 
+// The slip's customer row, not the customer tick on the save bar (named "কাস্টমার · …").
+const CUSTOMER_ROW = /^কাস্টমার(?! ·)/;
 const slipRow = (name: RegExp) => screen.getByRole('button', { name });
 const done = () => userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'হয়েছে' }));
 const save = () => userEvent.click(screen.getByRole('button', { name: 'অর্ডার সেভ করুন' }));
 const summaryRow = (label: RegExp) => within(screen.getByRole('table', { name: 'অর্ডারের হিসাব' })).getByRole('row', { name: label });
 
 async function newCustomer(name: string, phone?: string) {
-  await userEvent.click(await screen.findByRole('button', { name: /^কাস্টমার/ }));
+  await userEvent.click(await screen.findByRole('button', { name: CUSTOMER_ROW }));
   await userEvent.click(await screen.findByRole('button', { name: 'নতুন কাস্টমার' }));
   await userEvent.type(screen.getByLabelText('নাম'), name);
   if (phone) await userEvent.type(screen.getByLabelText('ফোন'), phone);
@@ -75,16 +77,16 @@ describe('Order entry on a phone', () => {
 
   it('asks for a customer on an empty slip instead of showing a bare dot', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
-    const row = await screen.findByRole('button', { name: /^কাস্টমার/ });
+    const row = await screen.findByRole('button', { name: CUSTOMER_ROW });
     expect(row.textContent).toContain('কাস্টমার বেছে নিন');
     expect(row.textContent).not.toContain('·');
     await newCustomer('জসিম');
-    expect(screen.getByRole('button', { name: /^কাস্টমার/ }).textContent).not.toContain('কাস্টমার বেছে নিন');
+    expect(screen.getByRole('button', { name: CUSTOMER_ROW }).textContent).not.toContain('কাস্টমার বেছে নিন');
   });
 
   it('finds customers by phone from the first digit typed', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
-    await userEvent.click(await screen.findByRole('button', { name: /^কাস্টমার/ }));
+    await userEvent.click(await screen.findByRole('button', { name: CUSTOMER_ROW }));
     const sheet = within(await screen.findByRole('dialog'));
     await userEvent.type(sheet.getByRole('searchbox', { name: 'কাস্টমার খুঁজুন' }), '০১');
     expect(sheet.queryByText('কোনো কাস্টমার পাওয়া যায়নি')).toBeNull();
@@ -187,14 +189,50 @@ describe('Order entry on a phone', () => {
     expect(screen.queryByRole('button', { name: /শার্ট ১/ })).toBeNull();
   });
 
-  it('folds the save bar into a total tab and brings it back', async () => {
+  it('hides the tab bar while the save bar is on screen', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
-    await userEvent.click(await screen.findByRole('button', { name: 'সেভ বার লুকান' }));
-    expect(screen.queryByRole('button', { name: 'অর্ডার সেভ করুন' })).toBeNull();
-    expect(document.documentElement.dataset['dockOpen']).toBeUndefined();
-    await userEvent.click(screen.getByRole('button', { name: 'সেভ বার দেখান' }));
-    expect(screen.getByRole('button', { name: 'অর্ডার সেভ করুন' })).toBeTruthy();
-    expect(document.documentElement.dataset['dockOpen']).toBe('1');
+    await screen.findByRole('heading', { name: 'নতুন অর্ডার' });
+    expect(document.documentElement.dataset['hideTabs']).toBe('1');
+    await userEvent.click(screen.getByRole('button', { name: 'ফিরে যান' }));
+    await screen.findByRole('searchbox', { name: 'অর্ডার খুঁজুন' });
+    expect(document.documentElement.dataset['hideTabs']).toBeUndefined();
+  });
+
+  it('keeps save grey until there is a customer and a priced garment, ticking each as it is done', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await screen.findByRole('heading', { name: 'নতুন অর্ডার' });
+    const saveButton = () => screen.getByRole('button', { name: 'অর্ডার সেভ করুন' });
+    expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByRole('button', { name: 'কাস্টমার · এখনো হয়নি' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'পোশাক · এখনো হয়নি' })).toBeTruthy();
+
+    await newCustomer('জসিম');
+    expect(screen.getByRole('button', { name: 'কাস্টমার · হয়েছে' })).toBeTruthy();
+    expect(saveButton().getAttribute('aria-disabled')).toBe('true');
+
+    await addGarment('শার্ট');
+    await done();
+    expect(screen.getByRole('button', { name: 'পোশাক · হয়েছে' })).toBeTruthy();
+    expect(saveButton().getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('opens the garment price when the only garment is at ৳0', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await newCustomer('জসিম');
+    const sheet = await addGarment('শার্ট');
+    await userEvent.click(within(sheet).getByRole('radio', { name: 'দাম' }));
+    await userEvent.clear(within(sheet).getByLabelText('দাম (প্রতিটি)'));
+    await done();
+    expect(screen.getByRole('button', { name: 'পোশাক · এখনো হয়নি' })).toBeTruthy();
+    await save();
+    const again = await screen.findByRole('dialog', { name: 'শার্ট ১' });
+    expect(within(again).getByLabelText('দাম (প্রতিটি)')).toBeTruthy();
+  });
+
+  it('goes to the order list from the back arrow when this is the first page opened', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await userEvent.click(await screen.findByRole('button', { name: 'ফিরে যান' }));
+    expect(await screen.findByRole('searchbox', { name: 'অর্ডার খুঁজুন' })).toBeTruthy();
   });
 
   it('asks before leaving a started order', async () => {

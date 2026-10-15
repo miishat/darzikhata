@@ -1,6 +1,6 @@
 import { ArrowLeft, ChevronRight, History, CircleAlert, MoreHorizontal, Plus, RotateCcw, Shirt, UserRound, Wallet } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
@@ -15,7 +15,7 @@ import { ItemDetails } from './entry/ItemDetails';
 import { ItemHeader } from './entry/ItemHeader';
 import { ItemMeasurements } from './entry/ItemMeasurements';
 import { ItemMoney, MoneyFields } from './entry/MoneyFields';
-import { SAVE_DOCK_SPACE, SaveDock } from './entry/SaveDock';
+import { SaveDock } from './entry/SaveDock';
 import { useErrorText, useItemTitle } from './entry/shared';
 import type { OrderEntry } from './useOrderEntry';
 
@@ -44,12 +44,13 @@ export function sheetForError(path: string, items: DraftItem[]): Sheet {
 
 /**
  * Order entry on a phone as a live order slip: the customer, one line per garment, the amounts and the payment, all on
- * one screen. Each part opens in a sheet to be edited; the save bar sits on the tab bar.
+ * one screen. Each part opens in a sheet to be edited; the save bar takes the tab bar's place.
  */
 export function MobileOrderSlip({ entry, onSaved }: Props) {
   const { t, money, number, date, label } = useI18n();
   const { state, config } = useSnapshot();
   const navigate = useNavigate();
+  const location = useLocation();
   const title = useItemTitle(entry);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -71,7 +72,13 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
   };
   const hasError = (match: (path: string) => boolean) => Object.keys(errors).some(match);
 
-  const leave = () => (window.history.length > 1 ? navigate(-1) : navigate('/app/orders'));
+  // The router's first page has the key 'default': with nothing in the app to go back to (opened straight on this page,
+  // or after a reload), go to the order list rather than out of the app.
+  const leave = () => (location.key === 'default' ? navigate('/app/orders') : navigate(-1));
+  const fixGarment = () => {
+    const first = items[0];
+    open(first ? { kind: 'item', key: first.key, tab: 'price' } : { kind: 'add' });
+  };
 
   const save = async () => {
     setProblem(null);
@@ -90,7 +97,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
   };
 
   return (
-    <div className={`flex flex-col gap-4 ${SAVE_DOCK_SPACE}`}>
+    <div className="flex flex-col gap-4">
       <div className="-mt-2 flex items-center gap-1">
         <button
           type="button"
@@ -199,7 +206,15 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
           {problem}
         </p>
       )}
-      <SaveDock totals={entry.totals} saving={entry.saving} onSave={() => void save()} />
+      <SaveDock
+        hasCustomer={!!customer}
+        hasGarment={items.length > 0}
+        priced={entry.totals.total > 0}
+        saving={entry.saving}
+        onSave={() => void save()}
+        onPickCustomer={() => open({ kind: 'customer' })}
+        onFixGarment={fixGarment}
+      />
 
       <Dialog open={sheet?.kind === 'customer'} title={t('entry.step.customer')} hideTitle onClose={close}>
         <div className="flex flex-col gap-3">
