@@ -1,4 +1,5 @@
 import { checkTransition, type OrderItem, type Stage } from '@darzikhata/domain';
+import type { MessageKey } from '../../i18n/bn';
 
 export interface StageMove {
   stage: Stage;
@@ -25,4 +26,23 @@ export function stageMoves(item: OrderItem): StageMove[] {
 /** The first forward stage, offered as the one-tap "move on" action. */
 export function nextMove(item: OrderItem): StageMove | null {
   return stageMoves(item).find((m) => m.kind === 'forward') ?? null;
+}
+
+/** What to do to reach each stage shops start with, as a button would say it. */
+const START: Record<string, MessageKey> = {
+  cutting: 'item.start.cutting',
+  stitching: 'item.start.stitching',
+  embroidery: 'item.start.embroidery',
+  working: 'item.start.working',
+  trial: 'item.start.trial',
+  qc: 'item.start.qc',
+};
+
+/**
+ * The words for the button that moves a garment on to `stage`: an action for a known stage, "mark ready" for any
+ * ready stage, or null for a stage a shop named itself, which then reads "Next: <name>".
+ */
+export function moveOnKey(stage: Stage): MessageKey | null {
+  if (stage.group === 'ready') return 'item.markReady';
+  return START[stage.key] ?? null;
 }
