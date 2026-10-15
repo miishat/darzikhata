@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { ActionSheet, ActionSheetItem } from '../../ui/ActionSheet';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { HoldButton } from '../../ui/HoldButton';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { stepOf, type DraftErrors, type DraftItem } from './draft';
 import { CustomerPicker } from './entry/CustomerPicker';
@@ -151,7 +152,8 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">
-                      {title(line)} × {number(line.quantity)}
+                      {title(line)}
+                      {line.quantity > 1 && <span className="font-normal text-muted">{` · ${t('entry.pieces', { n: number(line.quantity) })}`}</span>}
                     </span>
                     <span className="block truncate text-sm text-muted">{line.deliveryDate ? date(line.deliveryDate) : '·'}</span>
                   </span>
@@ -283,13 +285,25 @@ function ItemSheet({
       />
       {tab === 'measure' && (
         <div className="flex flex-col gap-3">
-          <ItemHeader entry={entry} item={item} errors={errors} />
+          <ItemHeader entry={entry} item={item} errors={errors} stepper />
           <ItemMeasurements entry={entry} item={item} errors={errors} tiles onDone={() => onTab('design')} onKeypadSpace={setKeypadSpace} />
         </div>
       )}
       {tab === 'design' && <ItemDetails entry={entry} item={item} />}
       {tab === 'price' && <ItemMoney entry={entry} item={item} errors={errors} />}
-      <Button onClick={onDone}>{t('work.done')}</Button>
+      {/* Remove sits apart from the quantity and needs a held press, so it is never mistaken for "× quantity" or hit by a stray tap. */}
+      <div className="flex gap-2">
+        <HoldButton
+          label={t('entry.holdToRemove')}
+          holdingLabel={t('entry.keepHolding')}
+          accessibleLabel={t('entry.holdToRemoveItem', { item: title(item) })}
+          onConfirm={() => entry.removeItem(item.key)}
+          className="flex-1"
+        />
+        <Button onClick={onDone} className="flex-[1.3]">
+          {t('work.done')}
+        </Button>
+      </div>
       {/* Room under the last button so it can be scrolled above the pinned keypad. */}
       {keypadSpace > 0 && <div aria-hidden="true" data-testid="keypad-space" style={{ height: keypadSpace }} />}
     </div>

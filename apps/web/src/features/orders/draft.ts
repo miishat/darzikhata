@@ -163,7 +163,8 @@ export function draftTotals(draft: OrderDraft): DraftTotals {
   return { garments, subtotal, discount, total, advance, balance: total - advance };
 }
 
-const MAX_QUANTITY = 50;
+/** The most of one garment a single order line can hold. */
+export const MAX_QUANTITY = 50;
 
 export function validateDraft(draft: OrderDraft, ctx: DraftContext): DraftErrors {
   const errors: DraftErrors = {};
