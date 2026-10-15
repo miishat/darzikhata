@@ -819,6 +819,7 @@ export const en: Messages = {
   'work.phase.finish': 'Finishing',
   'work.phaseEmpty': 'No work in this step',
   'work.finishStage': '{stage} Done',
+  'work.tapAgain': 'Tap Again to Confirm',
   'work.late': 'Late',
   'work.select': 'Select {item}',
   'work.selectGroup': 'Select All: {group}',

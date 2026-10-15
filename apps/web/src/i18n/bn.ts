@@ -818,6 +818,7 @@ export const bn = {
   'work.phase.finish': 'শেষের ধাপে',
   'work.phaseEmpty': 'এই ধাপে কোনো কাজ নেই',
   'work.finishStage': '{stage} শেষ',
+  'work.tapAgain': 'নিশ্চিত করতে আবার চাপুন',
   'work.late': 'দেরি',
   'work.select': '{item} বেছে নিন',
   'work.selectGroup': 'সব বেছে নিন: {group}',

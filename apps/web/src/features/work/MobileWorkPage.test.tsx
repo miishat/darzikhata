@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { renderApp } from '../../test/renderApp';
 import { itemTitle } from '../common/orderText';
 import { nextMove } from '../orders/stageMoves';
+import { CONFIRM_MS } from './MobileWorkPage';
 import { phaseCounts, workItems, workPhase } from './workList';
 
 const bn = (n: number) => toBanglaDigits(String(n));
@@ -60,22 +61,33 @@ describe('Phone work list', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('lets a tailor finish a garment with one tap', async () => {
+  const openTailorCard = async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'nakshi', path: '/app/work', as: { staffId: 'nakshi-tailor', pin: '4444' } });
     const orders = Object.values(store.getSnapshot().state.orders);
     const mine = itemsForWorker(orders, 'nakshi-tailor').filter((r) => nextMove(r.item) !== null);
-    const target = mine.find((r) => workPhase(r.item) === 'making') ?? mine[0]!;
-    const { order, item } = target;
-    const next = nextMove(item)!;
+    const { order, item } = mine.find((r) => workPhase(r.item) === 'making') ?? mine[0]!;
     const stage = item.stages.find((s) => s.key === item.stageKey)!;
-
     await userEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${{ start: 'শুরু হয়নি', making: 'চলছে', finish: 'শেষের ধাপে' }[workPhase(item)]}`) }));
     const card = await screen.findByRole('region', { name: `${order.number} ${itemTitle(order, item, 'bn')}` });
-    await userEvent.click(within(card).getByRole('button', { name: `${stage.label.bn} শেষ` }));
+    const stageNow = () => store.getSnapshot().state.orders[order.id]!.items.find((i) => i.id === item.id)!.stageKey;
+    return { card: within(card), done: `${stage.label.bn} শেষ`, item, next: nextMove(item)!, stageNow };
+  };
 
-    await waitFor(() => {
-      const after = store.getSnapshot().state.orders[order.id]!.items.find((i) => i.id === item.id)!;
-      expect(after.stageKey).toBe(next.stage.key);
-    });
+  it('lets a tailor finish a garment with a second tap, so a stray first tap moves nothing', async () => {
+    const { card, done, item, next, stageNow } = await openTailorCard();
+    await userEvent.click(card.getByRole('button', { name: done }));
+    expect(stageNow()).toBe(item.stageKey);
+    const confirm = card.getByRole('button', { name: `নিশ্চিত করতে আবার চাপুন: ${done}` });
+
+    await userEvent.click(confirm);
+    await waitFor(() => expect(stageNow()).toBe(next.stage.key));
+  });
+
+  it('asks for the first tap again when the second does not come in time', async () => {
+    const { card, done, item, stageNow } = await openTailorCard();
+    await userEvent.click(card.getByRole('button', { name: done }));
+    expect(card.getByRole('button', { name: /^নিশ্চিত করতে আবার চাপুন/ })).toBeTruthy();
+    await waitFor(() => expect(card.getByRole('button', { name: done })).toBeTruthy(), { timeout: CONFIRM_MS + 1000 });
+    expect(stageNow()).toBe(item.stageKey);
   });
 });

@@ -1,6 +1,6 @@
 import type { ItemRef } from '@darzikhata/domain';
-import { Printer, Ruler, Shirt } from 'lucide-react';
-import { useState } from 'react';
+import { Check, Printer, Ruler, Shirt } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -14,6 +14,47 @@ import { nextMove } from '../orders/stageMoves';
 import { useWorkList } from './useWorkList';
 import { WORK_PHASES, phaseCounts, workPhase, type WorkPhase } from './workList';
 import { MeasurementSheet } from '../customers/MeasurementSheet';
+
+/** How long the button waits for the second tap before it goes back to asking for the first. */
+export const CONFIRM_MS = 3000;
+
+/**
+ * The move-on button. The first tap only asks for a second one, within CONFIRM_MS; the second moves the garment on.
+ * A garment leaving the list slides the next card's button under the thumb, and a stray tap there now does nothing yet.
+ */
+function ConfirmTwice({ disabled, onClick, children }: { disabled: boolean; onClick(): void; children: ReactNode }) {
+  const { t } = useI18n();
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const id = setTimeout(() => setArmed(false), CONFIRM_MS);
+    return () => clearTimeout(id);
+  }, [armed]);
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => {
+        setArmed(!armed);
+        if (armed) onClick();
+      }}
+      onBlur={() => setArmed(false)}
+      className={`flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[14px] px-4 text-base font-semibold leading-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50 ${
+        armed ? 'bg-ok text-white' : 'bg-brand text-on-brand hover:bg-brand-hover'
+      }`}
+    >
+      {armed ? (
+        <>
+          <Check aria-hidden="true" size={20} />
+          {t('work.tapAgain')}
+          <span className="sr-only">{`: ${children}`}</span>
+        </>
+      ) : (
+        children
+      )}
+    </button>
+  );
+}
 
 function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }) {
   const { t, language, label } = useI18n();
@@ -61,15 +102,7 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
                 item={item}
                 stageKey={next.stage.key}
                 label={t('work.finishStage', { stage: stage ? label(stage.label) : item.stageKey })}
-                render={({ children, ...props }) => (
-                  <button
-                    type="button"
-                    className="flex min-h-[50px] w-full items-center justify-center rounded-[14px] bg-brand px-4 text-base font-semibold text-on-brand hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
-                    {...props}
-                  >
-                    {children}
-                  </button>
-                )}
+                render={(props) => <ConfirmTwice {...props} />}
               />
             </div>
           )}
@@ -84,8 +117,8 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
 
 /**
  * The phone work list: three steps with counts beside a print button, pinned under the header, then one large card
- * per garment with a single move-on button. Like Orders and Customers it shows no title of its own; the tab bar says
- * where you are.
+ * per garment with a single move-on button that asks for a second tap. Like Orders and Customers it shows no title
+ * of its own; the tab bar says where you are.
  */
 export function MobileWorkPage() {
   const { t, number } = useI18n();
