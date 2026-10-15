@@ -1,6 +1,6 @@
 import { can, type Role } from '@darzikhata/domain';
 import { Plus, UserRound } from 'lucide-react';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { Loading } from '../app/guards';
 import { useCurrentStaff } from '../data/StoreContext';
@@ -11,7 +11,7 @@ import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
 import { SyncButton } from './SyncStatus';
 import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
-import { FloatingSearch, isMainPage, NAV_KEYS, NAV_VARIANTS, SearchField, SearchIcon, SearchSheet, SearchTab } from './mobileNavPrototype';
+import { InlineSearch, NAV_KEYS, NAV_VARIANTS, OPEN_SEARCH_EVENT, SearchField, SearchIcon, SearchSheet, useOnScreen } from './mobileNavPrototype';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 px-1 text-xs focus-visible:outline-2 focus-visible:outline-focus ${
@@ -30,13 +30,19 @@ export function MobileShell({ role }: { role: Role }) {
   const { shopName } = useShopHeader();
   const current = useCurrentStaff();
   const [accountOpen, setAccountOpen] = useState(false);
-  // PROTOTYPE: where each variant puts search.
+  // PROTOTYPE: how each variant shows search on Home.
   const variant = useVariant(NAV_KEYS);
   const { pathname } = useLocation();
+  const onHome = pathname === '/app/dashboard';
   const [searching, setSearching] = useState(false);
   const openSearch = useCallback(() => setSearching(true), []);
   const closeSearch = useCallback(() => setSearching(false), []);
-  const floating = variant === '4' && isMainPage(pathname);
+  useEffect(() => {
+    window.addEventListener(OPEN_SEARCH_EVENT, openSearch);
+    return () => window.removeEventListener(OPEN_SEARCH_EVENT, openSearch);
+  }, [openSearch]);
+  const homeField = useRef<HTMLButtonElement>(null);
+  const fieldOnScreen = useOnScreen(homeField, variant === '5' && onHome);
   const tabs = visibleNav(role).filter((item) => item.mobileTab);
   const canCreate = can(role, 'orders.create');
   const split = Math.ceil(tabs.length / 2);
@@ -44,10 +50,7 @@ export function MobileShell({ role }: { role: Role }) {
   const right = canCreate ? tabs.slice(split) : [];
   const columns = tabs.length + (canCreate ? 1 : 0);
 
-  const tab = (item: (typeof tabs)[number]) =>
-    variant === '5' && item.key === 'customers' ? (
-      <SearchTab key="search" onOpen={openSearch} />
-    ) : (
+  const tab = (item: (typeof tabs)[number]) => (
     <NavLink key={item.key} to={item.path} className={tabClass} data-tour={`nav-${item.key}`}>
       {({ isActive }) => (
         <>
@@ -58,19 +61,15 @@ export function MobileShell({ role }: { role: Role }) {
         </>
       )}
     </NavLink>
-    );
+  );
 
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
         <BrandMark size={28} className="shrink-0" />
-        {variant === '2' ? (
-          <SearchField onOpen={openSearch} className="h-11 flex-1" />
-        ) : (
-          <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
-        )}
-        {variant === '1' && <SearchIcon onOpen={openSearch} />}
-        {variant !== '2' && <SyncButton />}
+        <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
+        {variant === '5' && onHome && !fieldOnScreen && <SearchIcon onOpen={openSearch} />}
+        <SyncButton dot={variant === '1'} />
         {current && (
           <button
             type="button"
@@ -87,7 +86,13 @@ export function MobileShell({ role }: { role: Role }) {
         )}
       </header>
       <main className="flex-1 px-4 pt-4 pb-[calc(5.25rem+1rem+env(safe-area-inset-bottom))]">
-        {variant === '3' && pathname === '/app/dashboard' && <SearchField onOpen={openSearch} className="mb-4 h-14 w-full text-base shadow-sm" />}
+        {onHome && (variant === '1' || variant === '5') && <SearchField onOpen={openSearch} className="mb-4" buttonRef={homeField} />}
+        {onHome && variant === '3' && (
+          <div className="sticky top-14 z-[8] -mx-4 -mt-4 mb-4 bg-surface px-4 pt-3 pb-3">
+            <SearchField onOpen={openSearch} />
+          </div>
+        )}
+        {onHome && variant === '4' && <InlineSearch role={role} />}
         <Suspense fallback={<Loading />}>
           <Outlet />
         </Suspense>
@@ -112,8 +117,7 @@ export function MobileShell({ role }: { role: Role }) {
         )}
         {right.map(tab)}
       </nav>
-      {floating && <FloatingSearch onOpen={openSearch} />}
-      {searching && <SearchSheet role={role} onClose={closeSearch} customersLink={variant === '5'} />}
+      {searching && <SearchSheet role={role} onClose={closeSearch} />}
       <PrototypeSwitcher variants={NAV_VARIANTS} />
       <AccountMenu open={accountOpen} onClose={() => setAccountOpen(false)} />
     </div>

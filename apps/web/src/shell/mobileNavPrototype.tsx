@@ -1,45 +1,34 @@
-// PROTOTYPE (throwaway), round 3: search only. Five ways to search orders and customers from anywhere on a phone;
-// Payments is left as it is. Switch with ?variant=0|1|2|3|4|5 on any phone page.
-//   1 a search icon in the header, next to the account button
-//   2 the header itself is a search field; the shop name gives way
-//   3 Home opens with a big search field on top; other pages unchanged
-//   4 a round search button floats above the tabs on the main pages
-//   5 a Search tab takes the Customers tab's place; the search screen links to all customers
+// PROTOTYPE (throwaway), round 4: variations of "a big search field on Home". Payments is left as it is.
+// Switch with ?variant=0|1|2|3|4|5 on a phone.
+//   1 the big field on top of Home, and the sync status in the header as a dot without words
+//   2 the field sits inside the navy "Today" card, at its top
+//   3 the field stays pinned under the header while Home scrolls
+//   4 you type right on Home: results drop down under the field, no separate search screen
+//   5 the field on Home; once it scrolls out of sight a search icon appears in the header
 import type { Role } from '@darzikhata/domain';
-import { ArrowLeft, ChevronRight, Search, Users } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router';
+import { ArrowLeft, Search } from 'lucide-react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useLocation } from 'react-router';
 import { useI18n } from '../i18n/I18nProvider';
 import { GlobalSearch } from './GlobalSearch';
 
 export const NAV_VARIANTS = {
   '0': 'Current',
-  '1': 'Search icon in the header',
-  '2': 'Header is a search field',
-  '3': 'Big search field on Home',
-  '4': 'Round search button above the tabs',
-  '5': 'Search tab instead of Customers',
+  '1': 'Home search, sync dot in the header',
+  '2': 'Search inside the Today card',
+  '3': 'Home search pinned while scrolling',
+  '4': 'Type right on Home, results drop down',
+  '5': 'Home search, header icon once scrolled past',
 } as const;
 export const NAV_KEYS = Object.keys(NAV_VARIANTS);
 
-type Words = { bn: string; en: string };
-const W = {
-  searchTab: { bn: 'খুঁজুন', en: 'Search' },
-  allCustomers: { bn: 'সব কাস্টমার', en: 'All Customers' },
-} satisfies Record<string, Words>;
-export function useWords() {
-  const { language } = useI18n();
-  return (key: keyof typeof W) => (language === 'bn' ? W[key].bn : W[key].en);
-}
-
-/** The pages a floating search button shows on; detail pages and forms keep that corner for their own bars. */
-const MAIN_PAGES = ['/app/dashboard', '/app/orders', '/app/customers', '/app/work', '/app/payments'];
-export const isMainPage = (pathname: string) => MAIN_PAGES.includes(pathname);
+/** Variant 2: the dashboard asks the shell to open search. */
+export const OPEN_SEARCH_EVENT = 'prototype-open-search';
+export const requestSearch = () => window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
 
 /** Full-screen search over orders and customers. */
-export function SearchSheet({ role, onClose, customersLink = false }: { role: Role; onClose(): void; customersLink?: boolean }) {
+export function SearchSheet({ role, onClose }: { role: Role; onClose(): void }) {
   const { t } = useI18n();
-  const w = useWords();
   const input = useRef<HTMLInputElement>(null);
   const { pathname } = useLocation();
   const opened = useRef(pathname);
@@ -60,30 +49,21 @@ export function SearchSheet({ role, onClose, customersLink = false }: { role: Ro
         </button>
         <GlobalSearch role={role} inputRef={input} />
       </div>
-      {customersLink && (
-        <Link
-          to="/app/customers"
-          className="mx-4 mt-4 flex min-h-14 items-center gap-3 rounded-xl border border-line px-4 font-semibold text-ink focus-visible:outline-2 focus-visible:outline-focus"
-        >
-          <Users aria-hidden="true" size={20} className="text-brand-strong" />
-          <span className="flex-1">{w('allCustomers')}</span>
-          <ChevronRight aria-hidden="true" size={18} className="text-muted rtl:rotate-180" />
-        </Link>
-      )}
     </div>
   );
 }
 
 /** A button that looks like a search field and opens the sheet. */
-export function SearchField({ onOpen, className = '' }: { onOpen(): void; className?: string }) {
+export function SearchField({ onOpen, className = '', buttonRef }: { onOpen(): void; className?: string; buttonRef?: RefObject<HTMLButtonElement | null> }) {
   const { t } = useI18n();
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onOpen}
-      className={`flex min-w-0 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-start text-sm text-muted focus-visible:outline-2 focus-visible:outline-focus ${className}`}
+      className={`flex h-14 w-full min-w-0 items-center gap-2 rounded-xl border border-line bg-panel px-4 text-start text-base text-muted shadow-sm focus-visible:outline-2 focus-visible:outline-focus ${className}`}
     >
-      <Search aria-hidden="true" size={18} className="shrink-0" />
+      <Search aria-hidden="true" size={20} className="shrink-0" />
       <span className="truncate">{t('search.placeholder')}</span>
     </button>
   );
@@ -103,36 +83,24 @@ export function SearchIcon({ onOpen }: { onOpen(): void }) {
   );
 }
 
-/** Variant 4: a round button in the corner above the tabs. */
-export function FloatingSearch({ onOpen }: { onOpen(): void }) {
-  const { t } = useI18n();
+/** Variant 4: the real search box, right on Home. */
+export function InlineSearch({ role }: { role: Role }) {
+  const input = useRef<HTMLInputElement>(null);
   return (
-    <div className="fixed end-4 bottom-[calc(4.6rem+max(0.875rem,env(safe-area-inset-bottom)))] z-[9] pb-3">
-      <button
-        type="button"
-        aria-label={t('search.label')}
-        onClick={onOpen}
-        className="flex size-14 items-center justify-center rounded-full border border-line bg-panel text-ink shadow-lg focus-visible:outline-2 focus-visible:outline-focus"
-      >
-        <Search aria-hidden="true" size={24} />
-      </button>
+    <div className="mb-4 [&_input]:h-14 [&_input]:bg-panel [&_input]:text-base [&_input]:shadow-sm [&_kbd]:hidden">
+      <GlobalSearch role={role} inputRef={input} />
     </div>
   );
 }
 
-/** Variant 5: a tab that opens search instead of a page. */
-export function SearchTab({ onOpen }: { onOpen(): void }) {
-  const w = useWords();
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 px-1 text-xs font-medium text-muted focus-visible:outline-2 focus-visible:outline-focus"
-    >
-      <span className="flex h-[30px] w-14 items-center justify-center rounded-full">
-        <Search aria-hidden="true" size={22} />
-      </span>
-      {w('searchTab')}
-    </button>
-  );
+/** Variant 5: whether an element is still on screen below the header. */
+export function useOnScreen(ref: RefObject<Element | null>, active: boolean): boolean {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    if (!active || !ref.current) return setOn(true);
+    const observer = new IntersectionObserver(([entry]) => setOn(entry!.isIntersecting), { rootMargin: '-56px 0px 0px 0px' });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref, active]);
+  return on;
 }

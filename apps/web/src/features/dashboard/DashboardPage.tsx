@@ -12,6 +12,9 @@ import { Avatar } from '../../ui/Avatar';
 import { DueLabel } from '../../ui/DueLabel';
 import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { NAV_KEYS, requestSearch } from '../../shell/mobileNavPrototype';
+import { Search } from 'lucide-react';
 import { dashboardModel, dayPart, todoRows, firstTrialTime, rowsThatFit, METHODS } from './dashboard';
 
 /** Today's deliveries in Orders: open orders due today, soonest first. */
@@ -58,6 +61,7 @@ export function DashboardPage() {
   const customerName = (order: Order) => state.customers[order.customerId]?.name ?? '';
 
   const { kind } = useShell();
+  const variant = useVariant(NAV_KEYS); // PROTOTYPE
   if (kind === 'mobile') {
     const rows = todoRows(model);
     return (
@@ -68,6 +72,17 @@ export function DashboardPage() {
             <h2 className="font-display text-xl font-semibold">{t('dashboard.title')}</h2>
             <span className="text-sm text-on-navy-muted">{date(today, { year: false })}</span>
           </div>
+          {variant === '2' && (
+            // PROTOTYPE 2: search inside the Today card.
+            <button
+              type="button"
+              onClick={requestSearch}
+              className="flex h-12 w-full min-w-0 items-center gap-2 rounded-xl bg-navy-raised px-3 text-start text-sm text-on-navy-muted focus-visible:outline-2 focus-visible:outline-focus"
+            >
+              <Search aria-hidden="true" size={18} className="shrink-0" />
+              <span className="truncate">{t('search.placeholder')}</span>
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2.5">
             <Tile to="/app/orders?status=trial&sort=delivery" label={t('dashboard.tile.trial')} count={number(model.trialsToday.length)} icon={Scissors} />
             <Tile to={deliveriesLink(today)} label={t('dashboard.tile.delivery')} count={number(model.deliveriesToday.length)} icon={ShoppingBag} />
