@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, History, CircleAlert, MoreHorizontal, Plus, RotateCcw, Shirt, UserRound, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, ChevronRight, History, CircleAlert, MoreHorizontal, Plus, RotateCcw, Shirt, UserRound, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -150,7 +150,8 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
             const bad = hasError((p) => p.startsWith(`items.${line.key}.`));
             return (
               <li key={line.key}>
-                <button type="button" className={ROW} onClick={() => open({ kind: 'item', key: line.key, tab: 'measure' })}>
+                {/* A garment whose delivery date was cleared opens on the tab that sets it. */}
+                <button type="button" className={ROW} onClick={() => open({ kind: 'item', key: line.key, tab: line.deliveryDate ? 'measure' : 'price' })}>
                   <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong">
                     <Shirt size={18} />
                   </span>
@@ -159,7 +160,14 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
                       {title(line)}
                       {line.quantity > 1 && <span className="font-normal text-muted">{` · ${t('entry.pieces', { n: number(line.quantity) })}`}</span>}
                     </span>
-                    <span className="block truncate text-sm text-muted">{line.deliveryDate ? date(line.deliveryDate) : '·'}</span>
+                    {line.deliveryDate ? (
+                      <span className="block truncate text-sm text-muted">{date(line.deliveryDate)}</span>
+                    ) : (
+                      <span className="flex items-center gap-1 truncate text-sm font-semibold text-warn-ink">
+                        <CalendarPlus aria-hidden="true" size={14} className="shrink-0" />
+                        {t('entry.addDeliveryDate')}
+                      </span>
+                    )}
                   </span>
                   <span className="font-semibold">{line.price === null ? '' : money(line.price * line.quantity)}</span>
                   {bad ? (

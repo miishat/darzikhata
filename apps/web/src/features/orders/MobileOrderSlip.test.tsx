@@ -82,6 +82,23 @@ describe('Order entry on a phone', () => {
     expect(screen.getByRole('button', { name: /^কাস্টমার/ }).textContent).not.toContain('কাস্টমার বেছে নিন');
   });
 
+  it('asks for a delivery date on a garment whose date was cleared, and opens on the date', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await screen.findByRole('button', { name: /পোশাক যোগ করুন/ });
+    const sheet = within(await addGarment('শার্ট'));
+    await userEvent.click(sheet.getByRole('radio', { name: 'দাম' }));
+    await userEvent.clear(sheet.getByLabelText('ডেলিভারির তারিখ'));
+    await done();
+
+    const row = slipRow(/^শার্ট ১/);
+    expect(row.textContent).toContain('ডেলিভারির তারিখ দিন');
+    expect(row.textContent).not.toContain('·');
+    await userEvent.click(row);
+    const reopened = within(await screen.findByRole('dialog'));
+    expect(reopened.getByRole('radio', { name: 'দাম' }).getAttribute('aria-checked')).toBe('true');
+    expect(reopened.getByLabelText('ডেলিভারির তারিখ')).toBeTruthy();
+  });
+
   it('finds customers by phone from the first digit typed', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     await userEvent.click(await screen.findByRole('button', { name: /^কাস্টমার/ }));
