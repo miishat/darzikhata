@@ -27,7 +27,7 @@ function RevokeDialog({ order, token, onClose }: { order: Order; token: string; 
 
 /** Create, share and turn off the customer's status link for one order. */
 export function StatusLinkSection({ order, inDialog = false }: { order: Order; /** The dialog's own title is the heading, so the heading and the card around it are left off. */ inDialog?: boolean }) {
-  const { t, language } = useI18n();
+  const { t, number, language } = useI18n();
   const { config } = useSnapshot();
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -57,10 +57,10 @@ export function StatusLinkSection({ order, inDialog = false }: { order: Order; /
       )}
       <p>{t('link.about')}</p>
       <p className="text-sm text-muted">{t('link.demoNote')}</p>
-      <p className="text-sm text-muted">{t('link.expiresAfter', { n: expiryDays })}</p>
+      <p className="text-sm text-muted">{t('link.expiresAfter', { n: number(expiryDays) })}</p>
 
       {expired ? (
-        <p className="font-semibold">{t('link.expired', { n: expiryDays })}</p>
+        <p className="font-semibold">{t('link.expired', { n: number(expiryDays) })}</p>
       ) : link ? (
         <>
           <TextField label={t('link.url')} readOnly value={statusUrl(window.location.origin, link.token)} />

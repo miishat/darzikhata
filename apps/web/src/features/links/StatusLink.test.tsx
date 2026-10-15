@@ -1,7 +1,8 @@
-import { isOrderClosed, type Order } from '@darzikhata/domain';
+import { isOrderClosed, orderClosedAt, todayInDhaka, type Order } from '@darzikhata/domain';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { addDays } from '../../lib/dates';
 import type { SeedShopKey } from '../../seed/shops';
 import { renderApp } from '../../test/renderApp';
 
@@ -28,6 +29,8 @@ describe('Status link section', () => {
   it('creates a link and shows where it goes', async () => {
     const { store, order } = await openOrder('rahman', (o) => !isOrderClosed(o) && o.links.length === 0);
     expect(within(section()).getByText('ডেমোতে লিংকটি শুধু এই ব্রাউজারেই খোলে।')).toBeTruthy();
+    // Bangla text counts in Bangla digits.
+    expect(within(section()).getByText('অর্ডার শেষ হওয়ার ৩০ দিন পর লিংকটি নিজে থেকে বন্ধ হবে।')).toBeTruthy();
     await userEvent.click(within(section()).getByRole('button', { name: 'লিংক তৈরি করুন' }));
 
     await within(section()).findByLabelText('লিংক');
@@ -65,6 +68,16 @@ describe('Status link section', () => {
 
     expect(await within(section()).findByRole('button', { name: 'লিংক তৈরি করুন' })).toBeTruthy();
     expect(store.getSnapshot().state.orders[order.id]!.links[0]!.revokedAt).not.toBeNull();
+  });
+
+  it('says in Bangla digits how long ago an expired link stopped working', async () => {
+    const twoDaysAgo = addDays(todayInDhaka(new Date()), -2);
+    const { store, order } = await openOrder('rahman', (o) => (orderClosedAt(o) ?? '9999') < twoDaysAgo);
+    await act(async () => {
+      await store.dispatch({ type: 'link.created', orderId: order.id, token: 'TestToken_0123456789ab' });
+      await store.updateConfig((c) => ({ ...c, settings: { ...c.settings, linkExpiryDays: 1 } }));
+    });
+    expect(await within(section()).findByText('অর্ডার শেষ হওয়ার ১ দিন পার হয়েছে, তাই লিংকটি আর কাজ করে না।')).toBeTruthy();
   });
 
   it('is only for staff who may manage links', async () => {
