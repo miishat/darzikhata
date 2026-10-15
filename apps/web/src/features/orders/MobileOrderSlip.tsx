@@ -11,7 +11,8 @@ import { stepOf, type DraftErrors, type DraftItem } from './draft';
 import { CustomerPicker } from './entry/CustomerPicker';
 import { DraftSummary } from './entry/DraftSummary';
 import { ItemDetails } from './entry/ItemDetails';
-import { ItemHeader } from './entry/ItemHeader';
+import { ItemTop, QuantitySuffix, RowRemove, SheetFooter, SheetHeader, useRemoveVariant, useRemoveVariants } from './entry/GarmentRemove.prototype';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
 import { ItemMeasurements } from './entry/ItemMeasurements';
 import { ItemMoney, MoneyFields } from './entry/MoneyFields';
 import { SAVE_DOCK_SPACE, SaveDock } from './entry/SaveDock';
@@ -46,7 +47,9 @@ export function sheetForError(path: string, items: DraftItem[]): Sheet {
  * one screen. Each part opens in a sheet to be edited; the save bar sits on the tab bar.
  */
 export function MobileOrderSlip({ entry, onSaved }: Props) {
-  const { t, money, number, date, label } = useI18n();
+  const { t, money, date, label } = useI18n();
+  const variant = useRemoveVariant();
+  const variants = useRemoveVariants();
   const { state, config } = useSnapshot();
   const navigate = useNavigate();
   const title = useItemTitle(entry);
@@ -90,6 +93,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
 
   return (
     <div className={`flex flex-col gap-4 ${SAVE_DOCK_SPACE}`}>
+      <PrototypeSwitcher variants={variants} />
       <div className="-mt-2 flex items-center gap-1">
         <button
           type="button"
@@ -144,14 +148,15 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
           {items.map((line) => {
             const bad = hasError((p) => p.startsWith(`items.${line.key}.`));
             return (
-              <li key={line.key}>
-                <button type="button" className={ROW} onClick={() => open({ kind: 'item', key: line.key, tab: 'measure' })}>
+              <li key={line.key} className="flex flex-wrap items-center">
+                <button type="button" className={`${ROW} w-auto min-w-0 flex-1`} onClick={() => open({ kind: 'item', key: line.key, tab: 'measure' })}>
                   <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong">
                     <Shirt size={18} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">
-                      {title(line)} × {number(line.quantity)}
+                      {title(line)}
+                      <QuantitySuffix quantity={line.quantity} variant={variant} />
                     </span>
                     <span className="block truncate text-sm text-muted">{line.deliveryDate ? date(line.deliveryDate) : '·'}</span>
                   </span>
@@ -162,6 +167,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
                     <ChevronRight aria-hidden="true" size={18} className="text-muted" />
                   )}
                 </button>
+                {variant === 'C' && <RowRemove entry={entry} item={line} />}
               </li>
             );
           })}
@@ -243,6 +249,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
             tab={sheet.tab}
             onTab={(tab) => setSheet({ kind: 'item', key: item.key, tab })}
             onDone={close}
+            variant={variant}
           />
         )}
       </Dialog>
@@ -258,7 +265,9 @@ function ItemSheet({
   tab,
   onTab,
   onDone,
+  variant,
 }: {
+  variant: string;
   entry: OrderEntry;
   item: DraftItem;
   errors: DraftErrors;
@@ -271,6 +280,7 @@ function ItemSheet({
   const title = useItemTitle(entry);
   return (
     <div className="flex flex-col gap-4">
+      <SheetHeader entry={entry} item={item} variant={variant} />
       <SegmentedControl<Tab>
         legend={title(item)}
         value={tab}
@@ -283,13 +293,14 @@ function ItemSheet({
       />
       {tab === 'measure' && (
         <div className="flex flex-col gap-3">
-          <ItemHeader entry={entry} item={item} errors={errors} />
+          <ItemTop entry={entry} item={item} errors={errors} variant={variant} />
           <ItemMeasurements entry={entry} item={item} errors={errors} tiles onDone={() => onTab('design')} onKeypadSpace={setKeypadSpace} />
         </div>
       )}
       {tab === 'design' && <ItemDetails entry={entry} item={item} />}
       {tab === 'price' && <ItemMoney entry={entry} item={item} errors={errors} />}
       <Button onClick={onDone}>{t('work.done')}</Button>
+      <SheetFooter entry={entry} item={item} variant={variant} />
       {/* Room under the last button so it can be scrolled above the pinned keypad. */}
       {keypadSpace > 0 && <div aria-hidden="true" data-testid="keypad-space" style={{ height: keypadSpace }} />}
     </div>
