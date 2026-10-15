@@ -1,45 +1,49 @@
-// PROTOTYPE (throwaway): five ways to put Payments within reach on a phone and add a search that works everywhere.
-// Switch with ?variant=0|1|2|3|4|5 on any phone page.
-//   1 Payments becomes a fifth tab; a search icon in the header opens a full-screen search
-//   2 the header becomes a search field; Payments takes the Customers tab (customers are found by search)
-//   3 tabs unchanged; the header gets a search icon and a "collected today" chip that opens Payments
-//   4 nothing in the shell changes; Home opens with a search field and a Payments button on top
-//   5 a search bar sits above the tab bar, in thumb reach; Payments takes the Home tab, the logo goes Home
-import { todayInDhaka, type Role } from '@darzikhata/domain';
+// PROTOTYPE (throwaway), round 2: variations of "search and Payments on Home" (4) and "search bar above the tabs,
+// Payments replaces Home" (5). Switch with ?variant=0|1|2|3|4|5 on any phone page.
+//   1 Home's search and Payments row stays pinned under the header while Home scrolls; tabs unchanged
+//   2 tabs unchanged; a search field and a Payments button sit above the tabs on the main list pages
+//   3 Payments takes the Home tab, the logo goes Home; the search bar above the tabs shows on list pages only
+//   4 like 3, but the search bar shrinks to a round button while you scroll down and grows back when you scroll up
+//   5 tabs unchanged; Home has the search and Payments row, other list pages get a round search button above the tabs
+import type { Role } from '@darzikhata/domain';
 import { ArrowLeft, Search, Wallet } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { useScopedState } from '../features/branches/BranchScopeProvider';
-import { dashboardModel } from '../features/dashboard/dashboard';
 import { useI18n } from '../i18n/I18nProvider';
 import { GlobalSearch } from './GlobalSearch';
 
 export const NAV_VARIANTS = {
   '0': 'Current',
-  '1': 'Payments tab, search icon in header',
-  '2': 'Search field header, Payments replaces Customers',
-  '3': 'Search icon and collected-today chip in header',
-  '4': 'Search and Payments button on Home',
-  '5': 'Search bar above tabs, Payments replaces Home',
+  '1': 'Pinned search and Payments row on Home',
+  '2': 'Search and Payments above the tabs',
+  '3': 'Payments tab, search above tabs on list pages',
+  '4': 'Payments tab, search bar shrinks while scrolling',
+  '5': 'Home row plus a round search button elsewhere',
 } as const;
 export const NAV_KEYS = Object.keys(NAV_VARIANTS);
 
-type Words = { bn: string; en: string };
-const W = {
-  today: { bn: 'আজ জমা', en: 'Collected Today' },
-} satisfies Record<string, Words>;
-export function useWords() {
-  const { language } = useI18n();
-  return (key: keyof typeof W) => (language === 'bn' ? W[key].bn : W[key].en);
+/** The pages a search bar above the tabs shows on; detail pages and forms keep the room for their own bars. */
+const LIST_PAGES = ['/app/dashboard', '/app/orders', '/app/customers', '/app/work', '/app/payments'];
+export const isListPage = (pathname: string) => LIST_PAGES.includes(pathname);
+
+/** True while the page is moving down, false once it moves up or reaches the top. */
+export function useScrollingDown(): boolean {
+  const [down, setDown] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 8) return;
+      setDown(y > last && y > 40);
+      last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return down;
 }
 
-function useMoneyToday() {
-  const state = useScopedState();
-  const today = todayInDhaka(new Date());
-  return useMemo(() => dashboardModel(Object.values(state.orders), today), [state, today]);
-}
-
-/** Full-screen search over orders and customers, opened from the header, Home or the bar above the tabs. */
+/** Full-screen search over orders and customers. */
 export function SearchSheet({ role, onClose }: { role: Role; onClose(): void }) {
   const { t } = useI18n();
   const input = useRef<HTMLInputElement>(null);
@@ -81,51 +85,53 @@ export function SearchField({ onOpen, className = '' }: { onOpen(): void; classN
   );
 }
 
-export function SearchIcon({ onOpen }: { onOpen(): void }) {
+export function PaymentsButton() {
   const { t } = useI18n();
-  return (
-    <button
-      type="button"
-      aria-label={t('search.label')}
-      onClick={onOpen}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full text-ink focus-visible:outline-2 focus-visible:outline-focus"
-    >
-      <Search aria-hidden="true" size={22} />
-    </button>
-  );
-}
-
-/** Variant 3: today's takings in the header, one tap to Payments. */
-export function TodayChip() {
-  const { money } = useI18n();
-  const w = useWords();
-  const model = useMoneyToday();
   return (
     <Link
       to="/app/payments"
-      aria-label={`${w('today')} ${money(model.collectedToday)}`}
-      className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand-soft px-3 text-sm font-bold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
+      className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-brand-soft px-3 text-sm font-bold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
     >
-      <Wallet aria-hidden="true" size={16} />
-      {money(model.collectedToday)}
+      <Wallet aria-hidden="true" size={18} />
+      {t('nav.payments')}
     </Link>
   );
 }
 
-/** Variant 4: what Home opens with. Home's money cards already show today's numbers, so this is just the way in. */
-export function HomeTop({ onSearch }: { onSearch(): void }) {
-  const { t } = useI18n();
-  const w = useWords();
+/** Search and Payments side by side. `pinned` keeps it under the header while the page scrolls. */
+export function HomeTop({ onSearch, pinned = false }: { onSearch(): void; pinned?: boolean }) {
   return (
-    <div className="mb-4 flex gap-2">
-      <SearchField onOpen={onSearch} className="flex-1" />
-      <Link
-        to="/app/payments"
-        className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-brand-soft px-3 text-sm font-bold text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
-      >
-        <Wallet aria-hidden="true" size={18} />
-        {t('nav.payments')}
-      </Link>
+    <div className={`mb-4 flex gap-2 ${pinned ? 'sticky top-14 z-[8] -mx-4 -mt-4 border-b border-line bg-surface px-4 pt-3 pb-3' : ''}`}>
+      <SearchField onOpen={onSearch} className={`flex-1 ${pinned ? 'bg-panel' : ''}`} />
+      <PaymentsButton />
+    </div>
+  );
+}
+
+/** Where things sit above the tab bar. */
+export const ABOVE_TABS = 'bottom-[calc(4.6rem+max(0.875rem,env(safe-area-inset-bottom)))]';
+
+/** A search bar above the tabs; `compact` turns it into a round button at the end. */
+export function BottomSearch({ onOpen, compact = false, withPayments = false }: { onOpen(): void; compact?: boolean; withPayments?: boolean }) {
+  const { t } = useI18n();
+  if (compact) {
+    return (
+      <div className={`fixed end-4 ${ABOVE_TABS} z-[9] pb-2`}>
+        <button
+          type="button"
+          aria-label={t('search.label')}
+          onClick={onOpen}
+          className="flex size-12 items-center justify-center rounded-full border border-line bg-panel text-ink shadow-lg focus-visible:outline-2 focus-visible:outline-focus"
+        >
+          <Search aria-hidden="true" size={22} />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className={`fixed inset-x-0 ${ABOVE_TABS} z-[9] flex gap-2 bg-gradient-to-t from-panel to-transparent px-4 pt-3 pb-2`}>
+      <SearchField onOpen={onOpen} className="flex-1 bg-panel shadow-md" />
+      {withPayments && <PaymentsButton />}
     </div>
   );
 }

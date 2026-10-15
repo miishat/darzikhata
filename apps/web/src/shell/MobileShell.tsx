@@ -11,7 +11,7 @@ import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
 import { SyncButton } from './SyncStatus';
 import { PrototypeSwitcher, useVariant } from '../ui/PrototypeSwitcher';
-import { HomeTop, NAV_KEYS, NAV_VARIANTS, SearchField, SearchIcon, SearchSheet, TodayChip } from './mobileNavPrototype';
+import { BottomSearch, HomeTop, isListPage, NAV_KEYS, NAV_VARIANTS, SearchSheet, useScrollingDown } from './mobileNavPrototype';
 
 const tabClass = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 px-1 text-xs focus-visible:outline-2 focus-visible:outline-focus ${
@@ -30,18 +30,21 @@ export function MobileShell({ role }: { role: Role }) {
   const { shopName } = useShopHeader();
   const current = useCurrentStaff();
   const [accountOpen, setAccountOpen] = useState(false);
-  // PROTOTYPE: which tabs each variant shows.
+  // PROTOTYPE: which tabs and which search each variant shows.
   const variant = useVariant(NAV_KEYS);
   const { pathname } = useLocation();
+  const scrollingDown = useScrollingDown();
   const [searching, setSearching] = useState(false);
   const openSearch = useCallback(() => setSearching(true), []);
   const closeSearch = useCallback(() => setSearching(false), []);
-  const TAB_KEYS: Record<string, string[]> = {
-    '1': ['dashboard', 'orders', 'customers', 'work', 'payments'],
-    '2': ['dashboard', 'orders', 'work', 'payments'],
-    '5': ['orders', 'customers', 'work', 'payments'],
-  };
-  const tabs = visibleNav(role).filter((item) => (TAB_KEYS[variant] ? TAB_KEYS[variant].includes(item.key) : item.mobileTab));
+  const paymentsTab = variant === '3' || variant === '4';
+  const onList = isListPage(pathname);
+  const onHome = pathname === '/app/dashboard';
+  const bottomBar = onList && (variant === '2' || variant === '3' || (variant === '4' && !scrollingDown));
+  const roundSearch = onList && ((variant === '4' && scrollingDown) || (variant === '5' && !onHome));
+  const tabs = visibleNav(role).filter((item) =>
+    paymentsTab ? ['orders', 'customers', 'work', 'payments'].includes(item.key) : item.mobileTab,
+  );
   const canCreate = can(role, 'orders.create');
   const split = Math.ceil(tabs.length / 2);
   const left = canCreate ? tabs.slice(0, split) : tabs;
@@ -64,22 +67,15 @@ export function MobileShell({ role }: { role: Role }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
-        {variant === '5' ? (
+        {paymentsTab ? (
           <Link to="/app/dashboard" aria-label={t('nav.dashboard')} className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-focus">
             <BrandMark size={28} />
           </Link>
         ) : (
           <BrandMark size={28} className="shrink-0" />
         )}
-        {variant === '2' ? (
-          <SearchField onOpen={openSearch} className="flex-1" />
-        ) : (
-          // PROTOTYPE 3: the header is full, so the shop name gives way to the chip.
-          <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{variant === '3' ? null : shopName}</p>
-        )}
-        {(variant === '1' || variant === '3') && <SearchIcon onOpen={openSearch} />}
-        {variant === '3' && <TodayChip />}
-        {variant !== '2' && <SyncButton />}
+        <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
+        <SyncButton />
         {current && (
           <button
             type="button"
@@ -96,9 +92,9 @@ export function MobileShell({ role }: { role: Role }) {
         )}
       </header>
       <main
-        className={`flex-1 px-4 pt-4 ${variant === '5' ? 'pb-[calc(9rem+1rem+env(safe-area-inset-bottom))]' : 'pb-[calc(5.25rem+1rem+env(safe-area-inset-bottom))]'}`}
+        className={`flex-1 px-4 pt-4 ${bottomBar || roundSearch ? 'pb-[calc(9rem+1rem+env(safe-area-inset-bottom))]' : 'pb-[calc(5.25rem+1rem+env(safe-area-inset-bottom))]'}`}
       >
-        {variant === '4' && pathname === '/app/dashboard' && <HomeTop onSearch={openSearch} />}
+        {onHome && (variant === '1' || variant === '5') && <HomeTop onSearch={openSearch} pinned={variant === '1'} />}
         <Suspense fallback={<Loading />}>
           <Outlet />
         </Suspense>
@@ -123,12 +119,8 @@ export function MobileShell({ role }: { role: Role }) {
         )}
         {right.map(tab)}
       </nav>
-      {variant === '5' && (
-        // PROTOTYPE 5: search in thumb reach, just above the tabs.
-        <div className="fixed inset-x-0 bottom-[calc(4.6rem+max(0.875rem,env(safe-area-inset-bottom)))] z-[9] bg-gradient-to-t from-panel to-transparent px-4 pt-3 pb-2">
-          <SearchField onOpen={openSearch} className="w-full bg-panel shadow-md" />
-        </div>
-      )}
+      {bottomBar && <BottomSearch onOpen={openSearch} withPayments={variant === '2'} />}
+      {roundSearch && <BottomSearch onOpen={openSearch} compact />}
       {searching && <SearchSheet role={role} onClose={closeSearch} />}
       <PrototypeSwitcher variants={NAV_VARIANTS} />
       <AccountMenu open={accountOpen} onClose={() => setAccountOpen(false)} />
