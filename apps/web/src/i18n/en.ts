@@ -532,7 +532,6 @@ export const en: Messages = {
   'item.history': 'Stage History',
   'item.rework': 'Rework: {reason}',
   'item.adjustments': 'Fitting Changes',
-  'item.moveTo': 'Move to {stage}',
   'item.start.cutting': 'Start Cutting',
   'item.start.stitching': 'Start Stitching',
   'item.start.embroidery': 'Start Embroidery',

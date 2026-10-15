@@ -531,7 +531,6 @@ export const bn = {
   'item.history': 'ধাপের ইতিহাস',
   'item.rework': 'আবার কাজ: {reason}',
   'item.adjustments': 'ফিটিংয়ের পরিবর্তন',
-  'item.moveTo': '{stage} এ নিন',
   'item.start.cutting': 'কাটিং শুরু করুন',
   'item.start.stitching': 'সেলাই শুরু করুন',
   'item.start.embroidery': 'এমব্রয়ডারি শুরু করুন',

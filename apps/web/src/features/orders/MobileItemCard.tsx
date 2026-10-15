@@ -12,7 +12,7 @@ import { itemTitle } from '../common/orderText';
 import { BatchAssignDialog } from '../work/batchDialogs';
 import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
-import { moveOnKey, nextMove } from './stageMoves';
+import { moveOnText, nextMove } from './stageMoves';
 import { MeasurementSheet } from '../customers/MeasurementSheet';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
@@ -49,9 +49,6 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
   };
 
   const next = nextMove(item);
-  // Say what to do ("start cutting"), not just where it goes; a shop's own stage reads "Next: <name>".
-  const nextKey = next && moveOnKey(next.stage);
-  const nextLabel = next ? (nextKey ? t(nextKey) : t('item.nextStage', { stage: label(next.stage.label) })) : '';
   const canMove = can('work.updateStage') && next !== null;
   const delivered = group === 'delivered';
   const open = group === 'unfinished' || group === 'ready';
@@ -227,7 +224,7 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                     order={order}
                     item={item}
                     stageKey={next.stage.key}
-                    label={nextLabel}
+                    label={moveOnText(next.stage, { t, label })}
                     render={(props) => <PrimaryButton {...props} />}
                   />
                 )

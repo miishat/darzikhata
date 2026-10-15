@@ -85,7 +85,7 @@ describe('Order detail', () => {
     const item = order.items.find((i) => !i.cancelled && i.stageKey === 'cutting')!;
     const card = screen.getByRole('region', { name: title(order, item) });
 
-    await userEvent.click(within(card).getByRole('button', { name: 'সেলাই এ নিন' }));
+    await userEvent.click(within(card).getByRole('button', { name: 'সেলাই শুরু করুন' }));
     expect((await within(card).findAllByText('সেলাই')).length).toBeGreaterThan(0);
 
     await pick(order, item, 'অন্য ধাপ…');

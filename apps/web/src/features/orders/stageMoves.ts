@@ -1,5 +1,6 @@
 import { checkTransition, type OrderItem, type Stage } from '@darzikhata/domain';
 import type { MessageKey } from '../../i18n/bn';
+import type { I18n } from '../../i18n/I18nProvider';
 
 export interface StageMove {
   stage: Stage;
@@ -45,4 +46,10 @@ const START: Record<string, MessageKey> = {
 export function moveOnKey(stage: Stage): MessageKey | null {
   if (stage.group === 'ready') return 'item.markReady';
   return START[stage.key] ?? null;
+}
+
+/** The move-on button's text for `stage`, in the current language: see moveOnKey. */
+export function moveOnText(stage: Stage, { t, label }: Pick<I18n, 't' | 'label'>): string {
+  const key = moveOnKey(stage);
+  return key ? t(key) : t('item.nextStage', { stage: label(stage.label) });
 }
