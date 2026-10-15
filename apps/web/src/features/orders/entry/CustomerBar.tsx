@@ -14,6 +14,8 @@ import { directoryRows } from '../../customers/directoryView';
 import type { DraftErrors } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
 import { useErrorText } from './shared';
+import { PrototypeSwitcher, useVariant } from '../../../ui/PrototypeSwitcher';
+import { BAR_KEYS, BAR_VARIANTS, NewCustomerRow, NewCustomerSection } from './newCustomerBarPrototype';
 
 const MATCHES = 6;
 
@@ -241,14 +243,26 @@ export function CustomerBar({
   const { t } = useI18n();
   const errorText = useErrorText(errors);
   const customer = entry.draft.customer;
+  // PROTOTYPE
+  const variant = useVariant(BAR_KEYS);
+  const switcher = <PrototypeSwitcher variants={BAR_VARIANTS} />;
+  if (customer?.kind === 'new' && (variant === '2' || variant === '4'))
+    return (
+      <>
+        {switcher}
+        <NewCustomerSection variant={variant} entry={entry} errors={errors} heading={heading} />
+      </>
+    );
   return (
+    <>
+    {switcher}
     <section aria-label={t('entry.step.customer')} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-line bg-panel px-4 py-3 shadow-sm">
       {heading}
       <span aria-hidden="true" className="h-8 w-px bg-line" />
       {customer?.kind === 'existing' ? (
         <ChosenCustomer entry={entry} customerId={customer.customerId} />
       ) : customer?.kind === 'new' ? (
-        <NewCustomerFields entry={entry} errors={errors} />
+        variant === '0' ? <NewCustomerFields entry={entry} errors={errors} /> : <NewCustomerRow variant={variant} entry={entry} errors={errors} />
       ) : (
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <div className="relative min-w-0 flex-1">
@@ -261,5 +275,6 @@ export function CustomerBar({
         </div>
       )}
     </section>
+    </>
   );
 }
