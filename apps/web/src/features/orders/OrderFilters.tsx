@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { ORDERS_SEARCH_ID } from './ordersSearchPrototype';
 import { ArrowDownUp, Check, Search } from 'lucide-react';
 import { useSnapshot } from '../../data/StoreContext';
 import { useId, useState } from 'react';
@@ -32,7 +34,7 @@ export function useSortOptions(): OrderSort[] {
 }
 
 /** The phone's sort control: a small button for the page header that opens a sheet of choices, ticked as the dropdown sheets are. */
-export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort: OrderSort): void }) {
+export function SortButton({ sort, onChange, iconOnly = false }: { sort: OrderSort; onChange(sort: OrderSort): void; iconOnly?: boolean }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const sorts = useSortOptions();
@@ -43,10 +45,10 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
         type="button"
         aria-label={t('orders.sortCurrent', { sort: current })}
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-panel text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${iconOnly ? 'size-12 justify-center' : 'min-h-12 px-3'}`}
       >
-        <ArrowDownUp aria-hidden="true" size={18} />
-        {current}
+        <ArrowDownUp aria-hidden="true" size={iconOnly ? 20 : 18} />
+        {!iconOnly && current}
       </button>
       <Dialog open={open} title={t('orders.sort')} hideTitle onClose={() => setOpen(false)}>
         <ul className="m-0 flex list-none flex-col p-0">
@@ -73,7 +75,7 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
 }
 
 /** Search, status, money and sort controls, and the chips for whatever is switched on. */
-export function OrderFilters({ query, onChange, onClear, counts }: Props) {
+export function OrderFilters({ query, onChange, onClear, counts, beside, pinned = false }: Props & { beside?: ReactNode; pinned?: boolean }) {
   const { t, number, date } = useI18n();
   const { kind } = useShell();
   const can = useCan();
@@ -115,10 +117,12 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
     if (query.from) hidden.push(t('orders.chipFrom', { date: date(query.from) }));
     if (query.to) hidden.push(t('orders.chipTo', { date: date(query.to) }));
     return (
-      <div className="flex flex-col gap-2">
-        <label className="flex min-h-12 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">
+      <div className={`flex flex-col gap-2 ${pinned ? 'sticky top-14 z-[8] -mx-4 -mt-4 bg-surface px-4 pt-3 pb-2 shadow-sm' : ''}`}>
+        <div className="flex items-center gap-2">
+        <label className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">
           <Search aria-hidden="true" size={20} />
           <input
+            id={ORDERS_SEARCH_ID}
             type="search"
             aria-label={t('orders.searchLabel')}
             placeholder={t('orders.searchPlaceholder')}
@@ -127,6 +131,8 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
             className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
           />
         </label>
+        {beside}
+        </div>
         <ChipGroup
           label={t('orders.chips')}
           value={selected}

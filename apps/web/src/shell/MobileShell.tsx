@@ -8,6 +8,9 @@ import { useI18n } from '../i18n/I18nProvider';
 import { BrandMark } from '../ui/BrandMark';
 import { AccountMenu } from './AccountMenu';
 import { MobileSearch } from './MobileSearch';
+import { useLocation } from 'react-router';
+import { useVariant } from '../ui/PrototypeSwitcher';
+import { ORDERS_KEYS, ORDERS_SEARCH_ID } from '../features/orders/ordersSearchPrototype';
 import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
 import { SyncButton } from './SyncStatus';
@@ -29,6 +32,9 @@ export function MobileShell({ role }: { role: Role }) {
   const { shopName } = useShopHeader();
   const current = useCurrentStaff();
   const [accountOpen, setAccountOpen] = useState(false);
+  // PROTOTYPE: what the header search does on the Orders page.
+  const variant = useVariant(ORDERS_KEYS);
+  const onOrders = useLocation().pathname === '/app/orders';
   const tabs = visibleNav(role).filter((item) => item.mobileTab);
   const canCreate = can(role, 'orders.create');
   const split = Math.ceil(tabs.length / 2);
@@ -54,7 +60,9 @@ export function MobileShell({ role }: { role: Role }) {
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
         <BrandMark size={28} className="shrink-0" />
         <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
-        <MobileSearch role={role} />
+        {!(onOrders && ['2', '3', '4'].includes(variant)) && (
+          <MobileSearch role={role} focusInstead={onOrders && variant === '5' ? ORDERS_SEARCH_ID : undefined} />
+        )}
         <SyncButton dot />
         {current && (
           <button

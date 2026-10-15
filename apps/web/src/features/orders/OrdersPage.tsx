@@ -12,6 +12,8 @@ import { useCan, useToday } from '../common/hooks';
 import { OrderCards } from './OrderCards';
 import { OrderDetail } from './OrderDetail';
 import { OrderFilters, SortButton } from './OrderFilters';
+import { useVariant, PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
+import { ORDERS_KEYS, ORDERS_VARIANTS } from './ordersSearchPrototype';
 import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
 import { DEFAULT_LIST_QUERY, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
@@ -57,6 +59,7 @@ export function OrdersPage() {
     [state, text, status, dueOnly, sort, page, worker, from, to, today],
   );
 
+  const variant = useVariant(ORDERS_KEYS); // PROTOTYPE
   const counts = useMemo(() => statusCounts(state, today), [state, today]);
   const viewCounts = useMemo(() => countViews(state, today), [state, today]);
   const owedTotal = useMemo(() => Object.values(state.orders).reduce((sum, o) => sum + Math.max(0, balanceDue(o)), 0), [state]);
@@ -104,11 +107,31 @@ export function OrdersPage() {
     </div>
   );
 
+  if (kind === 'mobile' && !orderId && variant !== '0') {
+    // PROTOTYPE: no visible heading; the sort sits beside the search box.
+    return (
+      <div className="flex flex-col gap-3">
+        <h1 className="sr-only">{t('nav.orders')}</h1>
+        <OrderFilters
+          query={query}
+          onChange={change}
+          onClear={() => update(DEFAULT_LIST_QUERY)}
+          counts={counts}
+          pinned={variant === '4'}
+          beside={<SortButton sort={sort} onChange={(next) => change({ sort: next })} iconOnly={variant !== '3'} />}
+        />
+        {list.props.children.slice(1)}
+        <PrototypeSwitcher variants={ORDERS_VARIANTS} />
+      </div>
+    );
+  }
+
   if (kind === 'mobile') {
     return orderId ? (
       <OrderDetail orderId={orderId} />
     ) : (
       <div className="flex flex-col gap-3">
+        <PrototypeSwitcher variants={ORDERS_VARIANTS} />
         <div className="flex items-center justify-between gap-2">
           <h1 className="font-display text-2xl font-bold">{t('nav.orders')}</h1>
           <SortButton sort={sort} onChange={(next) => change({ sort: next })} />

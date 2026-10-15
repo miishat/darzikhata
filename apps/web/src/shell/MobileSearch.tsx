@@ -7,7 +7,7 @@ import { useModalFocus } from '../ui/Dialog';
 import { GlobalSearch } from './GlobalSearch';
 
 /** The phone header's search button and the full-screen search it opens: orders by number, customers by name or phone. */
-export function MobileSearch({ role }: { role: Role }) {
+export function MobileSearch({ role, focusInstead }: { role: Role; /** PROTOTYPE: focus this page search box instead. */ focusInstead?: string }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (!can(role, 'orders.view') && !can(role, 'customers.view')) return null;
@@ -17,7 +17,13 @@ export function MobileSearch({ role }: { role: Role }) {
         type="button"
         aria-label={t('search.label')}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          const box = focusInstead ? document.getElementById(focusInstead) : null;
+          if (box) {
+            box.scrollIntoView({ block: 'center' });
+            box.focus();
+          } else setOpen(true);
+        }}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Search aria-hidden="true" size={22} />
