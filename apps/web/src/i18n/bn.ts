@@ -400,6 +400,7 @@ export const bn = {
   'entry.saveAndReceipt': 'অর্ডার সেভ করে রসিদ দেখান',
   'entry.balanceLeft': 'বাকি থাকবে',
   'entry.switchCustomer': 'কাস্টমার বদলান',
+  'entry.pickCustomer': 'কাস্টমার বেছে নিন',
   'entry.pickAnotherCustomer': 'অন্য কাস্টমার বেছে নিন',
   'entry.customerProfile': 'প্রোফাইল · {n}টি অর্ডার',
   'entry.fact.owes': 'আগের বাকি',
