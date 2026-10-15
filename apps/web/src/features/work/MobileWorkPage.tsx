@@ -82,7 +82,11 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
   );
 }
 
-/** The phone work list: three steps with counts, then one large card per garment with a single move-on button. */
+/**
+ * The phone work list: three steps with counts beside a print button, pinned under the header, then one large card
+ * per garment with a single move-on button. Like Orders and Customers it shows no title of its own; the tab bar says
+ * where you are.
+ */
 export function MobileWorkPage() {
   const { t, number } = useI18n();
   const { viewer, all } = useWorkList();
@@ -96,43 +100,42 @@ export function MobileWorkPage() {
 
   return (
     <div className="flex flex-col gap-3">
-      <header className="flex items-center gap-2.5">
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display text-[26px] font-bold">{viewer.seesAll ? t('nav.work') : t('work.mine')}</h1>
-          <p className="text-sm text-muted">{t('work.count', { n: number(all.length) })}</p>
+      <h1 className="sr-only">{viewer.seesAll ? t('nav.work') : t('work.mine')}</h1>
+
+      {/* Pinned under the shell header (3.5rem), so the steps and print stay in reach while the list scrolls. */}
+      <div className="sticky top-14 z-[8] -mx-4 -mt-4 flex items-center gap-2 bg-surface px-4 pt-3 pb-2 shadow-sm">
+        <div role="tablist" aria-label={t('work.stage')} className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-2xl bg-line p-1">
+          {WORK_PHASES.map((p) => {
+            const active = p === phase;
+            return (
+              <button
+                key={p}
+                id={`work-tab-${p}`}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls="work-panel"
+                tabIndex={active ? 0 : -1}
+                onClick={() => setChosen(p)}
+                onKeyDown={onKeyDown}
+                // A long English step name puts its count on a second line rather than breaking the name.
+                className={`flex min-h-11 flex-wrap items-center justify-center gap-x-1 rounded-xl px-1 text-sm leading-tight focus-visible:outline-2 focus-visible:outline-focus ${
+                  active ? 'bg-panel font-bold text-brand-strong shadow-sm' : 'text-muted'
+                }`}
+              >
+                <span className="whitespace-nowrap">{t(`work.phase.${p}`)}</span>
+                <b>{number(counts[p])}</b>
+              </button>
+            );
+          })}
         </div>
         <Link
           to={`/print/work${search ? `?${search}` : ''}`}
           aria-label={t('work.print')}
-          className="flex size-11 items-center justify-center rounded-full border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-focus"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-focus"
         >
           <Printer aria-hidden="true" size={22} />
         </Link>
-      </header>
-
-      <div role="tablist" aria-label={t('work.stage')} className="grid grid-cols-3 gap-1 rounded-2xl bg-line p-1">
-        {WORK_PHASES.map((p) => {
-          const active = p === phase;
-          return (
-            <button
-              key={p}
-              id={`work-tab-${p}`}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-controls="work-panel"
-              tabIndex={active ? 0 : -1}
-              onClick={() => setChosen(p)}
-              onKeyDown={onKeyDown}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-1 text-[15px] focus-visible:outline-2 focus-visible:outline-focus ${
-                active ? 'bg-panel font-bold text-brand-strong shadow-sm' : 'text-muted'
-              }`}
-            >
-              {t(`work.phase.${p}`)}
-              <b>{number(counts[p])}</b>
-            </button>
-          );
-        })}
       </div>
 
       <div role="tabpanel" id="work-panel" aria-labelledby={`work-tab-${phase}`}>
