@@ -24,7 +24,7 @@ export function NewOrderPage() {
       {kind === 'desktop' && variant !== '0' ? (
         <NewOrderDesktopPrototype
           key={`${entry.generation}:${variant}`}
-          variant={variant as 'A' | 'B' | 'C'}
+          variant={variant as Exclude<keyof typeof NEW_ORDER_VARIANTS, '0'>}
           entry={entry}
           onSaved={onSaved}
           onDiscarded={() => {
