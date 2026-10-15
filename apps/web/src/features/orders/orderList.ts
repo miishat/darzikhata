@@ -1,3 +1,4 @@
+import { soonDay } from './unassignedPrototype';
 import {
   balanceDue,
   customerMatchScore,
@@ -162,7 +163,12 @@ export function queryOrders(state: ShopState, query: OrderListQuery, today: stri
         matchesStatus(row, query.status) &&
         matchesText(row, query.text) &&
         (!query.dueOnly || row.balance > 0) &&
-        (!query.worker || (query.worker === 'none' ? row.unassigned : row.workers.includes(query.worker))) &&
+        (!query.worker ||
+          (query.worker === 'none'
+            ? row.unassigned
+            : query.worker === 'none-soon'
+              ? row.unassigned && (row.overdue || (row.nextDelivery !== null && row.nextDelivery <= soonDay(today)))
+              : row.workers.includes(query.worker))) &&
         matchesRange(row, query.from, query.to),
     )
     .sort(compare(query.sort));

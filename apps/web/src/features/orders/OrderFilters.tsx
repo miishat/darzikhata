@@ -13,7 +13,9 @@ import { useCan } from '../common/hooks';
 import { type OrderListQuery, type OrderSort, type OrderStatusFilter } from './orderList';
 import { viewOfQuery } from './orderViews';
 import { useVariant } from '../../ui/PrototypeSwitcher';
-import { NOBODY, UNASSIGNED_KEYS } from './unassignedPrototype';
+import { NOBODY, NOBODY_SOON, protoText, UNASSIGNED_KEYS } from './unassignedPrototype';
+import { orderRow } from './orderList';
+import { useToday } from '../common/hooks';
 import { Select } from '../../ui/Select';
 
 interface Props {
@@ -149,7 +151,7 @@ const DATE_INPUT = 'min-h-9 rounded-lg border border-line bg-panel px-2 text-sm 
 
 /** The laptop filter row: table search, worker and date filters, a chip for each active filter, and the sort on the right. */
 function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
-  const { t, date, label } = useI18n();
+  const { t, date, label, language, number } = useI18n();
   const sortLabelId = useId();
   const can = useCan();
   const money = can('money.view');
@@ -157,8 +159,12 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
   const { config } = useSnapshot();
   const { allowed, choice, setChoice } = useBranchScope();
   const staff = config?.staff ?? [];
-  const workerName = (id: string) => (id === NOBODY ? t('work.unassigned') : (staff.find((s) => s.id === id)?.name ?? id));
   const variant = useVariant(UNASSIGNED_KEYS); // PROTOTYPE
+  const { state: protoState } = useSnapshot();
+  const protoToday = useToday();
+  const nobodyCount = Object.values(protoState.orders).filter((o) => orderRow(o, protoState, protoToday).unassigned).length;
+  const workerName = (id: string) =>
+    id === NOBODY ? t('work.unassigned') : id === NOBODY_SOON ? protoText('urgentChip', language) : (staff.find((s) => s.id === id)?.name ?? id);
 
   const chips: Array<{ key: string; label: string; remove(): void }> = [];
   // A tab shows the status or money filter; only what no tab can show is listed as a chip.
@@ -191,7 +197,7 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
             className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
           />
         </label>
-        <FilterButton label={t('orders.filter.worker')}>
+        <FilterButton label={variant === 'D' && nobodyCount > 0 ? `${t('orders.filter.worker')} · ${protoText('filterCount', language, number(nobodyCount))}` : t('orders.filter.worker')}>
           <button
             type="button"
             aria-pressed={query.worker === ''}
@@ -200,14 +206,14 @@ function DesktopFilters({ query, onChange, onClear }: Omit<Props, 'counts'>) {
           >
             {t('orders.filter.anyWorker')}
           </button>
-          {variant === '3' && (
+          {variant === 'D' && (
             <button
               type="button"
               aria-pressed={query.worker === NOBODY}
               onClick={() => onChange({ worker: NOBODY })}
               className={`rounded-lg px-3 py-2 text-start text-sm ${query.worker === NOBODY ? 'bg-brand-soft font-semibold text-brand-strong' : 'text-ink hover:bg-surface'}`}
             >
-              {t('work.unassigned')}
+              {t('work.unassigned')} ({number(nobodyCount)})
             </button>
           )}
           {staff.map((person) => (

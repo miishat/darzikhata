@@ -16,7 +16,7 @@ import { fullPageTo } from './OrderPanel';
 import { OrderTable } from './OrderTable';
 import { DEFAULT_LIST_QUERY, orderRow, PAGE_SIZE, queryOrders, readListQuery, statusCounts, writeListQuery, type OrderListQuery } from './orderList';
 import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
-import { NOBODY, protoText, UNASSIGNED_KEYS, UNASSIGNED_VARIANTS } from './unassignedPrototype';
+import { NOBODY_SOON, protoText, soonDay, UNASSIGNED_KEYS, UNASSIGNED_VARIANTS } from './unassignedPrototype';
 import { UserX } from 'lucide-react';
 import { ORDER_VIEWS, countViews, viewOfQuery, viewQuery, type OrderView } from './orderViews';
 
@@ -70,10 +70,12 @@ export function OrdersPage() {
   }, [page, status, dueOnly]);
   // PROTOTYPE: keep ?variant= when the filters are rewritten, and count the orders with a garment nobody is on.
   const variant = useVariant(UNASSIGNED_KEYS);
-  const unassignedCount = useMemo(
-    () => Object.values(state.orders).filter((o) => orderRow(o, state, today).unassigned).length,
-    [state, today],
-  );
+  const urgentCount = useMemo(() => {
+    const last = soonDay(today);
+    return Object.values(state.orders)
+      .map((o) => orderRow(o, state, today))
+      .filter((r) => r.unassigned && (r.overdue || (r.nextDelivery !== null && r.nextDelivery <= last))).length;
+  }, [state, today]);
   const update = (next: OrderListQuery) => {
     const written = writeListQuery(next);
     if (params.get('variant')) written.set('variant', params.get('variant')!);
@@ -148,7 +150,7 @@ export function OrdersPage() {
           <ViewTabs
             tiles
             label={t('orders.tabs')}
-            views={[...tabViews.map((v: OrderView) => ({
+            views={tabViews.map((v: OrderView) => ({
               value: v,
               label: t(`orders.chip.${v === 'late' ? 'overdue' : v}`),
               count: viewCounts[v],
@@ -156,22 +158,18 @@ export function OrdersPage() {
               warn: v === 'late' || v === 'owed',
               // The amount owed is a lot to fit once the order panel narrows the tiles.
               note: v === 'owed' && !orderId ? formatMoney(owedTotal) : undefined,
-            })),
-            // PROTOTYPE variant 2: "no tailor" as one more tile, a filter like the others.
-            ...(variant === '2' ? [{ value: NOBODY, label: protoText('tile', language), count: unassignedCount, icon: UserX, warn: false, note: undefined }] : [])]}
-            value={variant === '2' && query.worker === NOBODY ? NOBODY : view}
-            onChange={(next) =>
-              next === NOBODY ? change({ status: 'all', dueOnly: false, worker: NOBODY }) : change({ ...viewQuery(next as OrderView), ...(variant === '2' ? { worker: '' } : {}) })
-            }
+            }))}
+            value={view}
+            onChange={(next) => change(viewQuery(next as OrderView))}
             panelId={panelId}
           />
           <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts} />
-          {/* PROTOTYPE variant 1: one line for the whole list instead of a warning on every row. */}
-          {variant === '1' && unassignedCount > 0 && query.worker !== NOBODY && (
-            <p className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2 text-sm">
-              <UserX aria-hidden="true" size={16} className="text-muted" />
-              {protoText('banner', language, number(unassignedCount))}
-              <button type="button" onClick={() => change({ worker: NOBODY })} className="font-semibold text-brand-strong underline">
+          {/* PROTOTYPE A: one line counting only the urgent orders nobody is on. */}
+          {variant === 'A' && urgentCount > 0 && query.worker !== NOBODY_SOON && (
+            <p className="flex items-center gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+              <UserX aria-hidden="true" size={16} />
+              {protoText('bannerSoon', language, number(urgentCount))}
+              <button type="button" onClick={() => change({ worker: NOBODY_SOON })} className="font-semibold underline">
                 {protoText('show', language)}
               </button>
             </p>

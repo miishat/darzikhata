@@ -1,35 +1,42 @@
-// PROTOTYPE (throwaway): five ways to quiet the "no tailor assigned" warning on the desktop orders list, and to group
-// the work list by stage until somebody has been given work. The same ?variant= switches both pages.
-//   1 one banner above the orders table, the column goes quiet
-//   2 a "no tailor" tile next to the status tiles, the column goes quiet
-//   3 a "no tailor yet" choice in the tailor filter, the column hidden while nobody has a tailor
-//   4 the column warns only when the order is late or due within three days
-//   5 no column: a quiet line under the order number, and the work list says why it is grouped by stage
+// PROTOTYPE (throwaway): five versions of "warn only when it matters" for the no-tailor warning on the desktop orders
+// list. In all five the red warning stays only on orders that are late or due within three days. They differ in how
+// the other, calm orders still show that nobody is on them. The work list opens by stage while nobody has work.
+//   A  a count of the urgent ones above the table, with a link that filters to them
+//   B  calm rows say "not yet" in grey instead of a dash
+//   C  two levels: late in red, due soon in orange, calm rows in grey
+//   D  the tailor filter shows how many have nobody, with a choice for them
+//   E  the warning moves next to the delivery date; the tailor column never warns
 import type { Language } from '@darzikhata/domain';
 
 export const UNASSIGNED_VARIANTS = {
   '0': 'Current',
-  '1': 'One banner above the table',
-  '2': 'A "no tailor" tile beside the status tiles',
-  '3': 'A choice in the tailor filter, column hidden until used',
-  '4': 'Warn only when late or due within 3 days',
-  '5': 'Quiet line under the order number, work list explains',
+  A: 'Urgent count above the table',
+  B: 'Calm rows say "not yet" in grey',
+  C: 'Late red, due soon orange, calm grey',
+  D: 'Count on the tailor filter',
+  E: 'Warning beside the delivery date',
 } as const;
 export type UnassignedVariant = keyof typeof UNASSIGNED_VARIANTS;
 export const UNASSIGNED_KEYS = Object.keys(UNASSIGNED_VARIANTS) as UnassignedVariant[];
 
-/** The worker filter value for "nobody yet". */
+/** Worker filter values: nobody on it, and nobody on it while late or due within three days. */
 export const NOBODY = 'none';
+export const NOBODY_SOON = 'none-soon';
+
+/** The last day that counts as "due soon": three days from today. */
+export function soonDay(today: string): string {
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 3);
+  return d.toISOString().slice(0, 10);
+}
 
 const TEXT = {
-  banner: { bn: '{n}টি অর্ডারে কারিগর ঠিক হয়নি', en: '{n} orders have no tailor yet' },
+  bannerSoon: { bn: '{n}টি জরুরি অর্ডারে কারিগর নেই', en: '{n} urgent orders have no tailor' },
   show: { bn: 'দেখুন', en: 'Show them' },
-  tile: { bn: 'কারিগর বাকি', en: 'No tailor' },
-  line: { bn: 'কারিগর বাকি', en: 'No tailor yet' },
-  hint: {
-    bn: 'এখনো কাউকে কাজ দেওয়া হয়নি, তাই ধাপ অনুযায়ী সাজানো। কারিগর ঠিক করলে কারিগর অনুযায়ী দেখাবে।',
-    en: 'Nobody has been given work yet, so this is grouped by stage. It groups by tailor once tailors are assigned.',
-  },
+  notYet: { bn: 'এখনো ঠিক হয়নি', en: 'Not yet' },
+  filterCount: { bn: '{n}টি বাকি', en: '{n} without' },
+  noTailor: { bn: 'কারিগর নেই', en: 'No tailor' },
+  urgentChip: { bn: 'জরুরি, কারিগর নেই', en: 'Urgent, no tailor' },
 } as const;
 
 export function protoText(key: keyof typeof TEXT, language: Language, n?: string): string {

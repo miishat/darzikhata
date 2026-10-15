@@ -1,5 +1,5 @@
 import { itemSummaryGroup, type Order } from '@darzikhata/domain';
-import { TriangleAlert } from 'lucide-react';
+import { Clock, TriangleAlert, UserX } from 'lucide-react';
 import { useRef, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
@@ -10,7 +10,7 @@ import { StagePill } from '../../ui/StagePill';
 import { stageTone } from '../../ui/stageTone';
 import { useCan, useToday } from '../common/hooks';
 import { useVariant } from '../../ui/PrototypeSwitcher';
-import { protoText, UNASSIGNED_KEYS } from './unassignedPrototype';
+import { protoText, soonDay as dayAfterSoon, UNASSIGNED_KEYS } from './unassignedPrototype';
 import { itemTitle } from '../common/orderText';
 import type { OrderRow } from './orderList';
 
@@ -69,11 +69,8 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
   const panelOpen = activeId !== undefined;
   // PROTOTYPE: which way the "no tailor" warning is shown.
   const variant = useVariant(UNASSIGNED_KEYS);
-  const today = useToday();
-  const soon = new Date(`${today}T00:00:00Z`);
-  soon.setUTCDate(soon.getUTCDate() + 3);
-  const soonDay = soon.toISOString().slice(0, 10);
-  const workersColumn = !panelOpen && variant !== '5' && !(variant === '3' && rows.every((r) => r.workers.length === 0));
+  const soonDay = dayAfterSoon(useToday());
+  const workersColumn = !panelOpen;
   const head = 'sticky top-0 z-10 whitespace-nowrap border-b border-line bg-panel px-3 py-2 text-start text-sm font-semibold text-muted';
   const target = (id: string) => ({ pathname: `/app/orders/${id}`, search });
   // One tab stop for the whole table: the open order, or the first row.
@@ -120,9 +117,10 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
           const selected = order.id === activeId;
           const live = order.items.filter((item) => !item.cancelled);
           const hasUnassigned = live.some(needsWorker);
-          // PROTOTYPE: today every row warns; variant 4 warns only when the order is late or due within three days.
+          // PROTOTYPE: today every row warns. The variants warn only when the order is late or due within three days.
           const urgent = row.overdue || (row.nextDelivery !== null && row.nextDelivery <= soonDay);
-          const warn = hasUnassigned && (variant === '0' || (variant === '4' && urgent));
+          const warn = hasUnassigned && (variant === '0' || (urgent && variant !== 'E' && variant !== 'C'));
+          const calm = hasUnassigned && !warn && !(variant === 'C' && urgent);
           return (
             <tr
               key={order.id}
@@ -149,7 +147,6 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     </Link>
                     <span className="text-sm text-muted">
                       {order.number}
-                      {variant === '5' && hasUnassigned && <span> · {protoText('line', language)}</span>}
                     </span>
                     {panelOpen && row.nextDelivery && (
                       <span className="w-fit">
@@ -179,6 +176,13 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                     <div className="flex flex-col items-start gap-0.5">
                       <span>{date(row.nextDelivery)}</span>
                       <DueLabel date={row.nextDelivery} />
+                      {/* PROTOTYPE E: the warning sits with the date it threatens. */}
+                      {variant === 'E' && hasUnassigned && urgent && (
+                        <span className="inline-flex items-center gap-1 font-semibold text-danger">
+                          <UserX aria-hidden="true" size={14} />
+                          {protoText('noTailor', language)}
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <span className="text-muted">-</span>
@@ -189,7 +193,14 @@ export function OrderTable({ rows, activeId, onOpenFull, onCloseDetail }: Props)
                 <td className="px-3 py-2 text-sm">
                   <div className="flex flex-col gap-0.5">
                     {row.workers.length > 0 && <span>{workerNames(row.workers)}</span>}
-                    {!warn && variant !== '0' && row.workers.length === 0 && <span className="text-muted">–</span>}
+                    {variant === 'C' && hasUnassigned && urgent && (
+                      <span className={`inline-flex items-center gap-1 whitespace-nowrap font-semibold ${row.overdue ? 'text-danger' : 'text-warn'}`}>
+                        {row.overdue ? <TriangleAlert aria-hidden="true" size={14} /> : <Clock aria-hidden="true" size={14} />}
+                        {t('orders.unassigned')}
+                      </span>
+                    )}
+                    {calm && (variant === 'B' || variant === 'C') && <span className="text-muted">{protoText('notYet', language)}</span>}
+                    {calm && row.workers.length === 0 && (variant === 'A' || variant === 'D' || variant === 'E') && <span className="text-muted">–</span>}
                     {warn && (
                       <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-warn">
                         <TriangleAlert aria-hidden="true" size={14} />
