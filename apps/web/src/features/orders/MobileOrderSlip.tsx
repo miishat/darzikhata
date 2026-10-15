@@ -131,7 +131,11 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
           <UserRound aria-hidden="true" size={18} className="shrink-0 text-brand-strong" />
           <span className="min-w-0 flex-1">
             <span className="block text-xs text-muted">{t('entry.step.customer')}</span>
-            <span className="block truncate font-semibold">{customerName || '·'}</span>
+            {customerName ? (
+              <span className="block truncate font-semibold">{customerName}</span>
+            ) : (
+              <span className="block truncate font-semibold text-brand-strong">{t('entry.pickCustomer')}</span>
+            )}
             {customerPhone && <span className="block truncate text-sm text-muted">{customerPhone}</span>}
           </span>
           {hasError((p) => p.startsWith('customer')) ? (

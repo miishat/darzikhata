@@ -73,6 +73,15 @@ describe('Order entry on a phone', () => {
     expect(store.getSnapshot().state.customers[order.customerId]).toMatchObject({ name: 'জসিম উদ্দিন', phone: '01799887766' });
   }, 30_000);
 
+  it('asks for a customer on an empty slip instead of showing a bare dot', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    const row = await screen.findByRole('button', { name: /^কাস্টমার/ });
+    expect(row.textContent).toContain('কাস্টমার বেছে নিন');
+    expect(row.textContent).not.toContain('·');
+    await newCustomer('জসিম');
+    expect(screen.getByRole('button', { name: /^কাস্টমার/ }).textContent).not.toContain('কাস্টমার বেছে নিন');
+  });
+
   it('opens the customer when saving an empty order, and saves nothing', async () => {
     const { store } = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
     const before = Object.keys(store.getSnapshot().state.orders).length;

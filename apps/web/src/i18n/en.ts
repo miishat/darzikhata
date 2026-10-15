@@ -407,6 +407,7 @@ export const en: Messages = {
   'entry.saveAndReceipt': 'Save Order and Show Receipt',
   'entry.balanceLeft': 'Left to Pay',
   'entry.switchCustomer': 'Change Customer',
+  'entry.pickCustomer': 'Pick a Customer',
   'entry.pickAnotherCustomer': 'Pick Another Customer',
   'entry.customerProfile': 'Profile · {n} Orders',
   'entry.fact.owes': 'Owed Before',
