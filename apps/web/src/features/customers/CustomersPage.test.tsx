@@ -135,6 +135,14 @@ describe('Customers', () => {
     expect(await screen.findByRole('list', { name: 'কাস্টমার তালিকা' })).toBeTruthy();
   });
 
+  it('on a phone, sends the header search to the customer search box, with the heading kept for screen readers', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/customers' });
+    await userEvent.click(await screen.findByRole('button', { name: 'অর্ডার বা কাস্টমার খুঁজুন' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('searchbox', { name: 'কাস্টমার খুঁজুন' }));
+    expect(screen.getByRole('heading', { name: 'কাস্টমার ও মাপ', level: 1 }).classList.contains('sr-only')).toBe(true);
+  });
+
   it('says so when a customer does not exist', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/customers/nobody' });
     expect((await screen.findByRole('alert')).textContent).toBe('কাস্টমার পাওয়া যায়নি');
