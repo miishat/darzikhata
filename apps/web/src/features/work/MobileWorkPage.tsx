@@ -1,6 +1,6 @@
 import type { ItemRef } from '@darzikhata/domain';
 import { Printer, Ruler, Shirt } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -14,13 +14,21 @@ import { nextMove } from '../orders/stageMoves';
 import { useWorkList } from './useWorkList';
 import { WORK_PHASES, phaseCounts, workPhase, type WorkPhase } from './workList';
 import { MeasurementSheet } from '../customers/MeasurementSheet';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
+import { DoneButton, DoneStub, UndoBar, useDoneVariant, useDoneVariants, useMove, type DoneRecord } from './WorkDone.prototype';
 
-function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }) {
+function Card({ refItem, showWorker, index, onDone }: { refItem: ItemRef; showWorker: boolean; index: number; onDone(record: DoneRecord): void }) {
+  const variant = useDoneVariant();
   const { t, language, label } = useI18n();
   const can = useCan();
   const hasAccess = useMeasurementAccess();
   const { state, config } = useSnapshot();
   const [measuring, setMeasuring] = useState(false);
+  const box = useRef<HTMLElement>(null);
+  const height = useRef(0);
+  useEffect(() => {
+    height.current = box.current?.offsetHeight ?? 0;
+  });
   const { order, item } = refItem;
 
   const title = itemTitle(order, item, language);
@@ -34,7 +42,7 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
 
   return (
     <li>
-      <section aria-label={`${order.number} ${title}`} className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-3.5">
+      <section ref={box} aria-label={`${order.number} ${title}`} className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-3.5">
         <div className="flex items-center gap-3">
           <span aria-hidden="true" className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-strong">
             <Shirt size={26} />
@@ -54,7 +62,21 @@ function Card({ refItem, showWorker }: { refItem: ItemRef; showWorker: boolean }
               <span className="sr-only">{` ${title}`}</span>
             </Button>
           )}
-          {next && (
+          {next && variant !== '0' && (
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <DoneButton
+                order={order}
+                item={item}
+                to={next.stage.key}
+                variant={variant}
+                label={t('work.finishStage', { stage: stage ? label(stage.label) : item.stageKey })}
+                onDone={(from) =>
+                  onDone({ orderId: order.id, itemId: item.id, from, title, doneLabel: t('work.finishStage', { stage: stage ? label(stage.label) : item.stageKey }), index, height: height.current })
+                }
+              />
+            </div>
+          )}
+          {next && variant === '0' && (
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <MoveOn
                 order={order}
@@ -97,9 +119,34 @@ export function MobileWorkPage() {
   const refs = all.filter((r) => workPhase(r.item) === phase);
   const search = params.toString();
   const onKeyDown = rovingTabsKeyDown(WORK_PHASES, phase, setChosen, (p) => `work-tab-${p}`);
+  const variant = useDoneVariant();
+  const variants = useDoneVariants();
+  const { undo } = useMove();
+  const [stubs, setStubs] = useState<DoneRecord[]>([]);
+  const [last, setLast] = useState<DoneRecord | null>(null);
+  const onDone = (record: DoneRecord) => {
+    if (variant === 'V1') setLast(record);
+    if (variant === 'V2') setStubs((s) => [...s, record]);
+  };
+  const undoRecord = (record: DoneRecord) => {
+    void undo(record.orderId, record.itemId, record.from);
+    setStubs((s) => s.filter((r) => r !== record));
+    setLast(null);
+  };
+  const pick = (p: WorkPhase) => {
+    setChosen(p);
+    setStubs([]);
+  };
+  const rows = refs.map((r, i) => <Card key={r.item.id} refItem={r} showWorker={viewer.seesAll} index={i} onDone={onDone} />);
+  if (variant === 'V2')
+    [...stubs]
+      .sort((a, b) => a.index - b.index)
+      .forEach((record) => rows.splice(Math.min(record.index, rows.length), 0, <DoneStub key={`stub-${record.itemId}`} record={record} onUndo={() => undoRecord(record)} />));
 
   return (
     <div className="flex flex-col gap-3">
+      <PrototypeSwitcher variants={variants} />
+      {variant === 'V1' && last && <UndoBar record={last} onUndo={() => undoRecord(last)} onGone={() => setLast(null)} />}
       <h1 className="sr-only">{viewer.seesAll ? t('nav.work') : t('work.mine')}</h1>
 
       {/* Pinned under the shell header (3.5rem), so the steps and print stay in reach while the list scrolls. */}
@@ -116,7 +163,7 @@ export function MobileWorkPage() {
                 aria-selected={active}
                 aria-controls="work-panel"
                 tabIndex={active ? 0 : -1}
-                onClick={() => setChosen(p)}
+                onClick={() => pick(p)}
                 onKeyDown={onKeyDown}
                 // A long English step name puts its count on a second line rather than breaking the name.
                 className={`flex min-h-11 flex-wrap items-center justify-center gap-x-1 rounded-xl px-1 text-sm leading-tight focus-visible:outline-2 focus-visible:outline-focus ${
@@ -139,13 +186,11 @@ export function MobileWorkPage() {
       </div>
 
       <div role="tabpanel" id="work-panel" aria-labelledby={`work-tab-${phase}`}>
-        {refs.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-muted">{all.length === 0 ? t('work.empty') : t('work.phaseEmpty')}</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
-            {refs.map((r) => (
-              <Card key={r.item.id} refItem={r} showWorker={viewer.seesAll} />
-            ))}
+            {rows}
           </ul>
         )}
       </div>

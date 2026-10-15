@@ -1,0 +1,51 @@
+// PROTOTYPE (throwaway): floating bar that cycles ?variant= for UI prototypes. Never shown in production builds.
+import { useEffect } from 'react';
+import { useSearchParams } from 'react-router';
+
+export function useVariant(keys: readonly string[]): string {
+  const [params] = useSearchParams();
+  const v = params.get('variant') ?? keys[0]!;
+  return keys.includes(v) ? v : keys[0]!;
+}
+
+export function PrototypeSwitcher({ variants }: { variants: Record<string, string> }) {
+  const keys = Object.keys(variants);
+  const current = useVariant(keys);
+  const [, setParams] = useSearchParams();
+  const go = (step: number) => {
+    const next = keys[(keys.indexOf(current) + step + keys.length) % keys.length]!;
+    setParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set('variant', next);
+        return p;
+      },
+      { replace: true },
+    );
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.matches('input,textarea,select,[contenteditable]') || el.isContentEditable)) return;
+      if (e.key === 'ArrowLeft') go(-1);
+      if (e.key === 'ArrowRight') go(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+  if (import.meta.env.PROD) return null;
+  return (
+    <div
+      title={variants[current]}
+      className="fixed left-1 top-1.5 z-[100] flex items-center rounded-full bg-black px-1 text-sm font-semibold text-white shadow-2xl ring-2 ring-fuchsia-400"
+    >
+      <button type="button" aria-label="Previous variant" onClick={() => go(-1)} className="size-9 rounded-full hover:bg-white/15">
+        ‹
+      </button>
+      <span className="px-1 text-center text-base">{current}</span>
+      <button type="button" aria-label="Next variant" onClick={() => go(1)} className="size-9 rounded-full hover:bg-white/15">
+        ›
+      </button>
+    </div>
+  );
+}
