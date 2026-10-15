@@ -145,11 +145,11 @@ export function deviceView(syncedEvents: DomainEvent[], pending: DomainEvent[]):
   return replay([...syncedEvents, ...pending]).state;
 }
 
-export type SyncStatus = 'online' | 'offline' | 'syncing' | 'needs-attention';
+/** The connection a device shows. Changes waiting for review are counted on their own, beside it. */
+export type SyncStatus = 'online' | 'offline' | 'syncing';
 
-export function syncStatus(input: { online: boolean; syncing: boolean; reviewCount: number }): SyncStatus {
+export function syncStatus(input: { online: boolean; syncing: boolean }): SyncStatus {
   if (!input.online) return 'offline';
   if (input.syncing) return 'syncing';
-  if (input.reviewCount > 0) return 'needs-attention';
   return 'online';
 }

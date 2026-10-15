@@ -44,7 +44,7 @@ describe('Desktop sidebar and top bar', () => {
     expect(nav.getAllByRole('separator')).toHaveLength(1);
 
     const side = within(nav.getByRole('link', { name: 'অর্ডার' }).closest('aside')!);
-    expect(side.getByRole('button', { name: /অনলাইন|অফলাইন|দেখতে হবে/ })).toBeTruthy();
+    expect(side.getByRole('button', { name: /অনলাইন|অফলাইন/ })).toBeTruthy();
     expect(side.getByRole('button', { name: /ইউজার বদলান/ })).toBeTruthy();
     expect(side.getByRole('button', { name: 'অ্যাকাউন্ট ও আরও' })).toBeTruthy();
 
@@ -66,7 +66,7 @@ describe('Desktop sidebar and top bar', () => {
     expect(header.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['বাংলা', 'English', 'রঙের থিম: হালকা']);
     // New Order's text ends in its N shortcut key.
     expect(header.getAllByRole('link').map((l) => l.textContent)).toEqual(['নতুন কাস্টমার', 'নতুন অর্ডারN']);
-    expect(header.queryByRole('button', { name: /অনলাইন|অফলাইন|দেখতে হবে/ })).toBeNull();
+    expect(header.queryByRole('button', { name: /অনলাইন|অফলাইন/ })).toBeNull();
   });
 
   it('shows the late garments as a word badge on the work link', async () => {

@@ -69,17 +69,17 @@ describe('Account menu', () => {
 describe('Phone header', () => {
   const header = () => within(document.querySelector('header')!);
 
-  it('has search, then the sync status as a dot without words, then the account button', async () => {
+  it('has search, then the sync status as a dot with only the review count, then the account button', async () => {
     await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
     await screen.findByRole('button', { name: 'অ্যাকাউন্ট ও আরও' });
     const buttons = header().getAllByRole('button');
     expect(buttons.map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual([
       'অর্ডার বা কাস্টমার খুঁজুন',
-      expect.stringMatching(/^(অনলাইন|দেখতে হবে)/),
+      'অনলাইন · যাচাই বাকি ১',
       'অ্যাকাউন্ট ও আরও',
     ]);
     expect(buttons[1]!.getAttribute('data-tour')).toBe('sync-status');
-    expect(buttons[1]!.textContent).toBe('');
+    expect(buttons[1]!.textContent).toBe('১');
   });
 
   it('opens a full-screen search, finds a customer, and goes to them', async () => {

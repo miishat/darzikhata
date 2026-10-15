@@ -166,9 +166,9 @@ describe('device sync', () => {
 
 describe('syncStatus', () => {
   it('derives the indicator', () => {
-    expect(syncStatus({ online: false, syncing: false, reviewCount: 3 })).toBe('offline');
-    expect(syncStatus({ online: true, syncing: true, reviewCount: 3 })).toBe('syncing');
-    expect(syncStatus({ online: true, syncing: false, reviewCount: 1 })).toBe('needs-attention');
-    expect(syncStatus({ online: true, syncing: false, reviewCount: 0 })).toBe('online');
+    expect(syncStatus({ online: false, syncing: false })).toBe('offline');
+    expect(syncStatus({ online: false, syncing: true })).toBe('offline');
+    expect(syncStatus({ online: true, syncing: true })).toBe('syncing');
+    expect(syncStatus({ online: true, syncing: false })).toBe('online');
   });
 });
