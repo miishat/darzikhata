@@ -1,7 +1,8 @@
 import { ArrowDownUp, Check, Search } from 'lucide-react';
 import { useSnapshot } from '../../data/StoreContext';
-import { useId, useState } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
+import { usePageSearch } from '../../shell/pageSearch';
 import { useShell } from '../../shell/ShellPreference';
 import { Button } from '../../ui/Button';
 import { ChipGroup } from '../../ui/ChipGroup';
@@ -21,6 +22,8 @@ interface Props {
   onClear(): void;
   /** Orders per chip; the phone's chips show them. */
   counts: Record<OrderStatusFilter | 'owed', number>;
+  /** On a phone, what sits to the right of the search box (the sort button). */
+  beside?: ReactNode;
 }
 
 const CHIPS = ['all', 'open', 'trial', 'ready', 'overdue', 'owed'] as const;
@@ -31,7 +34,10 @@ export function useSortOptions(): OrderSort[] {
   return money ? ['newest', 'oldest', 'delivery', 'balance'] : ['newest', 'oldest', 'delivery'];
 }
 
-/** The phone's sort control: a small button for the page header that opens a sheet of choices, ticked as the dropdown sheets are. */
+/**
+ * The phone's sort control: a round icon beside the search box that opens a sheet of choices, ticked as the dropdown
+ * sheets are. Its name says the current order.
+ */
 export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort: OrderSort): void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -43,10 +49,10 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
         type="button"
         aria-label={t('orders.sortCurrent', { sort: current })}
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        title={t('orders.sortCurrent', { sort: current })}
+        className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-line bg-panel text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
-        <ArrowDownUp aria-hidden="true" size={18} />
-        {current}
+        <ArrowDownUp aria-hidden="true" size={20} />
       </button>
       <Dialog open={open} title={t('orders.sort')} hideTitle onClose={() => setOpen(false)}>
         <ul className="m-0 flex list-none flex-col p-0">
@@ -73,8 +79,11 @@ export function SortButton({ sort, onChange }: { sort: OrderSort; onChange(sort:
 }
 
 /** Search, status, money and sort controls, and the chips for whatever is switched on. */
-export function OrderFilters({ query, onChange, onClear, counts }: Props) {
+export function OrderFilters({ query, onChange, onClear, counts, beside }: Props) {
   const { t, number, date } = useI18n();
+  // On a phone the header search comes here instead of opening its own screen.
+  const searchBox = useRef<HTMLInputElement>(null);
+  usePageSearch(searchBox);
   const { kind } = useShell();
   const can = useCan();
   const { config } = useSnapshot();
@@ -115,18 +124,23 @@ export function OrderFilters({ query, onChange, onClear, counts }: Props) {
     if (query.from) hidden.push(t('orders.chipFrom', { date: date(query.from) }));
     if (query.to) hidden.push(t('orders.chipTo', { date: date(query.to) }));
     return (
-      <div className="flex flex-col gap-2">
-        <label className="flex min-h-12 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">
-          <Search aria-hidden="true" size={20} />
-          <input
-            type="search"
-            aria-label={t('orders.searchLabel')}
-            placeholder={t('orders.searchPlaceholder')}
-            value={query.text}
-            onChange={(event) => onChange({ text: event.target.value })}
-            className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
-          />
-        </label>
+      // Pinned under the shell header (3.5rem), so search, sort and the chips stay in reach while the list scrolls.
+      <div className="sticky top-14 z-[8] -mx-4 -mt-4 flex flex-col gap-2 bg-surface px-4 pt-3 pb-2 shadow-sm">
+        <div className="flex items-center gap-2">
+          <label className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-line bg-panel px-4 text-muted">
+            <Search aria-hidden="true" size={20} />
+            <input
+              ref={searchBox}
+              type="search"
+              aria-label={t('orders.searchLabel')}
+              placeholder={t('orders.searchPlaceholder')}
+              value={query.text}
+              onChange={(event) => onChange({ text: event.target.value })}
+              className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+            />
+          </label>
+          {beside}
+        </div>
         <ChipGroup
           label={t('orders.chips')}
           value={selected}

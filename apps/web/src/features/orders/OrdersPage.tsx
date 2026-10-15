@@ -86,7 +86,13 @@ export function OrdersPage() {
 
   const list = (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
-      <OrderFilters query={query} onChange={change} onClear={() => update(DEFAULT_LIST_QUERY)} counts={counts} />
+      <OrderFilters
+        query={query}
+        onChange={change}
+        onClear={() => update(DEFAULT_LIST_QUERY)}
+        counts={counts}
+        beside={<SortButton sort={sort} onChange={(next) => change({ sort: next })} />}
+      />
       {result.rows.length === 0 ? (
         <p className="text-muted">{t('orders.empty')}</p>
       ) : (
@@ -108,11 +114,9 @@ export function OrdersPage() {
     return orderId ? (
       <OrderDetail orderId={orderId} />
     ) : (
+      // The tab bar already says where you are, so the heading is for screen readers only.
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="font-display text-2xl font-bold">{t('nav.orders')}</h1>
-          <SortButton sort={sort} onChange={(next) => change({ sort: next })} />
-        </div>
+        <h1 className="sr-only">{t('nav.orders')}</h1>
         {list}
       </div>
     );
