@@ -18,6 +18,8 @@ import { ItemMoney, MoneyFields } from './entry/MoneyFields';
 import { SAVE_DOCK_SPACE, SaveDock } from './entry/SaveDock';
 import { useErrorText, useItemTitle } from './entry/shared';
 import type { OrderEntry } from './useOrderEntry';
+import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
+import { SlipDateChip, SlipDateLine, rowTab, useDateVariant, useDateVariants } from './SlipDate.prototype';
 
 interface Props {
   entry: OrderEntry;
@@ -48,6 +50,8 @@ export function sheetForError(path: string, items: DraftItem[]): Sheet {
  */
 export function MobileOrderSlip({ entry, onSaved }: Props) {
   const { t, money, number, date, label } = useI18n();
+  const dateVariant = useDateVariant();
+  const dateVariants = useDateVariants();
   const { state, config } = useSnapshot();
   const navigate = useNavigate();
   const title = useItemTitle(entry);
@@ -91,6 +95,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
 
   return (
     <div className={`flex flex-col gap-4 ${SAVE_DOCK_SPACE}`}>
+      <PrototypeSwitcher variants={dateVariants} />
       <div className="-mt-2 flex items-center gap-1">
         <button
           type="button"
@@ -150,7 +155,7 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
             const bad = hasError((p) => p.startsWith(`items.${line.key}.`));
             return (
               <li key={line.key}>
-                <button type="button" className={ROW} onClick={() => open({ kind: 'item', key: line.key, tab: 'measure' })}>
+                <button type="button" className={ROW} onClick={() => open({ kind: 'item', key: line.key, tab: rowTab(dateVariant, line) })}>
                   <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong">
                     <Shirt size={18} />
                   </span>
@@ -159,8 +164,9 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
                       {title(line)}
                       {line.quantity > 1 && <span className="font-normal text-muted">{` · ${t('entry.pieces', { n: number(line.quantity) })}`}</span>}
                     </span>
-                    <span className="block truncate text-sm text-muted">{line.deliveryDate ? date(line.deliveryDate) : '·'}</span>
+                    <SlipDateLine line={line} variant={dateVariant} />
                   </span>
+                  <SlipDateChip line={line} variant={dateVariant} />
                   <span className="font-semibold">{line.price === null ? '' : money(line.price * line.quantity)}</span>
                   {bad ? (
                     <CircleAlert aria-label={t('entry.fixErrors')} role="img" size={18} className="text-danger" />
