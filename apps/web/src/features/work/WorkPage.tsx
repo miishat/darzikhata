@@ -107,7 +107,27 @@ function DesktopWorkPage() {
             <span>{t('work.inProgress', { n: number(all.length) })}</span>
             {lateCount > 0 && <span className="font-semibold text-warn-ink">{t('work.lateCount', { n: number(lateCount) })}</span>}
           </p>
+          {/* Every control shares the title row, so the worker tiles sit right above the list. */}
           <div className="ms-auto flex flex-wrap items-center gap-2">
+            {view === 'list' && viewer.seesAll && (
+              <Select
+                label={t('work.groupBy')}
+                value={query.by}
+                options={[
+                  { value: 'worker', label: t('work.byWorker') },
+                  { value: 'stage', label: t('work.byStage') },
+                ]}
+                onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
+              />
+            )}
+            {view === 'list' && (
+              <Select
+                label={t('work.stage')}
+                value={query.stage}
+                options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
+                onChange={(stage) => setQuery({ ...query, stage })}
+              />
+            )}
             <ViewTabs
               segmented
               label={t('work.view')}
@@ -127,27 +147,6 @@ function DesktopWorkPage() {
         </div>
         {viewer.seesAll && (
           <WorkerChips workers={workers} counts={chipCounts} late={lateCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
-        )}
-        {view === 'list' && (
-          <div className="flex flex-wrap items-center gap-2">
-            {viewer.seesAll && (
-              <Select
-                label={t('work.groupBy')}
-                value={query.by}
-                options={[
-                  { value: 'worker', label: t('work.byWorker') },
-                  { value: 'stage', label: t('work.byStage') },
-                ]}
-                onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
-              />
-            )}
-            <Select
-              label={t('work.stage')}
-              value={query.stage}
-              options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
-              onChange={(stage) => setQuery({ ...query, stage })}
-            />
-          </div>
         )}
       </div>
       {/* relative: keeps absolutely placed screen-reader text inside this scroll area, so the page itself never scrolls. */}
