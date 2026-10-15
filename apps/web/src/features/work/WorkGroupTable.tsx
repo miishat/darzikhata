@@ -53,7 +53,17 @@ export function WorkGroupTable({ title, refs, by, selected, onToggle }: Props) {
         <span className="rounded-full bg-panel px-2 text-xs font-normal text-muted">{number(refs.length)}</span>
       </h2>
       <div className="overflow-x-auto">
-        <table aria-label={title} className="w-full border-collapse">
+        {/* Every group is its own table, so the widths are fixed here rather than taken from each group's contents;
+            otherwise the columns of one group would not line up with the next. */}
+        <table aria-label={title} className="w-full min-w-[44rem] table-fixed border-collapse">
+          <colgroup>
+            {selected && <col className="w-10" />}
+            <col className="w-[12%]" />
+            <col className="w-[22%]" />
+            <col className="w-[16%]" />
+            <col className="w-[18%]" />
+            <col />
+          </colgroup>
           <thead>
             <tr className="border-b border-line">
               {selected && (
