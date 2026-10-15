@@ -17,8 +17,21 @@ function hitLabel(hit: SearchHit): string {
   return hit.customer.phone ? `${hit.customer.name} · ${hit.customer.phone}` : hit.customer.name;
 }
 
-/** The top-bar search box: orders by number, customers by name or phone. */
-export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObject<HTMLInputElement | null> }) {
+/**
+ * The top-bar search box: orders by number, customers by name or phone. In the phone's full-screen `sheet` it takes
+ * focus when the sheet opens and leaves out the "/" shortcut hint. `onPick` runs as a result is chosen.
+ */
+export function GlobalSearch({
+  role,
+  inputRef,
+  sheet = false,
+  onPick,
+}: {
+  role: Role;
+  inputRef: RefObject<HTMLInputElement | null>;
+  sheet?: boolean;
+  onPick?(): void;
+}) {
   const { t } = useI18n();
   const state = useScopedState();
   const navigate = useNavigate();
@@ -47,11 +60,14 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
     setQuery('');
     setOpen(false);
     setActive(-1);
+    onPick?.();
     navigate(hitPath(hit));
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
+      // In the sheet, Escape first closes the list of results and only then the sheet.
+      if (sheet && showList) e.stopPropagation();
       setOpen(false);
       setActive(-1);
     } else if (e.key === 'ArrowDown' && hits.length > 0) {
@@ -73,6 +89,7 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
       <Search aria-hidden="true" size={17} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
       <input
         ref={inputRef}
+        data-autofocus={sheet || undefined}
         type="text"
         role="combobox"
         aria-label={t('search.label')}
@@ -92,9 +109,11 @@ export function GlobalSearch({ role, inputRef }: { role: Role; inputRef: RefObje
         onKeyDown={onKeyDown}
         className="h-11 w-full rounded-xl border border-line bg-surface ps-10 pe-9 text-sm text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus"
       />
-      <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
-        /
-      </kbd>
+      {!sheet && (
+        <kbd aria-hidden="true" className="pointer-events-none absolute end-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-sans text-xs text-muted">
+          /
+        </kbd>
+      )}
       {showList && (
         <ul
           id={listId}

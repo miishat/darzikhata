@@ -7,6 +7,7 @@ import { useCurrentStaff } from '../data/StoreContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { BrandMark } from '../ui/BrandMark';
 import { AccountMenu } from './AccountMenu';
+import { MobileSearch } from './MobileSearch';
 import { visibleNav } from './nav';
 import { useShopHeader } from './ShellParts';
 import { SyncButton } from './SyncStatus';
@@ -20,7 +21,7 @@ const pillClass = (isActive: boolean) =>
   `flex h-[30px] w-14 items-center justify-center rounded-full ${isActive ? 'bg-brand-soft text-brand-strong' : ''}`;
 
 /**
- * Header, a bottom tab bar with a raised New Order button in the centre, and the account sheet for phones.
+ * Header (search, the sync status as a dot, account), a bottom tab bar with a raised New Order button in the centre, and the account sheet for phones.
  * While a PaymentDock is open (it sets data-dock-open on <html>) New Order shrinks to a regular tab so the dock can sit flush on the bar.
  */
 export function MobileShell({ role }: { role: Role }) {
@@ -53,7 +54,8 @@ export function MobileShell({ role }: { role: Role }) {
       <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-panel px-4">
         <BrandMark size={28} className="shrink-0" />
         <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
-        <SyncButton />
+        <MobileSearch role={role} />
+        <SyncButton dot />
         {current && (
           <button
             type="button"
