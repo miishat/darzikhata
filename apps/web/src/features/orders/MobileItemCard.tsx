@@ -14,6 +14,8 @@ import { MoveOn, Thumb } from './ItemCard';
 import { AdjustmentDialog, CancelItemDialog, ChangeStageDialog, EditItemDialog, HandOverDialog } from './itemDialogs';
 import { nextMove } from './stageMoves';
 import { MeasurementSheet } from '../customers/MeasurementSheet';
+import { useVariant } from '../../ui/PrototypeSwitcher';
+import { actionLabel, nextLabel, NEXT_STEP, ORDER_DETAIL_KEYS, words } from './orderDetailPrototype';
 
 type DialogKind = 'handOver' | 'stage' | 'adjust' | 'edit' | 'cancel' | 'assign' | 'measure';
 
@@ -30,6 +32,7 @@ function measureSummary(item: OrderItem, template: { fields: Array<{ key: string
 /** Phone garment card: a status band (stage, step, due), the garment's facts, and one filled button for the usual move. */
 export function MobileItemCard({ order, item }: { order: Order; item: OrderItem }) {
   const { t, language, label, date, number } = useI18n();
+  const variant = useVariant(ORDER_DETAIL_KEYS); // PROTOTYPE
   const can = useCan();
   const hasAccess = useMeasurementAccess();
   const { state, config } = useSnapshot();
@@ -224,8 +227,26 @@ export function MobileItemCard({ order, item }: { order: Order; item: OrderItem 
                     order={order}
                     item={item}
                     stageKey={next.stage.key}
-                    label={t('item.moveTo', { stage: label(next.stage.label) })}
-                    render={(props) => <PrimaryButton {...props} />}
+                    label={
+                      variant === '0'
+                        ? t('item.moveTo', { stage: label(next.stage.label) })
+                        : variant === '2'
+                          ? nextLabel(next.stage, language)
+                          : actionLabel(next.stage, language)
+                    }
+                    render={(props) =>
+                      variant === '3' ? (
+                        // PROTOTYPE 3: a small "next step" over the stage name.
+                        <PrimaryButton disabled={props.disabled} onClick={props.onClick}>
+                          <span className="flex flex-col items-center leading-tight">
+                            <span className="text-xs font-semibold opacity-80">{words(NEXT_STEP, language)}</span>
+                            <span>{label(next.stage.label)}</span>
+                          </span>
+                        </PrimaryButton>
+                      ) : (
+                        <PrimaryButton {...props} />
+                      )
+                    }
                   />
                 )
               )}

@@ -16,6 +16,9 @@ import { StatusLinkSection } from '../links/StatusLinkSection';
 import { MoneyCard, useMoneyDialogs } from '../payments/OrderMoney';
 import { MobileItemCard } from './MobileItemCard';
 import { wearerGroups } from './wearers';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { BALANCE_CHIP, ORDER_DETAIL_KEYS, ORDER_DETAIL_VARIANTS, words } from './orderDetailPrototype';
+import { Wallet } from 'lucide-react';
 
 const ROUND = 'flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
@@ -42,8 +45,10 @@ export function MobileOrderDetail({ order }: { order: Order }) {
   const taken = date(order.createdAt.slice(0, 10));
 
   const showTake = can('money.view') && can('payments.record') && moneySummary(order).balance > 0;
+  // PROTOTYPE: variants 1 and 3 have no bar at the bottom at all.
+  const variant = useVariant(ORDER_DETAIL_KEYS);
   // Receipt printing is also in the more menu, so a fully paid order needs no bar.
-  const hasBar = showTake;
+  const hasBar = showTake && variant !== '1' && variant !== '3';
 
   return (
     <div className={`flex flex-col gap-3 ${hasBar ? PAYMENT_DOCK_SPACE : ''}`}>
@@ -57,6 +62,17 @@ export function MobileOrderDetail({ order }: { order: Order }) {
             {takenBy ? t('order.takenBy', { date: taken, name: takenBy }) : t('order.takenOn', { date: taken })}
           </p>
         </div>
+        {variant === '3' && showTake && (
+          // PROTOTYPE 3: the balance sits in the header and opens "take payment".
+          <button
+            type="button"
+            onClick={() => money.open({ kind: 'take' })}
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-warn-soft px-3 text-sm font-bold text-warn-ink focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <Wallet aria-hidden="true" size={16} />
+            {words(BALANCE_CHIP, language).replace('{amount}', formatMoney(moneySummary(order).balance))}
+          </button>
+        )}
         {can('links.manage') && <IconButton label={t('order.share')} icon={Share2} onClick={() => setSharing(true)} />}
         <ActionSheet label={t('order.more')} icon={EllipsisVertical} title={t('nav.more')}>
           {() => (
@@ -95,6 +111,22 @@ export function MobileOrderDetail({ order }: { order: Order }) {
       )}
 
       {can('money.view') && <MoneyCard order={order} open={money.open} />}
+      {variant === '1' && showTake && (
+        // PROTOTYPE 1: taking payment lives with the money, not in a floating pill.
+        <div className="-mt-1 flex gap-2">
+          <Button className="min-h-12 flex-1" onClick={() => money.open({ kind: 'take' })}>
+            <Wallet aria-hidden="true" size={18} />
+            {t('payments.take')}
+          </Button>
+          <Link
+            to={`/print/receipt/${order.id}`}
+            aria-label={t('order.printReceipt')}
+            className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-strong focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            <Printer aria-hidden="true" size={20} />
+          </Link>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
@@ -130,7 +162,15 @@ export function MobileOrderDetail({ order }: { order: Order }) {
         );
       })}
 
-      {hasBar && <PaymentDock order={order} canPrint={can('money.view')} onTake={() => money.open({ kind: 'take' })} />}
+      {hasBar && (
+        <PaymentDock
+          order={order}
+          canPrint={can('money.view')}
+          onTake={() => money.open({ kind: 'take' })}
+          mode={variant === '2' ? 'slim' : variant === '4' ? 'autohide' : variant === '5' ? 'open' : 'current'}
+        />
+      )}
+      <PrototypeSwitcher variants={ORDER_DETAIL_VARIANTS} />
 
       {money.element}
       {sharing && (

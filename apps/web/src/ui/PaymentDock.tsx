@@ -19,9 +19,36 @@ const NAV_TOP = 'bottom-[calc(3.875rem+1px+max(0.875rem,env(safe-area-inset-bott
  * Phone payment bar attached to the top of the tab bar: what is left to pay, receipt print and "take payment".
  * It starts hidden; the chevron hides the whole bar, leaving a small tab with the balance on the nav bar's edge.
  */
-export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrint: boolean; onTake(): void }) {
+export function PaymentDock({
+  order,
+  canPrint,
+  onTake,
+  mode = 'current',
+}: {
+  order: Order;
+  canPrint: boolean;
+  onTake(): void;
+  /** PROTOTYPE: 'slim' a thin fixed bar, 'autohide' the pill hides while scrolling, 'open' the full bar always. */
+  mode?: 'current' | 'slim' | 'autohide' | 'open';
+}) {
   const { t, money } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(mode === 'open');
+  // PROTOTYPE 4: hidden while the page moves, back a moment after it stops.
+  const [scrolling, setScrolling] = useState(false);
+  useEffect(() => {
+    if (mode !== 'autohide') return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      setScrolling(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setScrolling(false), 700);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      clearTimeout(timer);
+    };
+  }, [mode]);
   const { paid, balance } = moneySummary(order);
 
   useEffect(() => {
@@ -32,9 +59,23 @@ export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrin
     };
   }, [open]);
 
+  if (mode === 'slim') {
+    // PROTOTYPE 2: a full-width strip on the tab bar; the page leaves room for it, so it never sits on content.
+    return (
+      <div className={`fixed inset-x-0 ${NAV_TOP} z-[9] flex items-center gap-3 border-t border-line bg-panel px-4 py-1.5`}>
+        <span className="flex-1 text-sm text-muted">
+          {t('money.balance')} <span className="font-display text-lg font-bold text-ink">{money(balance)}</span>
+        </span>
+        <button type="button" onClick={onTake} className={`h-9 rounded-xl bg-brand-soft px-4 text-sm font-bold text-brand-strong ${FOCUS}`}>
+          {t('payments.take')}
+        </button>
+      </div>
+    );
+  }
+
   if (!open) {
     return (
-      <div className={`fixed right-3 ${NAV_TOP} z-[9]`}>
+      <div className={`fixed right-3 ${NAV_TOP} z-[9] transition-opacity duration-200 ${scrolling ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type="button"
           aria-label={t('payments.dockShow')}
@@ -74,15 +115,17 @@ export function PaymentDock({ order, canPrint, onTake }: { order: Order; canPrin
         >
           {t('payments.take')}
         </button>
-        <button
-          type="button"
-          aria-label={t('payments.dockHide')}
-          aria-expanded
-          onClick={() => setOpen(false)}
-          className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-muted ${FOCUS}`}
-        >
-          <ChevronDown aria-hidden="true" size={18} />
-        </button>
+        {mode !== 'open' && (
+          <button
+            type="button"
+            aria-label={t('payments.dockHide')}
+            aria-expanded
+            onClick={() => setOpen(false)}
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-muted ${FOCUS}`}
+          >
+            <ChevronDown aria-hidden="true" size={18} />
+          </button>
+        )}
       </div>
     </div>
   );
