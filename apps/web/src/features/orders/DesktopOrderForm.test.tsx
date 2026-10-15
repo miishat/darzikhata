@@ -329,7 +329,7 @@ describe('Draft autosave on desktop', () => {
 
   it('brings the draft back after a reload, says so, and starts over on request', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
-    expect(screen.getByText(/নিজে থেকে রাখা হয়/)).toBeTruthy();
+    expect(screen.getByRole('img', { name: /নিজে থেকে রাখা হয়/ })).toBeTruthy();
     const bar = await screen.findByRole('region', { name: 'কাস্টমার' });
     await addGarment('শার্ট');
     await waitFor(() => expect(window.localStorage.getItem(KEY)).not.toBeNull(), { timeout: 2000 });
@@ -363,4 +363,57 @@ describe('Draft autosave on desktop', () => {
     // Checked after the leave has settled, so a late write from the closing form would show.
     expect(window.localStorage.getItem(KEY)).toBeNull();
   }, 30_000);
+});
+
+describe('The receipt column on desktop', () => {
+  const summary = () => region('অর্ডারের হিসাব');
+  const open = async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new?customer=rahman-c1' });
+    await screen.findByRole('region', { name: 'কাস্টমার' });
+  };
+
+  it('asks for a discount reason only once there is a discount, and forgets it when the discount is cleared', async () => {
+    await open();
+    expect(within(summary()).queryByLabelText('ছাড়ের কারণ (ঐচ্ছিক)')).toBeNull();
+    await userEvent.type(within(summary()).getByLabelText('ছাড়'), '100');
+    await userEvent.type(within(summary()).getByLabelText('ছাড়ের কারণ (ঐচ্ছিক)'), 'পুরনো কাস্টমার');
+    await userEvent.clear(within(summary()).getByLabelText('ছাড়'));
+    expect(within(summary()).queryByLabelText('ছাড়ের কারণ (ঐচ্ছিক)')).toBeNull();
+    await userEvent.type(within(summary()).getByLabelText('ছাড়'), '50');
+    expect((within(summary()).getByLabelText('ছাড়ের কারণ (ঐচ্ছিক)') as HTMLInputElement).value).toBe('');
+  });
+
+  it('asks for a TrxID only for bKash, Nagad or bank, and forgets it on going back to cash', async () => {
+    await open();
+    expect(within(summary()).queryByLabelText('রেফারেন্স / TrxID (ঐচ্ছিক)')).toBeNull();
+    await userEvent.click(within(summary()).getByRole('radio', { name: 'বিকাশ' }));
+    await userEvent.type(within(summary()).getByLabelText('রেফারেন্স / TrxID (ঐচ্ছিক)'), 'TX123');
+    await userEvent.click(within(summary()).getByRole('radio', { name: 'ক্যাশ' }));
+    expect(within(summary()).queryByLabelText('রেফারেন্স / TrxID (ঐচ্ছিক)')).toBeNull();
+    await userEvent.click(within(summary()).getByRole('radio', { name: 'বিকাশ' }));
+    expect((within(summary()).getByLabelText('রেফারেন্স / TrxID (ঐচ্ছিক)') as HTMLInputElement).value).toBe('');
+  });
+
+  it('takes the order note on one line', async () => {
+    await open();
+    expect(within(summary()).getByLabelText('অর্ডারের নোট (ঐচ্ছিক)').tagName).toBe('INPUT');
+  });
+
+  it('keeps the draft explanation behind an info icon instead of under the title', async () => {
+    await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders/new' });
+    const note = 'অর্ডার নম্বর সেভ করার সময় দেওয়া হবে। লেখা খসড়া এই কম্পিউটারে নিজে থেকে রাখা হয়। অগ্রিম সেভ না করা পর্যন্ত জমা হয় না।';
+    expect(within(summary()).getByRole('img', { name: note })).toBeTruthy();
+    expect(within(summary()).queryByText(note)).toBeNull();
+  });
+
+  it('shows the total and what is left to pay on one line, without a price row', async () => {
+    await open();
+    await addGarment('অল্টারেশন');
+    await userEvent.clear(within(garments()).getByLabelText('দাম (প্রতিটি)'));
+    await userEvent.type(within(garments()).getByLabelText('দাম (প্রতিটি)'), '500');
+    await userEvent.type(within(summary()).getByLabelText('অগ্রিম'), '200');
+    expect(within(summary()).getByRole('group', { name: 'মোট' }).textContent).toContain('৳৫০০');
+    expect(within(summary()).getByRole('group', { name: 'বাকি থাকবে' }).textContent).toContain('৳৩০০');
+    expect(within(summary()).queryByRole('table')).toBeNull();
+  });
 });

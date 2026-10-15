@@ -1,5 +1,5 @@
 import { profileKey, templateById } from '@darzikhata/domain';
-import { AlertCircle, ArrowLeft, Shirt, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Info, Shirt, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Dialog } from '../../ui/Dialog';
@@ -8,7 +8,6 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../../ui/Button';
 import type { DraftItem } from './draft';
 import { CustomerBar } from './entry/CustomerBar';
-import { DraftSummary } from './entry/DraftSummary';
 import { AddGarmentButtons, GarmentTiles, type LineStatus } from './entry/GarmentTiles';
 import { ItemDetails } from './entry/ItemDetails';
 import { ItemHeader } from './entry/ItemHeader';
@@ -122,6 +121,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
   };
 
   const chosenStatus = chosen ? statusLine(chosen) : null;
+  const draftNote = t(entry.persists ? 'entry.newDraftNote' : 'entry.newOrderNote');
 
   return (
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col gap-3">
@@ -201,10 +201,14 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
 
         <Card title={t('entry.summary')} className="w-80 shrink-0 xl:w-[340px]">
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="flex flex-col gap-1 border-b border-dashed border-line px-5 py-4 text-center">
-              <p className="text-xs font-semibold text-muted">{t('receipt.title')}</p>
-              <p className="font-display text-lg font-bold">{t('nav.newOrder')}</p>
-              <p className="text-xs text-muted">{t(entry.persists ? 'entry.newDraftNote' : 'entry.newOrderNote')}</p>
+            <div className="flex flex-col gap-0.5 border-b border-dashed border-line px-5 py-2.5 text-center">
+              {/* The explanation sits behind an icon so the column fits without scrolling. */}
+              <p className="flex items-center justify-center gap-1.5 font-display text-lg font-bold">
+                {t('nav.newOrder')}
+                <span role="img" aria-label={draftNote} title={draftNote} className="text-muted">
+                  <Info aria-hidden="true" size={15} />
+                </span>
+              </p>
               {entry.restored && (
                 <p role="status" className="text-xs text-muted">
                   {t('entry.draftRestored')}{' '}
@@ -218,10 +222,10 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                 </p>
               )}
             </div>
-            <ul className="flex flex-col px-5 py-2 text-sm">
+            <ul className="flex flex-col px-5 py-1 text-sm">
               {items.length === 0 && <li className="py-2 text-muted">{t('entry.noGarments')}</li>}
               {items.map((item) => (
-                <li key={item.key} className="flex items-baseline justify-between gap-2 border-b border-dotted border-line py-2">
+                <li key={item.key} className="flex items-baseline justify-between gap-2 border-b border-dotted border-line py-1.5">
                   <span>
                     {title(item)}
                     {item.quantity > 1 && <span className="text-muted"> × {number(item.quantity)}</span>}
@@ -231,11 +235,21 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
               ))}
             </ul>
             <div className="px-5 pt-2 pb-4">
-              <MoneyFields entry={entry} errors={errors} />
+              <MoneyFields entry={entry} errors={errors} onlyWhatApplies />
             </div>
           </div>
           <div className="flex flex-col gap-3 border-t border-line p-4">
-            <DraftSummary totals={entry.totals} desktop />
+            {/* Price and advance already sit beside their fields above, so only the total and what is left show here. */}
+            <dl className="flex items-baseline justify-between gap-2">
+              <div role="group" aria-label={t('money.total')} className="flex items-baseline gap-1.5">
+                <dt className="text-sm text-muted">{t('money.total')}</dt>
+                <dd className="font-display text-lg font-bold">{money(entry.totals.total)}</dd>
+              </div>
+              <div role="group" aria-label={t('entry.balanceLeft')} className="flex items-baseline gap-1.5">
+                <dt className="text-sm text-muted">{t('entry.balanceLeft')}</dt>
+                <dd className="font-display text-lg font-bold text-warn">{money(entry.totals.balance)}</dd>
+              </div>
+            </dl>
             {(hasErrors || problem) && (
               <p role="alert" className="flex gap-2 rounded-lg border border-danger px-3 py-2 text-sm text-danger">
                 <AlertCircle aria-hidden="true" size={16} className="mt-0.5 shrink-0" />
