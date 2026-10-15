@@ -168,7 +168,7 @@ export function DesktopOrderForm({ entry, onSaved, onDiscarded }: Props) {
                       }}
                     />
                   )}
-                  <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} showRemove={false} />
+                  <ItemHeader key={`${chosen.key}:header`} entry={entry} item={chosen} errors={errors} />
                 </div>
                 <ItemMeasurements key={`${chosen.key}:measurements`} entry={entry} item={chosen} errors={errors} />
                 <ItemDetails key={`${chosen.key}:details`} entry={entry} item={chosen} desktop />

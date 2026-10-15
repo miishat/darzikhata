@@ -1,5 +1,5 @@
 import { moneySummary } from '@darzikhata/domain';
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test/renderApp';
@@ -50,8 +50,9 @@ describe('Order entry on a phone', () => {
     await fill(sheet, { ...SHIRT, 'ঝুল': '42' });
     await done();
 
-    expect(slipRow(/শার্ট ১ × ২/)).toBeTruthy();
-    expect(slipRow(/পাঞ্জাবি ২ × ১/)).toBeTruthy();
+    // Quantity reads "2 pieces" and only shows above one, so a × never means two things on this screen.
+    expect(slipRow(/শার্ট ১\s*· ২টি/)).toBeTruthy();
+    expect(slipRow(/পাঞ্জাবি ২/).textContent).not.toMatch(/×|১টি/);
 
     await userEvent.click(slipRow(/অগ্রিম, ছাড় ও নোট/));
     await userEvent.type(await screen.findByLabelText('অগ্রিম'), '১০০০');
@@ -135,6 +136,37 @@ describe('Order entry on a phone', () => {
     await userEvent.clear(quantity);
     await userEvent.type(quantity, '1234567');
     expect((quantity as HTMLInputElement).value).toBe('৯৯৯');
+  });
+
+  it('steps the quantity up and down, never below one', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await newCustomer('জসিম');
+    const sheet = await addGarment('শার্ট');
+    const quantity = within(sheet).getByLabelText('সংখ্যা') as HTMLInputElement;
+    const less = within(sheet).getByRole('button', { name: 'একটি কম' });
+    expect((less as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(within(sheet).getByRole('button', { name: 'একটি বেশি' }));
+    await userEvent.click(within(sheet).getByRole('button', { name: 'একটি বেশি' }));
+    expect(quantity.value).toBe('৩');
+    await userEvent.click(less);
+    expect(quantity.value).toBe('২');
+    await done();
+    expect(slipRow(/শার্ট ১\s*· ২টি/)).toBeTruthy();
+  });
+
+  it('removes a garment only after its remove button is held, not tapped', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders/new' });
+    await newCustomer('জসিম');
+    const sheet = await addGarment('শার্ট');
+    const remove = within(sheet).getByRole('button', { name: 'চেপে ধরে শার্ট ১ বাদ দিন' });
+    expect(within(sheet).queryByText('×')).toBeNull();
+
+    await userEvent.click(remove);
+    expect(screen.getByRole('dialog', { name: 'শার্ট ১' })).toBeTruthy();
+
+    fireEvent.pointerDown(remove);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 2000 });
+    expect(screen.queryByRole('button', { name: /শার্ট ১/ })).toBeNull();
   });
 
   it('folds the save bar into a total tab and brings it back', async () => {
