@@ -5,6 +5,7 @@
 //   3 the field stays pinned under the header while Home scrolls
 //   4 you type right on Home: results drop down under the field, no separate search screen
 //   5 the field on Home; once it scrolls out of sight a search icon appears in the header
+//   6 no field on Home; the header has the sync dot, then a search icon, then the account button
 import type { Role } from '@darzikhata/domain';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useEffect, useRef, useState, type RefObject } from 'react';
@@ -19,6 +20,7 @@ export const NAV_VARIANTS = {
   '3': 'Home search pinned while scrolling',
   '4': 'Type right on Home, results drop down',
   '5': 'Home search, header icon once scrolled past',
+  '6': 'Sync dot, then search icon in the header',
 } as const;
 export const NAV_KEYS = Object.keys(NAV_VARIANTS);
 

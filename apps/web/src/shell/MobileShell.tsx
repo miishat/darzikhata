@@ -69,7 +69,8 @@ export function MobileShell({ role }: { role: Role }) {
         <BrandMark size={28} className="shrink-0" />
         <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{shopName}</p>
         {variant === '5' && onHome && !fieldOnScreen && <SearchIcon onOpen={openSearch} />}
-        <SyncButton dot={variant === '1'} />
+        <SyncButton dot={variant === '1' || variant === '6'} />
+        {variant === '6' && <SearchIcon onOpen={openSearch} />}
         {current && (
           <button
             type="button"
