@@ -261,6 +261,15 @@ describe('Orders list', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('puts the sort beside the search on a phone, as an icon, with the heading kept for screen readers', async () => {
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    const sort = await screen.findByRole('button', { name: 'সাজান: নতুন আগে' });
+    expect(sort.textContent).toBe('');
+    const search = screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' });
+    expect(search.closest('label')!.parentElement).toBe(sort.parentElement);
+    expect(screen.getByRole('heading', { name: 'অর্ডার', level: 1 }).classList.contains('sr-only')).toBe(true);
+  });
+
   it('finds an order by its number typed in Bangla digits', async () => {
     await renderApp({ layout: 'desktop', shop: 'rahman', path: '/app/orders' });
     await userEvent.type(await screen.findByLabelText('অর্ডার নম্বর, নাম বা ফোন'), '৪০');

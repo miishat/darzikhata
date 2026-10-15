@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { renderApp } from '../test/renderApp';
@@ -83,7 +83,7 @@ describe('Phone header', () => {
   });
 
   it('opens a full-screen search, finds a customer, and goes to them', async () => {
-    const app = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    const app = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
     const customer = Object.values(app.store.getSnapshot().state.customers)[0]!;
     await userEvent.click(await screen.findByRole('button', { name: 'অর্ডার বা কাস্টমার খুঁজুন' }));
     const sheet = await screen.findByRole('dialog', { name: 'অর্ডার বা কাস্টমার খুঁজুন' });
@@ -97,7 +97,7 @@ describe('Phone header', () => {
   });
 
   it('closes the search with its back button or Escape, results first, and gives focus back', async () => {
-    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/dashboard' });
     const open = await screen.findByRole('button', { name: 'অর্ডার বা কাস্টমার খুঁজুন' });
     await userEvent.click(open);
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'বন্ধ করুন' }));
@@ -112,6 +112,18 @@ describe('Phone header', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(open);
+  });
+
+  it('on Orders, goes to the search box on the page instead of opening a second search, and opens it again elsewhere', async () => {
+    const app = await renderApp({ layout: 'mobile', shop: 'rahman', path: '/app/orders' });
+    const button = await screen.findByRole('button', { name: 'অর্ডার বা কাস্টমার খুঁজুন' });
+    await userEvent.click(button);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('searchbox', { name: 'অর্ডার খুঁজুন' }));
+
+    await act(() => app.router.navigate('/app/dashboard'));
+    await userEvent.click(screen.getByRole('button', { name: 'অর্ডার বা কাস্টমার খুঁজুন' }));
+    expect(await screen.findByRole('dialog', { name: 'অর্ডার বা কাস্টমার খুঁজুন' })).toBeTruthy();
   });
 
   it('gives no search to a tailor, who sees neither orders nor customers', async () => {

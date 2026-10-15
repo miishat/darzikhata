@@ -5,19 +5,28 @@ import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n/I18nProvider';
 import { useModalFocus } from '../ui/Dialog';
 import { GlobalSearch } from './GlobalSearch';
+import { usePageSearchTarget } from './pageSearch';
 
-/** The phone header's search button and the full-screen search it opens: orders by number, customers by name or phone. */
+/**
+ * The phone header's search button and the full-screen search it opens: orders by number, customers by name or phone.
+ * On a page with its own search box (Orders) it goes to that box instead, so the page never has two searches.
+ */
 export function MobileSearch({ role }: { role: Role }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const pageSearch = usePageSearchTarget();
   if (!can(role, 'orders.view') && !can(role, 'customers.view')) return null;
   return (
     <>
       <button
         type="button"
         aria-label={t('search.label')}
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        aria-haspopup={pageSearch ? undefined : 'dialog'}
+        onClick={() => {
+          const box = pageSearch?.current;
+          if (box) box.focus();
+          else setOpen(true);
+        }}
         className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-ink focus-visible:outline-2 focus-visible:outline-focus"
       >
         <Search aria-hidden="true" size={22} />
