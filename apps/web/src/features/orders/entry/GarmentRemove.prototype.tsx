@@ -1,27 +1,26 @@
-// PROTOTYPE (throwaway): five ways to keep "remove garment" from reading as "× quantity" in the phone garment sheet.
-// Plan: Current plus five variants of the phone new order slip, switchable via ?variant= on /app/orders/new.
+// PROTOTYPE (throwaway): round 2 of keeping "remove garment" from reading as "× quantity" in the phone garment sheet.
+// Plan: Current plus five mixes of round 1's B (− + counter, remove on the title line) and E's press-and-hold remove,
+// switchable via ?variant= on /app/orders/new. Round 1 (variants A to E) is in this branch's first commit.
 import { toScript } from '@darzikhata/domain';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useI18n } from '../../../i18n/I18nProvider';
-import { Button } from '../../../ui/Button';
 import { useVariant } from '../../../ui/PrototypeSwitcher';
 import type { DraftErrors, DraftItem } from '../draft';
 import type { OrderEntry } from '../useOrderEntry';
 import { ItemHeader } from './ItemHeader';
-import { useItemTitle } from './shared';
 
-export const REMOVE_VARIANT_KEYS = ['0', 'A', 'B', 'C', 'D', 'E'] as const;
+export const REMOVE_VARIANT_KEYS = ['0', 'BE1', 'BE2', 'BE3', 'BE4', 'BE5'] as const;
 
 export function useRemoveVariants(): Record<string, string> {
   const pick = usePick();
   return {
     '0': pick('এখনকার: সংখ্যার পাশে ×', 'Current: × next to quantity'),
-    A: pick('A: নিচে লেখা-সহ বাদ বোতাম', 'A: labelled remove button at the bottom'),
-    B: pick('B: − + সংখ্যা, ওপরে মুছুন', 'B: − + stepper, trash in the header'),
-    C: pick('C: তালিকা থেকে বাদ', 'C: remove from the slip list'),
-    D: pick('D: সংখ্যার নিচে লিংক, নিশ্চিত করুন', 'D: link under quantity, confirm inline'),
-    E: pick('E: সংখ্যার চিপ, চেপে ধরে বাদ', 'E: quantity chips, hold to remove'),
+    BE1: pick('BE1: − + সংখ্যা, নিচে চেপে ধরে বাদ', 'BE1: − + counter, hold-to-remove bar at the bottom'),
+    BE2: pick('BE2: শিরোনামের লাইনে চেপে ধরে বাদ', 'BE2: hold-to-remove pill on the title line'),
+    BE3: pick('BE3: সংখ্যার ঠিক নিচে হালকা বার', 'BE3: light hold bar right under the counter'),
+    BE4: pick('BE4: শিরোনামে মুছুন আইকন, ধরলে বৃত্ত ভরে', 'BE4: bin icon on the title line with a filling ring'),
+    BE5: pick('BE5: হয়েছে আর বাদ এক সারিতে', 'BE5: Done and hold-to-remove side by side'),
   };
 }
 
@@ -43,92 +42,53 @@ export function QuantitySuffix({ quantity, variant }: { quantity: number; varian
   return <span className="font-normal text-muted"> · {language === 'bn' ? `${n}টি` : `${n} pcs`}</span>;
 }
 
-/** The quantity and remove controls at the top of the Measure tab. */
+/** The quantity (and, in BE3, the remove bar) at the top of the Measure tab. */
 export function ItemTop({ entry, item, errors, variant }: { entry: OrderEntry; item: DraftItem; errors: DraftErrors; variant: string }) {
   if (variant === '0') return <ItemHeader entry={entry} item={item} errors={errors} />;
-  if (variant === 'B') return <Stepper entry={entry} item={item} />;
-  if (variant === 'E') return <QuantityChips entry={entry} item={item} />;
-  if (variant === 'D')
+  if (variant === 'BE3')
     return (
       <div className="flex flex-col gap-2">
-        <ItemHeader entry={entry} item={item} errors={errors} showRemove={false} />
-        <ConfirmLink entry={entry} item={item} />
+        <Stepper entry={entry} item={item} />
+        <HoldToRemove entry={entry} item={item} look="light" />
       </div>
     );
-  return <ItemHeader entry={entry} item={item} errors={errors} showRemove={false} />;
+  return <Stepper entry={entry} item={item} />;
 }
 
-/** B: a header above the tabs with the garment name and a labelled trash button. */
+/** BE2 and BE4: the remove control sits on the sheet's own title line, which already names the garment. */
 export function SheetHeader({ entry, item, variant }: { entry: OrderEntry; item: DraftItem; variant: string }) {
-  const pick = usePick();
-  if (variant !== 'B') return null;
-  // Sits on the sheet's own title line, which already names the garment.
+  if (variant !== 'BE2' && variant !== 'BE4') return null;
   return (
     <div className="-mt-[46px] flex justify-end">
-      <button
-        type="button"
-        onClick={() => entry.removeItem(item.key)}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-danger hover:bg-danger/10"
-      >
-        <Trash2 aria-hidden="true" size={18} />
-        {pick('বাদ দিন', 'Remove')}
-      </button>
+      <HoldToRemove entry={entry} item={item} look={variant === 'BE2' ? 'pill' : 'ring'} />
     </div>
   );
 }
 
-/** A: below Done, a full width outlined danger button that names the garment. E: the same spot holds a press-and-hold button. */
-export function SheetFooter({ entry, item, variant }: { entry: OrderEntry; item: DraftItem; variant: string }) {
+/** BE1: a full width hold bar under Done. BE5: Done and the hold button share one row. */
+export function SheetFooter({ entry, item, variant, onDone }: { entry: OrderEntry; item: DraftItem; variant: string; onDone(): void }) {
   const { t } = useI18n();
-  const title = useItemTitle(entry);
-  if (variant === 'A')
+  if (variant === 'BE1') return <HoldToRemove entry={entry} item={item} look="bar" />;
+  if (variant === 'BE5')
     return (
-      <button
-        type="button"
-        onClick={() => entry.removeItem(item.key)}
-        className="mt-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-danger/50 px-4 text-sm font-semibold text-danger hover:bg-danger/10"
-      >
-        <Trash2 aria-hidden="true" size={18} />
-        {t('entry.removeItem', { item: title(item) })}
-      </button>
-    );
-  if (variant === 'E') return <HoldToRemove entry={entry} item={item} />;
-  return null;
-}
-
-/** C: a trash button at the end of each slip row; the first tap turns the row into a confirm. */
-export function RowRemove({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
-  const pick = usePick();
-  const title = useItemTitle(entry);
-  const [asking, setAsking] = useState(false);
-  if (asking)
-    return (
-      <div className="flex w-full items-center gap-2 bg-danger/10 px-4 py-2">
-        <span className="min-w-0 flex-1 text-sm font-semibold text-danger">{pick(`${title(item)} বাদ দেবেন?`, `Remove ${title(item)}?`)}</span>
-        <Button variant="ghost" onClick={() => setAsking(false)}>
-          {pick('না', 'No')}
-        </Button>
-        <Button variant="danger" onClick={() => entry.removeItem(item.key)}>
-          {pick('হ্যাঁ, বাদ দিন', 'Yes, remove')}
-        </Button>
+      <div className="flex gap-2">
+        <HoldToRemove entry={entry} item={item} look="half" />
+        <button
+          type="button"
+          onClick={onDone}
+          className="inline-flex min-h-11 flex-[1.3] items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-on-brand hover:bg-brand-hover"
+        >
+          {t('work.done')}
+        </button>
       </div>
     );
-  return (
-    <button
-      type="button"
-      aria-label={pick(`${title(item)} বাদ দিন`, `Remove ${title(item)}`)}
-      onClick={() => setAsking(true)}
-      className="grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-danger/10 hover:text-danger"
-    >
-      <Trash2 aria-hidden="true" size={18} />
-    </button>
-  );
+  return null;
 }
 
 function Stepper({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
   const { t, language } = useI18n();
-  const set = (q: number) => entry.updateItem(item.key, { quantity: Math.max(1, Math.min(99, q)) });
   const pick = usePick();
+  const set = (q: number) => entry.updateItem(item.key, { quantity: Math.max(1, Math.min(99, q)) });
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="font-semibold">{t('entry.quantity')}</span>
@@ -145,57 +105,12 @@ function Stepper({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
   );
 }
 
-function QuantityChips({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
-  const { t, language } = useI18n();
-  return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 font-semibold">{t('entry.quantity')}</legend>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => {
-          const on = item.quantity === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={on}
-              onClick={() => entry.updateItem(item.key, { quantity: n })}
-              className={`grid min-h-11 flex-1 place-items-center rounded-xl border font-display text-lg font-semibold ${on ? 'border-brand bg-brand text-on-brand' : 'border-line bg-panel'}`}
-            >
-              {toScript(String(n), language)}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
-  );
-}
-
-function ConfirmLink({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
-  const pick = usePick();
-  const [asking, setAsking] = useState(false);
-  if (asking)
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2">
-        <span className="min-w-0 flex-1 text-sm font-semibold text-danger">{pick('এই পোশাকটি বাদ দেবেন?', 'Remove this garment?')}</span>
-        <Button variant="ghost" onClick={() => setAsking(false)}>
-          {pick('থাক', 'Keep')}
-        </Button>
-        <Button variant="danger" onClick={() => entry.removeItem(item.key)}>
-          {pick('বাদ দিন', 'Remove')}
-        </Button>
-      </div>
-    );
-  return (
-    <button type="button" onClick={() => setAsking(true)} className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-danger underline-offset-4 hover:underline">
-      <Trash2 aria-hidden="true" size={16} />
-      {pick('এই পোশাকটি অর্ডার থেকে বাদ দিন', 'Remove this garment from the order')}
-    </button>
-  );
-}
-
 const HOLD_MS = 900;
 
-function HoldToRemove({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
+type Look = 'bar' | 'pill' | 'light' | 'ring' | 'half';
+
+/** Removes the garment only after a press held for HOLD_MS; letting go early cancels. */
+function HoldToRemove({ entry, item, look }: { entry: OrderEntry; item: DraftItem; look: Look }) {
   const pick = usePick();
   const [progress, setProgress] = useState(0);
   const start = useRef<number | null>(null);
@@ -217,22 +132,46 @@ function HoldToRemove({ entry, item }: { entry: OrderEntry; item: DraftItem }) {
     frame.current = requestAnimationFrame(tick);
   };
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
-  return (
-    <button
-      type="button"
-      onPointerDown={() => {
-        start.current = performance.now();
-        frame.current = requestAnimationFrame(tick);
-      }}
-      onPointerUp={stop}
-      onPointerLeave={stop}
-      onContextMenu={(e) => e.preventDefault()}
-      className="relative mt-2 min-h-11 select-none overflow-hidden rounded-lg border border-danger/50 px-4 text-sm font-semibold text-danger"
-    >
-      <span aria-hidden="true" className="absolute inset-y-0 start-0 bg-danger/20" style={{ width: `${progress * 100}%` }} />
-      <span className="relative inline-flex items-center gap-2">
+  const press = {
+    onPointerDown: () => {
+      start.current = performance.now();
+      frame.current = requestAnimationFrame(tick);
+    },
+    onPointerUp: stop,
+    onPointerLeave: stop,
+    onContextMenu: (e: MouseEvent) => e.preventDefault(),
+  };
+  const holding = progress > 0;
+  const long = holding ? pick('ধরে রাখুন…', 'Keep holding…') : pick('চেপে ধরে বাদ দিন', 'Press and hold to remove');
+  const short = holding ? pick('ধরে রাখুন…', 'Hold…') : pick('চেপে ধরে বাদ', 'Hold to remove');
+  const fill = <span aria-hidden="true" className="absolute inset-y-0 start-0 bg-danger/20" style={{ width: `${progress * 100}%` }} />;
+
+  if (look === 'ring') {
+    const r = 18;
+    const c = 2 * Math.PI * r;
+    return (
+      <button type="button" aria-label={pick('চেপে ধরে বাদ দিন', 'Press and hold to remove')} {...press} className="relative grid size-11 select-none place-items-center rounded-full text-danger hover:bg-danger/10">
+        <svg aria-hidden="true" viewBox="0 0 44 44" className="absolute inset-0 -rotate-90">
+          <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeOpacity={0.15} strokeWidth="3" />
+          <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray={c} strokeDashoffset={c * (1 - progress)} strokeLinecap="round" />
+        </svg>
         <Trash2 aria-hidden="true" size={18} />
-        {progress > 0 ? pick('ধরে রাখুন…', 'Keep holding…') : pick('চেপে ধরে বাদ দিন', 'Press and hold to remove')}
+        {holding && <span className="absolute top-full mt-1 whitespace-nowrap rounded bg-ink px-2 py-0.5 text-xs text-panel">{short}</span>}
+      </button>
+    );
+  }
+  const shape: Record<Exclude<Look, 'ring'>, string> = {
+    bar: 'mt-2 w-full min-h-11 rounded-lg border border-danger/50 px-4 text-sm',
+    pill: 'min-h-11 rounded-full border border-danger/40 px-3 text-sm',
+    light: 'w-full min-h-11 rounded-lg bg-danger/5 px-4 text-sm',
+    half: 'min-h-11 flex-1 whitespace-nowrap rounded-lg border border-danger/50 px-2 text-sm',
+  };
+  return (
+    <button type="button" {...press} className={`relative select-none overflow-hidden font-semibold text-danger ${shape[look]}`}>
+      {fill}
+      <span className="relative inline-flex items-center gap-2">
+        <Trash2 aria-hidden="true" size={look === 'bar' ? 18 : 16} />
+        {look === 'bar' || look === 'light' ? long : short}
       </span>
     </button>
   );

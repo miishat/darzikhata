@@ -11,7 +11,7 @@ import { stepOf, type DraftErrors, type DraftItem } from './draft';
 import { CustomerPicker } from './entry/CustomerPicker';
 import { DraftSummary } from './entry/DraftSummary';
 import { ItemDetails } from './entry/ItemDetails';
-import { ItemTop, QuantitySuffix, RowRemove, SheetFooter, SheetHeader, useRemoveVariant, useRemoveVariants } from './entry/GarmentRemove.prototype';
+import { ItemTop, QuantitySuffix, SheetFooter, SheetHeader, useRemoveVariant, useRemoveVariants } from './entry/GarmentRemove.prototype';
 import { PrototypeSwitcher } from '../../ui/PrototypeSwitcher';
 import { ItemMeasurements } from './entry/ItemMeasurements';
 import { ItemMoney, MoneyFields } from './entry/MoneyFields';
@@ -167,7 +167,6 @@ export function MobileOrderSlip({ entry, onSaved }: Props) {
                     <ChevronRight aria-hidden="true" size={18} className="text-muted" />
                   )}
                 </button>
-                {variant === 'C' && <RowRemove entry={entry} item={line} />}
               </li>
             );
           })}
@@ -299,8 +298,8 @@ function ItemSheet({
       )}
       {tab === 'design' && <ItemDetails entry={entry} item={item} />}
       {tab === 'price' && <ItemMoney entry={entry} item={item} errors={errors} />}
-      <Button onClick={onDone}>{t('work.done')}</Button>
-      <SheetFooter entry={entry} item={item} variant={variant} />
+      {variant !== 'BE5' && <Button onClick={onDone}>{t('work.done')}</Button>}
+      <SheetFooter entry={entry} item={item} variant={variant} onDone={onDone} />
       {/* Room under the last button so it can be scrolled above the pinned keypad. */}
       {keypadSpace > 0 && <div aria-hidden="true" data-testid="keypad-space" style={{ height: keypadSpace }} />}
     </div>
