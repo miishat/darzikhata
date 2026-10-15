@@ -1,6 +1,6 @@
 import type { ItemRef } from '@darzikhata/domain';
 import { useEffect, useMemo, useState } from 'react';
-import { Columns3, List, Printer } from 'lucide-react';
+import { Columns3, List, Printer, Search, TriangleAlert } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useSnapshot } from '../../data/StoreContext';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -17,14 +17,20 @@ import { WorkBoard, WorkerChips, isLate } from './BoardView';
 import { WorkGroupTable } from './WorkGroupTable';
 import { assignees, filterWork, stageOptions } from './workList';
 import { Select } from '../../ui/Select';
+import { PrototypeSwitcher, useVariant } from '../../ui/PrototypeSwitcher';
+import { itemTitle } from '../common/orderText';
+import { searchWords, TOP_KEYS, TOP_VARIANTS } from './workTopBarPrototype';
 
 type Open = { kind: 'assign' | 'stage'; refs: ItemRef[] } | null;
 
 /** Everyone's unfinished garments for supervisors, or just your own; with batch assign and stage moves. */
 function DesktopWorkPage() {
-  const { t, number, label } = useI18n();
+  const { t, number, label, language } = useI18n();
   const can = useCan();
-  const { config } = useSnapshot();
+  const { config, state } = useSnapshot();
+  // PROTOTYPE
+  const variant = useVariant(TOP_KEYS);
+  const [text, setText] = useState('');
   const { branchIds } = useBranchScope();
   const { view, setView, viewer, query, setQuery, all, shown, groups } = useWorkList();
   const [params] = useSearchParams();
@@ -94,12 +100,215 @@ function DesktopWorkPage() {
   if (view === 'board') printParams.delete('stage');
   const printSearch = printParams.toString();
 
-  const empty = view === 'board' ? boardRows.length === 0 : groups.length === 0;
+  // PROTOTYPE 1: the search box narrows the list.
+  const needle = variant === '1' ? text.trim().toLowerCase() : '';
+  const matches = (r: ItemRef) =>
+    needle === '' ||
+    [r.order.number, itemTitle(r.order, r.item, language), state.customers[r.order.customerId]?.name ?? ''].join(' ').toLowerCase().includes(needle);
+  const shownGroups = needle === '' ? groups : groups.map((g) => ({ ...g, refs: g.refs.filter(matches) })).filter((g) => g.refs.length > 0);
+  const empty = view === 'board' ? boardRows.length === 0 : shownGroups.length === 0;
+
+  const printTo = `/print/work${printSearch ? `?${printSearch}` : ''}`;
+  const title = <h1 className="font-display text-xl font-bold">{t('nav.work')}</h1>;
+  const summary = (
+    <p className="flex items-center gap-3 text-sm text-muted">
+      <span>{t('work.inProgress', { n: number(all.length) })}</span>
+      {lateCount > 0 && <span className="font-semibold text-warn-ink">{t('work.lateCount', { n: number(lateCount) })}</span>}
+    </p>
+  );
+  const viewSwitch = (
+    <ViewTabs
+      segmented
+      label={t('work.view')}
+      views={[
+        { value: 'list', label: t('work.view.list'), icon: List },
+        { value: 'board', label: t('work.view.board'), icon: Columns3 },
+      ]}
+      value={view}
+      onChange={(next) => setView(next === 'board' ? 'board' : 'list')}
+      panelId={panelId}
+    />
+  );
+  const printButton = (
+    <Link to={printTo} className={`${buttonClasses('secondary')} min-h-9!`}>
+      <Printer aria-hidden="true" size={16} />
+      {t('work.print')}
+    </Link>
+  );
+  const printIcon = (
+    <Link
+      to={printTo}
+      aria-label={t('work.print')}
+      title={t('work.print')}
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panel text-ink hover:bg-surface focus-visible:outline-2 focus-visible:outline-focus"
+    >
+      <Printer aria-hidden="true" size={16} />
+    </Link>
+  );
+  const groupSelect =
+    view === 'list' && viewer.seesAll ? (
+      <Select
+        label={t('work.groupBy')}
+        value={query.by}
+        options={[
+          { value: 'worker', label: t('work.byWorker') },
+          { value: 'stage', label: t('work.byStage') },
+        ]}
+        onChange={(by) => setQuery({ ...query, by: by === 'stage' ? 'stage' : 'worker' })}
+      />
+    ) : null;
+  const stageSelect =
+    view === 'list' ? (
+      <Select
+        label={t('work.stage')}
+        value={query.stage}
+        options={[{ value: 'all', label: t('work.allStages') }, ...stages.map((s) => ({ value: s.key, label: label(s.label) }))]}
+        onChange={(stage) => setQuery({ ...query, stage })}
+      />
+    ) : null;
+  const tiles = viewer.seesAll ? (
+    <WorkerChips workers={workers} counts={chipCounts} late={lateCounts} value={query.worker} onChange={(worker) => setQuery({ ...query, worker })} />
+  ) : null;
+  const pill = (id: string, name: string, warn = false) => {
+    const on = query.worker === id;
+    const behind = lateCounts[id] ?? 0;
+    return (
+      <button
+        key={id}
+        type="button"
+        aria-pressed={on}
+        onClick={() => setQuery({ ...query, worker: id })}
+        className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-focus ${
+          on ? 'bg-navy font-semibold text-on-navy ring-navy' : warn ? 'bg-warn-soft/50 text-warn-ink ring-warn-line' : 'bg-panel text-ink ring-line hover:bg-surface'
+        }`}
+      >
+        {warn && <TriangleAlert aria-hidden="true" size={14} />}
+        {name}
+        <b>{number(chipCounts[id] ?? 0)}</b>
+        {behind > 0 && <span className={`text-xs font-semibold ${on ? 'text-on-navy' : 'text-warn-ink'}`}>· {t('work.lateCount', { n: number(behind) })}</span>}
+      </button>
+    );
+  };
+  const pills = viewer.seesAll ? (
+    <div role="group" aria-label={t('work.workerFilter')} className="flex min-w-0 flex-1 gap-2 overflow-x-auto p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {pill('all', t('work.everyone'))}
+      {workers.map((w) => pill(w.id, w.name))}
+      {pill('none', t('work.unassigned'), true)}
+    </div>
+  ) : (
+    <div className="flex-1" />
+  );
+  const workerSelect = viewer.seesAll ? (
+    <Select
+      label={t('work.workerFilter')}
+      value={query.worker}
+      options={[
+        { value: 'all', label: `${t('work.everyone')} (${number(chipCounts.all ?? 0)})` },
+        ...workers.map((w) => ({ value: w.id, label: `${w.name} (${number(chipCounts[w.id] ?? 0)})` })),
+        { value: 'none', label: `${t('work.unassigned')} (${number(chipCounts.none ?? 0)})` },
+      ]}
+      onChange={(worker) => setQuery({ ...query, worker })}
+    />
+  ) : null;
+  const searchBox = (
+    <label className="flex min-h-10 min-w-0 max-w-72 grow basis-44 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-muted focus-within:outline-2 focus-within:outline-focus">
+      <Search aria-hidden="true" size={18} />
+      <input
+        type="search"
+        aria-label={searchWords(language)}
+        placeholder={searchWords(language)}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+      />
+    </label>
+  );
+  const BAR = 'flex flex-col gap-3 border-b border-line p-4';
+  const prototypeBar =
+    variant === '1' ? (
+      <div className={BAR}>
+        {title}
+        {tiles}
+        <div className="flex flex-wrap items-center gap-2">
+          {searchBox}
+          {groupSelect}
+          {stageSelect}
+          <div className="ms-auto flex items-center gap-2">
+            {viewSwitch}
+            {printButton}
+          </div>
+        </div>
+      </div>
+    ) : variant === '2' ? (
+      <div className={BAR}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {title}
+          {summary}
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            {groupSelect}
+            {stageSelect}
+            {viewSwitch}
+            {printButton}
+          </div>
+        </div>
+        {tiles}
+      </div>
+    ) : variant === '3' ? (
+      <div className={BAR}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {title}
+          {summary}
+          <div className="ms-auto flex items-center gap-2">
+            {viewSwitch}
+            {printButton}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {pills}
+          {groupSelect}
+          {stageSelect}
+        </div>
+      </div>
+    ) : variant === '4' ? (
+      <div className={BAR}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {title}
+          {summary}
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            {workerSelect}
+            {groupSelect}
+            {stageSelect}
+            {viewSwitch}
+            {printIcon}
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className={BAR}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {title}
+          {viewSwitch}
+          {summary}
+          <div className="ms-auto">{printIcon}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">{tiles}</div>
+          {(groupSelect || stageSelect) && (
+            <div className="flex shrink-0 flex-col gap-2">
+              {groupSelect}
+              {stageSelect}
+            </div>
+          )}
+        </div>
+      </div>
+    );
 
   return (
     // One card the height of the window less the shell header (3.5rem) and the page padding (2 × 1.5rem):
     // the board's columns and the list scroll inside it, and the selection sits in its footer.
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-96 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+      <PrototypeSwitcher variants={TOP_VARIANTS} />
+      {variant !== '0' ? prototypeBar : (
       <div className="flex flex-col gap-3 border-b border-line p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="font-display text-xl font-bold">{t('nav.work')}</h1>
@@ -150,6 +359,7 @@ function DesktopWorkPage() {
           </div>
         )}
       </div>
+      )}
       {/* relative: keeps absolutely placed screen-reader text inside this scroll area, so the page itself never scrolls. */}
       <div
         role="tabpanel"
@@ -162,7 +372,7 @@ function DesktopWorkPage() {
         ) : view === 'board' ? (
           <WorkBoard rows={boardRows} selected={selectable ? selected : null} onToggle={toggle} />
         ) : (
-          groups.map((group) => (
+          shownGroups.map((group) => (
             <WorkGroupTable
               key={group.key}
               title={query.by === 'worker' ? (group.staff?.name ?? t('work.unassigned')) : group.stage ? label(group.stage.label) : group.key}
