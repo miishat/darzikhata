@@ -412,6 +412,7 @@ export const en: Messages = {
   'entry.balanceLeft': 'Left to Pay',
   'entry.switchCustomer': 'Change Customer',
   'entry.pickCustomer': 'Pick a Customer',
+  'entry.genderPick': 'Choose',
   'entry.pickAnotherCustomer': 'Pick Another Customer',
   'entry.customerProfile': 'Profile · {n} Orders',
   'entry.fact.owes': 'Owed Before',
